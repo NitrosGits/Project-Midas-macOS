@@ -71,13 +71,16 @@
 #define	PHYS_TO_K1(x)	((u32)(x)|0xA0000000)	/* physical to kseg1 */
 
 #else /* PC port: there is no KSEG mapping, and masking host pointers corrupts
-       * them (it crashed texSelect). All conversions are identity. */
+       * them (it crashed texSelect). All conversions are identity, except
+       * that a 64-bit build turns a host pointer into its window word
+       * (portPtr32 passes an existing 32-bit word through). */
 
-#define	K0_TO_K1(x)	((u32)(x))
-#define	K1_TO_K0(x)	((u32)(x))
-#define	K0_TO_PHYS(x)	((u32)(x))
-#define	K1_TO_PHYS(x)	((u32)(x))
-#define	KDM_TO_PHYS(x)	((u32)(x))
+#include "port_hostptr.h"
+#define	K0_TO_K1(x)	portPtr32((const void *) (uintptr_t) (x))
+#define	K1_TO_K0(x)	portPtr32((const void *) (uintptr_t) (x))
+#define	K0_TO_PHYS(x)	portPtr32((const void *) (uintptr_t) (x))
+#define	K1_TO_PHYS(x)	portPtr32((const void *) (uintptr_t) (x))
+#define	KDM_TO_PHYS(x)	portPtr32((const void *) (uintptr_t) (x))
 #define	PHYS_TO_K0(x)	((u32)(x))
 #define	PHYS_TO_K1(x)	((u32)(x))
 

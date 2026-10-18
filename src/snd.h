@@ -181,7 +181,7 @@ struct ALInstrumentAlt_s
     s32 unk0;
     s32 unk4;
     s32 unk8;
-    ALSound *soundArray[1];
+    PTR32(ALSound) soundArray[1]; /* PTR32 like ALInstrument's: the 1-based trick needs 4-byte slots */
 };
 
 struct ALBankAlt_s
@@ -190,8 +190,8 @@ struct ALBankAlt_s
     u8 flags;
     u8 pad;
     s32 sampleRate;             /* e.g. 44100, 22050, etc...       */
-    ALInstrument *percussion;   /* default percussion for GM       */
-    struct ALInstrumentAlt_s *instArray[1]; /* ARRAY of instruments            */
+    PTR32(ALInstrument) percussion;   /* default percussion for GM       */
+    PTR32(struct ALInstrumentAlt_s) instArray[1]; /* ARRAY of instruments      */
 };
 
 // end Alternate defintion for ALInstrument

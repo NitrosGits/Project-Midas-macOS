@@ -708,14 +708,21 @@ extern u8 *port_musicsampletblSegmentRomStart;
  */
 void musicSeqFileNew(RareALSeqBankFile *file, u8 *base)
 {
-    s32 offset = (intptr_t) base;
+#ifdef TARGET_N64
+    s32 offset = (s32) base;
+#endif
     s32 i;
     
     /*
      * patch the file so that offsets are pointers
      */
     for (i = 0; i < file->seqCount; i++) {
+#ifdef TARGET_N64
         file->seqArray[i].address = (u8 *)((u8 *)file->seqArray[i].address + offset);
+#else
+        /* PORT: address is a PTR32 word holding the offset into the .sbk */
+        PSET(file->seqArray[i].address, base + PTRW(file->seqArray[i].address));
+#endif
     }
 }
 
@@ -734,7 +741,7 @@ void musicSeqPlayerInit(void)
     ALBankFile *instrumentBank; // sp 204
 
     // This type/cast is not correct, but this is how it matches.
-    s32 tblSegmentRomStartAddress = (intptr_t)&_musicsampletblSegmentRomStart; // ??
+    intptr_t tblSegmentRomStartAddress = (intptr_t)&_musicsampletblSegmentRomStart; // ??
 
     ALSynConfig synconfig; // sp 164-192
     ALSeqpConfig track1SeqpConfig; // sp 136-160
@@ -774,22 +781,22 @@ void musicSeqPlayerInit(void)
 
     if (MUSIC_CONFIG_USE_SFX_BANK)
     {
-        size = (uintptr_t)&_sfxtblSegmentRomStart - (uintptr_t)&_sfxctlSegmentRomStart;
+        size = (u32) ((u8 *) &_sfxtblSegmentRomStart - (u8 *) &_sfxctlSegmentRomStart);
 
         sfxBank = alHeapAlloc(&g_musicHeap, 1, size);
         romCopy(sfxBank, &_sfxctlSegmentRomStart, size);
         alBnkfNew(sfxBank, (u8 *)&_sfxtblSegmentRomStart);
-        g_musicSfxBufferPtr = sfxBank->bankArray[0];
+        g_musicSfxBufferPtr = PGET(sfxBank->bankArray[0]);
     }
 
     if (MUSIC_CONFIG_USE_INSTRUMENT_BANK)
     {
-        size = (uintptr_t)&_instrumentstblSegmentRomStart - (uintptr_t)&_instrumentsctlSegmentRomStart;
+        size = (u32) ((u8 *) &_instrumentstblSegmentRomStart - (u8 *) &_instrumentsctlSegmentRomStart);
 
         instrumentBank = alHeapAlloc(&g_musicHeap, 1, size);
         romCopy(instrumentBank, &_instrumentsctlSegmentRomStart, size);
         alBnkfNew(instrumentBank, (u8 *)&_instrumentstblSegmentRomStart);
-        g_musicInstrumentBufferPtr = instrumentBank->bankArray[0];
+        g_musicInstrumentBufferPtr = PGET(instrumentBank->bankArray[0]);
     }
 
     // this area based on auReadSeqFileHeader
@@ -818,10 +825,10 @@ void musicSeqPlayerInit(void)
     for (ui = 0; ui < g_musicDataTable->seqCount; ui++)
     {
         RareALSeqData *e = &g_musicDataTable->seqArray[ui];
-        u32 a = (uintptr_t)e->address;
+        u32 a = PTRW(e->address);
 
-        e->address = (u8 *)((a >> 24) | ((a >> 8) & 0xFF00u) |
-                            ((a & 0xFF00u) << 8) | (a << 24));
+        PTRW(e->address) = (a >> 24) | ((a >> 8) & 0xFF00u) |
+                           ((a & 0xFF00u) << 8) | (a << 24);
         e->uncompressed_len =
             (u16)((e->uncompressed_len >> 8) | (e->uncompressed_len << 8));
         e->len = (u16)((e->len >> 8) | (e->len << 8));
@@ -963,7 +970,7 @@ void musicTrack1Play(s32 track)
 
     MUSIC_WAIT_STOPPED(g_musicXTrack1SeqPlayer);
 
-    romAddress = g_musicDataTable->seqArray[g_musicXTrack1CurrentTrackNum].address;
+    romAddress = PGET(g_musicDataTable->seqArray[g_musicXTrack1CurrentTrackNum].address);
 
     if (romAddress < (void*)ROM_MUSIC_START_OFFSET)
     {
@@ -1151,7 +1158,7 @@ void musicTrack2Play(s32 track)
 
     MUSIC_WAIT_STOPPED(g_musicXTrack2SeqPlayer);
 
-    romAddress = g_musicDataTable->seqArray[g_musicXTrack2CurrentTrackNum].address;
+    romAddress = PGET(g_musicDataTable->seqArray[g_musicXTrack2CurrentTrackNum].address);
 
     if (romAddress < (void*)ROM_MUSIC_START_OFFSET)
     {
@@ -1339,7 +1346,7 @@ void musicTrack3Play(s32 track)
 
     MUSIC_WAIT_STOPPED(g_musicXTrack3SeqPlayer);
 
-    romAddress = g_musicDataTable->seqArray[g_musicXTrack3CurrentTrackNum].address;
+    romAddress = PGET(g_musicDataTable->seqArray[g_musicXTrack3CurrentTrackNum].address);
 
     if (romAddress < (void*)ROM_MUSIC_START_OFFSET)
     {

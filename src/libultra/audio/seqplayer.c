@@ -483,13 +483,13 @@ void __handleMIDIMsg(ALSeqPlayer *seqp, ALEvent *event)
                 else
                     vstate->phase = AL_PHASE_NOTEON;
                 
-                cents = (key - sound->keyMap->keyBase) * 100
-                    + sound->keyMap->detune;
+                cents = (key - PGET(sound->keyMap)->keyBase) * 100
+                    + PGET(sound->keyMap)->detune;
                 
                 vstate->pitch = alCents2Ratio(cents);
-                vstate->envGain = sound->envelope->attackVolume;
+                vstate->envGain = PGET(sound->envelope)->attackVolume;
                 vstate->envEndTime = seqp->curTime +
-                    sound->envelope->attackTime;
+                    PGET(sound->envelope)->attackTime;
 
                 /*
                  * setup tremelo and vibrato if active
@@ -555,18 +555,18 @@ void __handleMIDIMsg(ALSeqPlayer *seqp, ALEvent *event)
                 fxmix = seqp->chanState[chan].fxmix;
                 pan   = __vsPan(vstate, seqp);
                 vol   = __vsVol(vstate, seqp);
-                deltaTime  = sound->envelope->attackTime;
+                deltaTime  = PGET(sound->envelope)->attackTime;
 
-                alSynStartVoiceParams(seqp->drvr, voice, sound->wavetable,
+                alSynStartVoiceParams(seqp->drvr, voice, PGET(sound->wavetable),
                                       pitch, vol, pan, fxmix, deltaTime);
                 /*
                  * set up callbacks for envelope
                  */
                 evt.type          = AL_SEQP_ENV_EVT;
                 evt.msg.vol.voice = voice;
-                evt.msg.vol.vol   = sound->envelope->decayVolume;
-                evt.msg.vol.delta = sound->envelope->decayTime;
-                deltaTime = sound->envelope->attackTime;
+                evt.msg.vol.vol   = PGET(sound->envelope)->decayVolume;
+                evt.msg.vol.delta = PGET(sound->envelope)->decayTime;
+                deltaTime = PGET(sound->envelope)->attackTime;
                 
                 alEvtqPostEvent(&seqp->evtq, &evt, deltaTime);
 
@@ -588,7 +588,7 @@ void __handleMIDIMsg(ALSeqPlayer *seqp, ALEvent *event)
             else {
                 vstate->phase = AL_PHASE_RELEASE;
                 __seqpReleaseVoice(seqp, &vstate->voice,
-				   vstate->sound->envelope->releaseTime);
+				   PGET(vstate->sound->envelope)->releaseTime);
             }
 
             break;
@@ -672,7 +672,7 @@ void __handleMIDIMsg(ALSeqPlayer *seqp, ALEvent *event)
 			    else if(vs->phase == AL_PHASE_SUSTREL) {
 				vs->phase = AL_PHASE_RELEASE;
 				__seqpReleaseVoice(seqp, &vs->voice,
-						   vs->sound->envelope->releaseTime);
+						   PGET(vs->sound->envelope)->releaseTime);
 			    }
 			}
 		    }
@@ -714,7 +714,7 @@ void __handleMIDIMsg(ALSeqPlayer *seqp, ALEvent *event)
 	    assert(seqp->bank != NULL);
 
             if (key < seqp->bank->instCount) {
-                ALInstrument *inst = seqp->bank->instArray[key];
+                ALInstrument *inst = PGET(seqp->bank->instArray[key]);
                 __setInstChanState(seqp, inst, chan);        /* sct 11/6/95 */
             }
 #ifdef _DEBUG
@@ -888,11 +888,11 @@ ALSound *__lookupSoundQuick(ALSeqPlayer *seqp, u8 key, u8 vel, u8 chan)
     while (r >= l) {
         i = (l+r)/2;
 
-        keymap = inst->soundArray[i-1]->keyMap;
+        keymap = PGET(PGET(inst->soundArray[i-1])->keyMap);
 
         if ((key >= keymap->keyMin) && (key <= keymap->keyMax) &&
             (vel >= keymap->velocityMin) && (vel <= keymap->velocityMax)) {
-            return inst->soundArray[i-1];
+            return PGET(inst->soundArray[i-1]);
         } else if ((key < keymap->keyMin) ||
                    ((vel < keymap->velocityMin) && (key <= keymap->keyMax))) {
             r = i - 1;
@@ -1093,7 +1093,7 @@ void __initFromBank(ALSeqPlayer *seqp, ALBank *b)
     
     /* set to the first available instrument. */
     for(i = 0; !inst ; i++)
-      inst = b->instArray[i];
+      inst = PGET(b->instArray[i]);
     
     /* sct 11/6/95 - Setup the channel state for the given instrument. */
     /* There is some wasted effort here since both calls the same state vars */
@@ -1103,9 +1103,9 @@ void __initFromBank(ALSeqPlayer *seqp, ALBank *b)
       __setInstChanState(seqp, inst, i);
     }
 
-    if (b->percussion) {
+    if (PGET(b->percussion)) {
       __resetPerfChanState(seqp, i);
-      __setInstChanState(seqp, b->percussion, 9);
+      __setInstChanState(seqp, PGET(b->percussion), 9);
     }
 }
 

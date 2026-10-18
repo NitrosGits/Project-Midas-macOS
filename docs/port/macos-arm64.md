@@ -462,6 +462,43 @@ Checked: `aliases` and `variants` are clean. i386 against de10b68: 207 objects
 identical, and textrelated.c differs only in `load_font_tables`. The audit no
 longer lists `font` or `fontchar` (231 records move).
 
+### 2026-10-18: audio banks
+
+Error count: **305 → 266**. audio_stubs.c, music.c, audi.c, snd.c, load.c,
+save.c, resample.c and reverb.c are all at 0.
+
+Done:
+
+- **PTR32 in place, not a native copy.** The `.ctl` bank and its records are
+  used in place by libultra's players and by snd.c. Keeping 4-byte slots also
+  keeps GE's `ALInstrumentAlt` view working: its 1-based `soundArray` at +12
+  lines up with `ALInstrument.soundArray` at +16 only with 4-byte slots
+  (asserted on arm64). Converted: `ALBankFile.bankArray`,
+  `ALBank.percussion/instArray`, `ALInstrument.soundArray`,
+  `ALSound.envelope/keyMap/wavetable`, `ALWaveTable.base`, the ADPCM/raw wave
+  info `loop`/`book`, the Alt views, and music.c's `RareALSeqData.address`
+  (the `.sbk` header, sized by `sizeof`). The anonymous typedefs got struct
+  tags so the rewrite tool can name them. libaudio.h has its own identity
+  `PTR32` macros on N64. `ptr32_rewrite.py` rewrote 73 reads.
+- **Loaders.** `alBnkfNew` (audio_stubs.c) byte-swaps each offset word and
+  promotes it with `PSET(f, base + swap(PTRW(f)))`. `musicSeqFileNew` and the
+  `.sbk` header swap do the same.
+- **Words the RSP or the DMA callback sees.** load.c's `memin` is the DMA
+  callback's 32-bit word, so it is built from `PTRW(table->base)`. The save
+  filter stores `portPtr32` of its output buffer, so audi.c passes the buffer
+  itself instead of an `osVirtualToPhysical` word cast back to `s16 *`. The
+  `K0_TO_PHYS` family in R4300.h encodes with `portPtr32` on PC; that is an
+  identity on 32-bit builds, and 32-bit words pass through unchanged.
+- Smaller fixes: `ALSndPlayer.target` holds an `ALSoundState *`; the int
+  parameters passed as `void *` in resample.c; the reverb delay-line
+  differences; and audi.c's task sizes and scheduler flag.
+
+Checked: `aliases` and `variants` are clean. i386 against 1014cd9: 206
+objects identical. load.c differs only in the operand order of two additions,
+and audi.c only in `amHandleFrameMessage` (no `osVirtualToPhysical` call, an
+identity shim on 32-bit builds). libultra's own `ALSeqData`/`ALSeqFile` still
+move, but GE never uses them (220 records move).
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -475,15 +512,12 @@ longer lists `font` or `fontchar` (231 records move).
 
 ### Next, in order
 
-1. **Audio banks** (audio_stubs.c `alBnkfNew`). Choose between `PTR32` in place
-   and a native copy at load. Watch the `ALBankAlt`/`ALInstrumentAlt` views,
-   whose 1-based `soundArray` trick only lines up with 4-byte pointers.
-2. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
+1. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
    `PORT_STATIC_PTR32`, and `debugmenu.c:55`. The macro names its record with
    `__LINE__`, so two `.inc.c` files included into one TU collide if they use
    it on the same line number. `__COUNTER__` avoids that.
-3. **Phase 3: the remaining punning sites.** 305 errors, led by
-   rarewarelogo.c (static DLs, item 2), bondview2.c, gunfire.c, image_bank.c,
+2. **Phase 3: the remaining punning sites.** 266 errors, led by
+   rarewarelogo.c (static DLs, item 1), bondview2.c, gunfire.c, image_bank.c,
    image.c, memp.c, title.c, ramromreplay.c and init.c. Start with
    `retype_locals.py` (add `--globals` for title.c's `s32` buffer globals). Still
    truncating with `(u32)(uintptr_t)`: port_textures.c (`entry.index`) and

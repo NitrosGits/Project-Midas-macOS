@@ -66,7 +66,7 @@ Acmd *alAdpcmPull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset, Acmd 
 
     inp = AL_DECODER_IN;
     aLoadADPCM(ptr++, f->bookSize,
-               K0_TO_PHYS(f->table->waveInfo.adpcmWave.book->book));
+               K0_TO_PHYS(PGET(f->table->waveInfo.adpcmWave.book)->book));
 
     looped = (outCount + f->sample > f->loop.end) && (f->loop.count != 0);
     if (looped)
@@ -101,7 +101,7 @@ Acmd *alAdpcmPull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset, Acmd 
          * Now fix up state info to reflect the loop start point
          */
         f->lastsam = f->loop.start &0xf;
-        f->memin = (intptr_t) f->table->base + ADPCMFBYTES *
+        f->memin = PTRW(f->table->base) + ADPCMFBYTES *
             ((s32) (f->loop.start>>LFSAMPLES) + 1);
         f->sample = f->loop.start;
 
@@ -163,7 +163,7 @@ Acmd *alAdpcmPull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset, Acmd 
      * overFlow is the number of bytes past the end
      * of the bitstream I try to generate
      */
-    overFlow = f->memin + nbytes - ((intptr_t) f->table->base + f->table->len);
+    overFlow = f->memin + nbytes - (PTRW(f->table->base) + f->table->len);
     if (overFlow < 0)
         overFlow = 0;
     nOver = (overFlow/ADPCMFBYTES)<<LFSAMPLES;
@@ -248,7 +248,7 @@ Acmd *alRaw16Pull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset, Acmd 
          */
         *outp += dramAlign;
         
-        f->memin = (intptr_t) f->table->base + (f->loop.start<<1);
+        f->memin = PTRW(f->table->base) + (f->loop.start<<1);
         f->sample = f->loop.start;
         op = *outp;
         
@@ -309,7 +309,7 @@ Acmd *alRaw16Pull(void *filter, s16 *outp, s32 outCount, s32 sampleOffset, Acmd 
      */
 
     nbytes = outCount<<1;
-    overFlow = f->memin + nbytes - ((intptr_t) f->table->base + f->table->len);
+    overFlow = f->memin + nbytes - (PTRW(f->table->base) + f->table->len);
     if (overFlow < 0)
         overFlow = 0;
     if (overFlow > nbytes)
@@ -360,7 +360,7 @@ alLoadParam(void *filter, s32 paramID, void *param)
     switch (paramID) {
         case (AL_FILTER_SET_WAVETABLE):
             a->table = (ALWaveTable *) param;
-            a->memin = (intptr_t) a->table->base;
+            a->memin = PTRW(a->table->base);
             a->sample = 0;
             switch (a->table->type){
                 case (AL_ADPCM_WAVE):
@@ -377,13 +377,13 @@ alLoadParam(void *filter, s32 paramID, void *param)
                     a->table->len = ADPCMFBYTES *
                         ((s32) (a->table->len/ADPCMFBYTES));
                     
-                    a->bookSize = 2*a->table->waveInfo.adpcmWave.book->order*
-                    a->table->waveInfo.adpcmWave.book->npredictors*ADPCMVSIZE;
-                    if (a->table->waveInfo.adpcmWave.loop) {
-                        a->loop.start = a->table->waveInfo.adpcmWave.loop->start;
-                        a->loop.end = a->table->waveInfo.adpcmWave.loop->end;
-                        a->loop.count = a->table->waveInfo.adpcmWave.loop->count;
-                        alCopy(a->table->waveInfo.adpcmWave.loop->state,
+                    a->bookSize = 2*PGET(a->table->waveInfo.adpcmWave.book)->order*
+                    PGET(a->table->waveInfo.adpcmWave.book)->npredictors*ADPCMVSIZE;
+                    if (PGET(a->table->waveInfo.adpcmWave.loop)) {
+                        a->loop.start = PGET(a->table->waveInfo.adpcmWave.loop)->start;
+                        a->loop.end = PGET(a->table->waveInfo.adpcmWave.loop)->end;
+                        a->loop.count = PGET(a->table->waveInfo.adpcmWave.loop)->count;
+                        alCopy(PGET(a->table->waveInfo.adpcmWave.loop)->state,
                                a->lstate, sizeof(ADPCM_STATE));
                     } else {
                         a->loop.start = a->loop.end = a->loop.count = 0;
@@ -392,10 +392,10 @@ alLoadParam(void *filter, s32 paramID, void *param)
                     
                 case (AL_RAW16_WAVE):
                     f->handler = alRaw16Pull;
-                    if (a->table->waveInfo.rawWave.loop) {
-                        a->loop.start = a->table->waveInfo.rawWave.loop->start;
-                        a->loop.end = a->table->waveInfo.rawWave.loop->end;
-                        a->loop.count = a->table->waveInfo.rawWave.loop->count;
+                    if (PGET(a->table->waveInfo.rawWave.loop)) {
+                        a->loop.start = PGET(a->table->waveInfo.rawWave.loop)->start;
+                        a->loop.end = PGET(a->table->waveInfo.rawWave.loop)->end;
+                        a->loop.count = PGET(a->table->waveInfo.rawWave.loop)->count;
                     } else {
                         a->loop.start = a->loop.end = a->loop.count = 0;
                     }
@@ -416,16 +416,16 @@ alLoadParam(void *filter, s32 paramID, void *param)
 	    /* Get loop info according to table type. */
 	    if (a->table)
 	    {
-		a->memin  = (s32) a->table->base;
+		a->memin  = PTRW(a->table->base); /* memin is the DMA callback's 32-bit word */
 		if (a->table->type == AL_ADPCM_WAVE)
 		{
-		    if (a->table->waveInfo.adpcmWave.loop)
-			a->loop.count = a->table->waveInfo.adpcmWave.loop->count;
+		    if (PGET(a->table->waveInfo.adpcmWave.loop))
+			a->loop.count = PGET(a->table->waveInfo.adpcmWave.loop)->count;
 		}
 		else if (a->table->type == AL_RAW16_WAVE)
 		{
-		    if (a->table->waveInfo.rawWave.loop)
-			a->loop.count = a->table->waveInfo.rawWave.loop->count;
+		    if (PGET(a->table->waveInfo.rawWave.loop))
+			a->loop.count = PGET(a->table->waveInfo.rawWave.loop)->count;
 		}
 	    }
 

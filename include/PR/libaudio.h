@@ -35,6 +35,20 @@ extern "C" {
 
 #include <PR/ultratypes.h>
 #include <PR/mbi.h>
+
+/* PORT: the bank (.ctl) and its records are used in place, so their pointer
+ * fields are 32-bit words (PTR32, port/include/port_hostptr.h); the same
+ * identity macros as bondtypes.h on N64. */
+#ifdef TARGET_N64
+#ifndef PTR32
+#define PTR32(T) T *
+#define PGET(f) (f)
+#define PSET(f, p) ((f) = (p))
+#define PTRW(f) (*(u32 *) &(f))
+#endif
+#else
+#include "port_hostptr.h"
+#endif
     
 /***********************************************************************
  * misc defines
@@ -204,17 +218,17 @@ typedef struct {
     s8          detune;
 } ALKeyMap;
 
-typedef struct {
-    ALADPCMloop *loop;
-    ALADPCMBook *book;
+typedef struct ALADPCMWaveInfo_s {
+    PTR32(ALADPCMloop) loop;
+    PTR32(ALADPCMBook) book;
 } ALADPCMWaveInfo;
 
-typedef struct {
-    ALRawLoop *loop;
+typedef struct ALRAWWaveInfo_s {
+    PTR32(ALRawLoop) loop;
 } ALRAWWaveInfo;
 
 typedef struct ALWaveTable_s {
-    u8          *base;          /* ptr to start of wave data    */
+    PTR32(u8)   base;           /* ptr to start of wave data    */
     s32         len;            /* length of data in bytes      */
     u8          type;           /* compression type             */
     u8          flags;          /* offset/address flags         */
@@ -225,15 +239,15 @@ typedef struct ALWaveTable_s {
 } ALWaveTable;
 
 typedef struct ALSound_s {
-    ALEnvelope  *envelope;
-    ALKeyMap    *keyMap;
-    ALWaveTable *wavetable;     /* offset to wavetable struct           */
+    PTR32(ALEnvelope)  envelope;
+    PTR32(ALKeyMap)    keyMap;
+    PTR32(ALWaveTable) wavetable; /* offset to wavetable struct         */
     ALPan       samplePan;
     u8          sampleVolume;
     u8          flags;
 } ALSound;
 
-typedef struct {
+typedef struct ALInstrument_s {
     u8          volume;         /* overall volume for this instrument   */
     ALPan       pan;            /* 0 = hard left, 127 = hard right      */
     u8          priority;       /* voice priority for this instrument   */
@@ -248,7 +262,7 @@ typedef struct {
     u8          vibDelay;       /* the delay for the tremelo osc        */
     s16         bendRange;      /* pitch bend range in cents            */
     s16         soundCount;     /* number of sounds in this array       */
-    ALSound     *soundArray[1];
+    PTR32(ALSound) soundArray[1];
 } ALInstrument;
 
 typedef struct ALBank_s {
@@ -256,14 +270,14 @@ typedef struct ALBank_s {
     u8                  flags;
     u8                  pad;
     s32                 sampleRate;     /* e.g. 44100, 22050, etc...       */
-    ALInstrument        *percussion;    /* default percussion for GM       */
-    ALInstrument        *instArray[1];  /* ARRAY of instruments            */
+    PTR32(struct ALInstrument_s) percussion;   /* default percussion for GM */
+    PTR32(struct ALInstrument_s) instArray[1]; /* ARRAY of instruments     */
 } ALBank;
 
-typedef struct {                /* Note: sizeof won't be correct        */
+typedef struct ALBankFile_s {  /* Note: sizeof won't be correct        */
     s16         revision;       /* format revision of this file         */
     s16         bankCount;      /* number of banks                      */
-    ALBank      *bankArray[1];  /* ARRAY of bank offsets                */
+    PTR32(struct ALBank_s) bankArray[1]; /* ARRAY of bank offsets       */
 } ALBankFile;
 
 void    alBnkfNew(ALBankFile *f, u8 *table);
@@ -903,7 +917,7 @@ typedef struct {
     ALEventQueue        evtq;
     ALEvent             nextEvent;
     ALSynth             *drvr;          /* reference to the client driver   */
-    s32                 target;
+    void                *target;        /* PORT: holds an ALSoundState * (snd.c) */
     void                *sndState;
     s32                 maxSounds;
     ALMicroTime         frameTime;

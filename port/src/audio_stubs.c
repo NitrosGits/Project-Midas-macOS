@@ -103,28 +103,28 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
     }
     s->flags = 1;
 
-    s->envelope = (ALEnvelope *)(base + portBSwap32((uintptr_t)s->envelope));
-    if (portBnkfVisit(s->envelope)) {
-        s->envelope->attackTime = (s32)portBSwap32((u32)s->envelope->attackTime);
-        s->envelope->decayTime = (s32)portBSwap32((u32)s->envelope->decayTime);
-        s->envelope->releaseTime = (s32)portBSwap32((u32)s->envelope->releaseTime);
+    PSET(s->envelope, (ALEnvelope *)(base + portBSwap32(PTRW(s->envelope))));
+    if (portBnkfVisit(PGET(s->envelope))) {
+        PGET(s->envelope)->attackTime = (s32)portBSwap32((u32)PGET(s->envelope)->attackTime);
+        PGET(s->envelope)->decayTime = (s32)portBSwap32((u32)PGET(s->envelope)->decayTime);
+        PGET(s->envelope)->releaseTime = (s32)portBSwap32((u32)PGET(s->envelope)->releaseTime);
     }
 
     /* keymap fields are all bytes - promote the pointer, nothing to swap */
-    s->keyMap = (ALKeyMap *)(base + portBSwap32((uintptr_t)s->keyMap));
+    PSET(s->keyMap, (ALKeyMap *)(base + portBSwap32(PTRW(s->keyMap))));
 
-    s->wavetable = (ALWaveTable *)(base + portBSwap32((uintptr_t)s->wavetable));
-    w = s->wavetable;
+    PSET(s->wavetable, (ALWaveTable *)(base + portBSwap32(PTRW(s->wavetable))));
+    w = PGET(s->wavetable);
     if (!w->flags) {
         w->flags = 1;
-        w->base = (u8 *)(table + portBSwap32((uintptr_t)w->base));
+        PSET(w->base, (u8 *)(table + portBSwap32(PTRW(w->base))));
         w->len = (s32)portBSwap32((u32)w->len);
 
         if (w->type == AL_ADPCM_WAVE) {
-            if (w->waveInfo.adpcmWave.book != NULL) {
-                ALADPCMBook *book = (ALADPCMBook *)(base + portBSwap32((uintptr_t)w->waveInfo.adpcmWave.book));
+            if (PTRW(w->waveInfo.adpcmWave.book) != 0) {
+                ALADPCMBook *book = (ALADPCMBook *)(base + portBSwap32(PTRW(w->waveInfo.adpcmWave.book)));
 
-                w->waveInfo.adpcmWave.book = book;
+                PSET(w->waveInfo.adpcmWave.book, book);
                 if (portBnkfVisit(book)) {
                     s32 n;
 
@@ -135,10 +135,10 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
                     }
                 }
             }
-            if (w->waveInfo.adpcmWave.loop != NULL) {
-                ALADPCMloop *loop = (ALADPCMloop *)(base + portBSwap32((uintptr_t)w->waveInfo.adpcmWave.loop));
+            if (PTRW(w->waveInfo.adpcmWave.loop) != 0) {
+                ALADPCMloop *loop = (ALADPCMloop *)(base + portBSwap32(PTRW(w->waveInfo.adpcmWave.loop)));
 
-                w->waveInfo.adpcmWave.loop = loop;
+                PSET(w->waveInfo.adpcmWave.loop, loop);
                 if (portBnkfVisit(loop)) {
                     s32 n;
 
@@ -151,10 +151,10 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
                 }
             }
         } else if (w->type == AL_RAW16_WAVE) {
-            if (w->waveInfo.rawWave.loop != NULL) {
-                ALRawLoop *loop = (ALRawLoop *)(base + portBSwap32((uintptr_t)w->waveInfo.rawWave.loop));
+            if (PTRW(w->waveInfo.rawWave.loop) != 0) {
+                ALRawLoop *loop = (ALRawLoop *)(base + portBSwap32(PTRW(w->waveInfo.rawWave.loop)));
 
-                w->waveInfo.rawWave.loop = loop;
+                PSET(w->waveInfo.rawWave.loop, loop);
                 if (portBnkfVisit(loop)) {
                     loop->start = portBSwap32(loop->start);
                     loop->end = portBSwap32(loop->end);
@@ -165,8 +165,8 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
             /* RAW16 samples are big-endian s16 in the .tbl but the mixer
              * plays native s16, so swap them once (visited-guarded). ADPCM
              * decodes bytes and needs no swap. */
-            if (portBnkfVisit(w->base)) {
-                s16 *smp = (s16 *)w->base;
+            if (portBnkfVisit(PGET(w->base))) {
+                s16 *smp = (s16 *)PGET(w->base);
                 s32 ns = w->len >> 1;
                 s32 k;
 
@@ -191,8 +191,8 @@ static void portBnkfPatchInst(ALInstrument *inst, uintptr_t base, uintptr_t tabl
     inst->soundCount = (s16)portBSwap16((u16)inst->soundCount);
 
     for (i = 0; i < inst->soundCount; i++) {
-        inst->soundArray[i] = (ALSound *)(base + portBSwap32((uintptr_t)inst->soundArray[i]));
-        portBnkfPatchSound(inst->soundArray[i], base, table);
+        PSET(inst->soundArray[i], (ALSound *)(base + portBSwap32(PTRW(inst->soundArray[i]))));
+        portBnkfPatchSound(PGET(inst->soundArray[i]), base, table);
     }
 }
 
@@ -208,15 +208,15 @@ static void portBnkfPatchBank(ALBank *bank, uintptr_t base, uintptr_t table)
     bank->instCount = (s16)portBSwap16((u16)bank->instCount);
     bank->sampleRate = (s32)portBSwap32((u32)bank->sampleRate);
 
-    if (bank->percussion != NULL) {
-        bank->percussion = (ALInstrument *)(base + portBSwap32((uintptr_t)bank->percussion));
-        portBnkfPatchInst(bank->percussion, base, table);
+    if (PTRW(bank->percussion) != 0) {
+        PSET(bank->percussion, (ALInstrument *)(base + portBSwap32(PTRW(bank->percussion))));
+        portBnkfPatchInst(PGET(bank->percussion), base, table);
     }
 
     for (i = 0; i < bank->instCount; i++) {
-        bank->instArray[i] = (ALInstrument *)(base + portBSwap32((uintptr_t)bank->instArray[i]));
-        if (bank->instArray[i] != (ALInstrument *)base) {
-            portBnkfPatchInst(bank->instArray[i], base, table);
+        PSET(bank->instArray[i], (ALInstrument *)(base + portBSwap32(PTRW(bank->instArray[i]))));
+        if (PGET(bank->instArray[i]) != (ALInstrument *)base) {
+            portBnkfPatchInst(PGET(bank->instArray[i]), base, table);
         }
     }
 }
@@ -236,24 +236,24 @@ void alBnkfNew(ALBankFile *f, u8 *table)
     f->bankCount = (s16)portBSwap16((u16)f->bankCount);
 
     for (i = 0; i < f->bankCount; i++) {
-        f->bankArray[i] = (ALBank *)(base + portBSwap32((uintptr_t)f->bankArray[i]));
-        if (f->bankArray[i] != (ALBank *)base) {
-            portBnkfPatchBank(f->bankArray[i], base, (uintptr_t)table);
+        PSET(f->bankArray[i], (ALBank *)(base + portBSwap32(PTRW(f->bankArray[i]))));
+        if (PGET(f->bankArray[i]) != (ALBank *)base) {
+            portBnkfPatchBank(PGET(f->bankArray[i]), base, (uintptr_t)table);
         }
     }
 
     { /* bring-up (GE_DUMP_BOND): prove the parse - bank/inst/sound shape */
         extern void ge_dbg_vec(const char *tag, const float *v, int n);
-        ALBank *bank = f->bankArray[0];
+        ALBank *bank = PGET(f->bankArray[0]);
         float v[7];
 
         v[0] = (float)f->bankCount;
         v[1] = (float)bank->instCount;
         v[2] = (float)bank->sampleRate;
-        v[3] = (float)bank->instArray[0]->soundCount;
-        v[4] = (float)bank->instArray[0]->soundArray[0]->wavetable->type;
-        v[5] = (float)bank->instArray[0]->soundArray[0]->wavetable->len;
-        v[6] = (float)(uintptr_t)bank->instArray[0]->soundArray[0]->wavetable->base;
+        v[3] = (float)PGET(bank->instArray[0])->soundCount;
+        v[4] = (float)PGET(PGET(PGET(bank->instArray[0])->soundArray[0])->wavetable)->type;
+        v[5] = (float)PGET(PGET(PGET(bank->instArray[0])->soundArray[0])->wavetable)->len;
+        v[6] = (float)PTRW(PGET(PGET(PGET(bank->instArray[0])->soundArray[0])->wavetable)->base);
         ge_dbg_vec("bnkf banks/insts/rate/sounds/wt0type/len/base", v, 7);
     }
 }

@@ -46,7 +46,9 @@ s32 alSaveParam(void *filter, s32 paramID, void *param)
 {
     ALSave *a = (ALSave *) filter;
     ALFilter *f = (ALFilter *) filter;
-    s32 pp = (intptr_t) param;
+#ifdef TARGET_N64
+    s32 pp = (s32) param;
+#endif
 
     switch (paramID) {
         case (AL_FILTER_SET_SOURCE):
@@ -54,7 +56,11 @@ s32 alSaveParam(void *filter, s32 paramID, void *param)
             break;
 
         case (AL_FILTER_SET_DRAM): 
+#ifdef TARGET_N64
             a->dramout = pp;
+#else
+            a->dramout = portPtr32(param); /* the output buffer's word for aSaveBuffer */
+#endif
             break;
             
         default:

@@ -572,7 +572,7 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
             return;
         }
 
-        keyMap = sound->keyMap;
+        keyMap = PGET(sound->keyMap);
         nextState = (ALSoundState *) soundState->link.next;
 
         switch (event->common.type) {
@@ -645,14 +645,14 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
 
                 // Set volume
                 soundState->unk3e |= SOUND_FLAG_PLAYING;
-                alSynStartVoice(sndp->drvr, &soundState->voice, sound->wavetable);
+                alSynStartVoice(sndp->drvr, &soundState->voice, PGET(sound->wavetable));
                 soundState->playingState = SOUND_STATE_PLAYING;
                 g_sndAllocatedVoicesCount++;
 
-                delta = sound->envelope->attackTime / soundState->pitch_2c / soundState->pitch_28;
+                delta = PGET(sound->envelope)->attackTime / soundState->pitch_2c / soundState->pitch_28;
                 volume =
                     MAX(0, g_sndSfxSlotVolume[SOUND_PARAM_GROUP(keyMap)] *
-                                   (sound->envelope->attackVolume * soundState->vol * sound->sampleVolume / 16129) /
+                                   (PGET(sound->envelope)->attackVolume * soundState->vol * sound->sampleVolume / 16129) /
                                    AL_SNDP_GROUP_VOLUME_MAX - 1);
                 alSynSetVol(sndp->drvr, &soundState->voice, 0, 0);
                 alSynSetVol(sndp->drvr, &soundState->voice, volume, delta);
@@ -677,7 +677,7 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
                 spAC.common.type = AL_SNDP_DECAY_EVT;
                 spAC.common.state = soundState;
                 portSndPostEvent(&sndp->evtq, (ALEvent *) &spAC,
-                                 sound->envelope->attackTime / soundState->pitch_2c / soundState->pitch_28);
+                                 PGET(sound->envelope)->attackTime / soundState->pitch_2c / soundState->pitch_28);
                 break;
             case AL_SNDP_STOP_EVT:
             case AL_SNDP_DEACTIVATE_EVT:
@@ -693,7 +693,7 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
                     switch (soundState->playingState) {
                         case SOUND_STATE_PLAYING:
                             sndRemoveEvents(&sndp->evtq, soundState, AL_SNDP_DECAY_EVT);
-                            delta = sound->envelope->releaseTime / soundState->pitch_28 / soundState->pitch_2c;
+                            delta = PGET(sound->envelope)->releaseTime / soundState->pitch_28 / soundState->pitch_2c;
                             alSynSetVol(sndp->drvr, &soundState->voice, 0, delta);
                             if (delta != 0) {
                                 spAC.common.type = AL_SNDP_END_EVT;
@@ -745,7 +745,7 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
                 if (soundState->playingState == SOUND_STATE_PLAYING) {
                     volume = MAX(
                         0, g_sndSfxSlotVolume[SOUND_PARAM_GROUP(keyMap)] *
-                                   (sound->envelope->decayVolume * soundState->vol * sound->sampleVolume / 16129) /
+                                   (PGET(sound->envelope)->decayVolume * soundState->vol * sound->sampleVolume / 16129) /
                                    AL_SNDP_GROUP_VOLUME_MAX -
                                1);
                     alSynSetVol(sndp->drvr, &soundState->voice, volume, 1000);
@@ -753,10 +753,10 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
                 break;
             case AL_SNDP_RELEASE_EVT:
                 if (soundState->playingState == SOUND_STATE_PLAYING) {
-                    delta = sound->envelope->releaseTime / soundState->pitch_28 / soundState->pitch_2c;
+                    delta = PGET(sound->envelope)->releaseTime / soundState->pitch_28 / soundState->pitch_2c;
                     volume = MAX(
                         0, g_sndSfxSlotVolume[SOUND_PARAM_GROUP(keyMap)] *
-                                   (sound->envelope->decayVolume * soundState->vol * sound->sampleVolume / 16129) /
+                                   (PGET(sound->envelope)->decayVolume * soundState->vol * sound->sampleVolume / 16129) /
                                    AL_SNDP_GROUP_VOLUME_MAX -
                                1);
                     alSynSetVol(sndp->drvr, &soundState->voice, volume, delta);
@@ -770,10 +770,10 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
                 if (!(soundState->unk3e & SOUND_FLAG_LOOPED)) {
                     volume = MAX(
                         0, g_sndSfxSlotVolume[SOUND_PARAM_GROUP(keyMap)] *
-                                   (sound->envelope->decayVolume * soundState->vol * sound->sampleVolume / 16129) /
+                                   (PGET(sound->envelope)->decayVolume * soundState->vol * sound->sampleVolume / 16129) /
                                    AL_SNDP_GROUP_VOLUME_MAX -
                                1);
-                    delta = sound->envelope->decayTime / soundState->pitch_28 / soundState->pitch_2c;
+                    delta = PGET(sound->envelope)->decayTime / soundState->pitch_28 / soundState->pitch_2c;
                     alSynSetVol(sndp->drvr, &soundState->voice, volume, delta);
 
                     spAC.common.type = AL_SNDP_STOP_EVT;
@@ -841,7 +841,7 @@ void sndCreatePitchEvent(ALSoundState *state)
     ALSndpEvent evt;
     f32 pitch;
 
-    pitch = (f32) (alCents2Ratio(state->sound->keyMap->detune) * (f32)state->pitch_2c);
+    pitch = (f32) (alCents2Ratio(PGET(state->sound->keyMap)->detune) * (f32)state->pitch_2c);
     evt.pitch.state = state;
     evt.pitch.type = AL_SNDP_PITCH_EVT;
 
@@ -954,7 +954,7 @@ s32 sndCountAllocList(s16 *allocListCount, s16 *freeListCount)
 ALSoundState *sndSetupSound(struct ALBankAlt_s *soundBank, ALSound* sound)
 {
     s32 decayTimeFlag;
-    ALKeyMap *keymap = sound->keyMap;
+    ALKeyMap *keymap = PGET(sound->keyMap);
     ALSoundState *state = (ALSoundState *)D_800243E4.g_sndPlayerSoundStatePtr;
     OSIntMask mask;
 
@@ -982,7 +982,7 @@ ALSoundState *sndSetupSound(struct ALBankAlt_s *soundBank, ALSound* sound)
 
         osSetIntMask(mask);
 
-        decayTimeFlag = (sound->envelope->decayTime == -1);
+        decayTimeFlag = (PGET(sound->envelope)->decayTime == -1);
         state->priority = decayTimeFlag + 0x40;
 
         state->playingState = AL_UNKOWN_5;
@@ -1236,7 +1236,7 @@ ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundS
     {
         ALKeyMap *keyMap;
 
-        sound = (soundBank->instArray[0]->soundArray[soundIndex]);
+        sound = (PGET(PGET(soundBank->instArray[0])->soundArray[soundIndex]));
 
         newState = sndSetupSound(soundBank, sound);
 
@@ -1244,10 +1244,10 @@ ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundS
         {
             ALSndpEvent playEvent;
 
-            g_sndPlayerPtr->target = (intptr_t)newState;
+            g_sndPlayerPtr->target = newState;
             playEvent.common.type = AL_SNDP_PLAY_EVT;
             playEvent.common.state = newState;
-            deltaLoop = sound->keyMap->velocityMax * DELTA_33_MS;
+            deltaLoop = PGET(sound->keyMap)->velocityMax * DELTA_33_MS;
 
             if (newState->unk3e & 0x10)
             {
@@ -1266,7 +1266,7 @@ ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundS
 
         deltaTotal += deltaLoop;
 
-        keyMap = sound->keyMap;
+        keyMap = PGET(sound->keyMap);
         soundIndex = (s16)((s32)keyMap->velocityMin + ((s32)(keyMap->keyMin & 0xC0) * 4));
     } while (soundIndex != 0 && newState != NULL);
 
@@ -1603,7 +1603,7 @@ void sndSetSfxSlotVolume(u8 sfxIndex, u16 volume)
     {
         if (item->sound != NULL)
         {
-            if ((item->sound->keyMap->keyMin & 0x3f) == sfxIndex)
+            if ((PGET(item->sound->keyMap)->keyMin & 0x3f) == sfxIndex)
             {
                 evt.common.type = AL_SNDP_RELEASE_EVT;
                 evt.common.state = item;

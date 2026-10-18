@@ -436,7 +436,7 @@ void amMain(void* arg)
 	s16 *msg = NULL;
 	AudioInfo *info = NULL;
 
-	osScAddClient(&os_scheduler, &g_AudioClient[0], &g_AudioManager.frameMessageQueue, 1);
+	osScAddClient(&os_scheduler, &g_AudioClient[0], &g_AudioManager.frameMessageQueue, (OSScClient *) (intptr_t) 1); /* a flag, stored in g_AudioClient[1].next */
 
 	while (!done) {
 		osRecvMesg(&g_AudioManager.frameMessageQueue, (OSMesg *) &msg, OS_MESG_BLOCK);
@@ -515,7 +515,12 @@ void amHandleFrameMessage(AudioInfo *info, AudioInfo *lastInfo)
     /* call once a frame, before doing alAudioFrame */
     amClearDmaBuffers();
 
+#ifdef TARGET_N64
     outBuffer = (s16*)osVirtualToPhysical(info->data);
+#else
+    /* PORT: the buffer itself; the save filter turns it into the RSP word */
+    outBuffer = (s16 *) info->data;
+#endif
 
     if (lastInfo)
     {
@@ -547,10 +552,10 @@ void amHandleFrameMessage(AudioInfo *info, AudioInfo *lastInfo)
     info->task.msg = info;
     info->task.flags = OS_SC_NEEDS_RSP;
     info->task.list.t.data_ptr = (u64*)(g_AudioManager.cmdList[g_CurrentAcmdList]);
-    info->task.list.t.data_size = (((intptr_t)cmdlp - (intptr_t)g_AudioManager.cmdList[g_CurrentAcmdList]) >> 3) * sizeof(Acmd);
+    info->task.list.t.data_size = (u32) ((((intptr_t)cmdlp - (intptr_t)g_AudioManager.cmdList[g_CurrentAcmdList]) >> 3) * sizeof(Acmd));
     info->task.list.t.type = M_AUDTASK;
     info->task.list.t.ucode_boot = (u64*)rspbootTextStart;
-    info->task.list.t.ucode_boot_size = ((intptr_t)gsp3DTextStart - (intptr_t)rspbootTextStart);
+    info->task.list.t.ucode_boot_size = (u32) ((intptr_t)gsp3DTextStart - (intptr_t)rspbootTextStart);
     info->task.list.t.flags = 0; // 1c
     info->task.list.t.ucode = (u64*)aspMainTextStart;
     info->task.list.t.ucode_data = (u64*)aspMainDataStart;

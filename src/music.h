@@ -16,10 +16,11 @@
  * Metadata for a sequence "file" entry / data content of single sequence.
  * Based on original ALSeqData in n64devkit\ultra\usr\include\PR\libaudio.h.
  */
-typedef struct
+typedef struct RareALSeqData_s
 {
-    // address is offset from the start of .sbk file
-    u8 *address;
+    // address is offset from the start of .sbk file (a PTR32 word: the
+    // table is the file's header, sized by sizeof)
+    PTR32(u8) address;
 
     // seq length after uncompressed.
     u16 uncompressed_len;
