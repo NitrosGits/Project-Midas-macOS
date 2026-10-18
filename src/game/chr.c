@@ -80,7 +80,7 @@ static int portChrHatChainLooksBad(ChrRecord *chr)
         portModelAuditReport("chrTick:hat-obj", hatobj, chr, chr->handle_positiondata_hat);
         return 1;
     }
-    hatmodel = hatobj->model;
+    hatmodel = PGET(hatobj->model);
     if (portPtrLooksBad(hatmodel)) {
         portModelAuditReport("chrTick:hat-model", hatmodel, chr, hatobj);
         return 1;
@@ -2677,7 +2677,7 @@ after_position_update:
             Model *hatmodel;
 
             hatobj = chr->handle_positiondata_hat->obj;
-            hatmodel = hatobj->model;
+            hatmodel = PGET(hatobj->model);
 
             chr->handle_positiondata_hat->flags |= PROPFLAG_ONSCREEN;
 
@@ -3170,17 +3170,17 @@ Gfx *chrRenderProp(PropRecord *prop, Gfx *gdl, s32 withalpha)
 
                 if ((held_right_obj != NULL) && ((held_right_obj->runtime_bitflags & 0x800) == 0))
                 {
-                    bondviewTransformManyPosToViewMatrix(held_right_obj->model->render_pos, held_right_obj->model->obj->numMatrices);
+                    bondviewTransformManyPosToViewMatrix(PGET(held_right_obj->model)->render_pos, PGET(held_right_obj->model)->obj->numMatrices);
                 }
 
                 if ((held_left_obj != NULL) && ((held_left_obj->runtime_bitflags & 0x800) == 0))
                 {
-                    bondviewTransformManyPosToViewMatrix(held_left_obj->model->render_pos, held_left_obj->model->obj->numMatrices);
+                    bondviewTransformManyPosToViewMatrix(PGET(held_left_obj->model)->render_pos, PGET(held_left_obj->model)->obj->numMatrices);
                 }
 
                 if (held_hat_obj != NULL)
                 {
-                    bondviewTransformManyPosToViewMatrix(held_hat_obj->model->render_pos, held_hat_obj->model->obj->numMatrices);
+                    bondviewTransformManyPosToViewMatrix(PGET(held_hat_obj->model)->render_pos, PGET(held_hat_obj->model)->obj->numMatrices);
                 }
             }
         }
@@ -3556,7 +3556,7 @@ void chrTestHit(PropRecord *prop, ShotData *shotdata)
         if (chr->weapons_held[i] != NULL)
         {
             weapon = chr->weapons_held[i]->weapon;
-            size = model->scale * getinstsize(weapon->model);
+            size = model->scale * getinstsize(PGET(weapon->model));
 
             if (heldmodelsize < size)
             {
@@ -3783,7 +3783,7 @@ void chrHandleBulletHit(struct ShotData *shot, struct BulletHit *bhit)
                 /**
                  * If a character is holding an explosive such as a grenade, and the explosive is shot, detonate it.
                  */
-                if (weaponobj->model == bhit->model) {
+                if (PGET(weaponobj->model) == bhit->model) {
                     if (
                         ((WeaponObjRecord *)weaponobj)->weaponnum == ITEM_GRENADE ||
                         ((WeaponObjRecord *)weaponobj)->weaponnum == ITEM_GRENADEROUND ||

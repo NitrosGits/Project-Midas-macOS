@@ -243,13 +243,26 @@ def rhs_end(src, off):
     return last
 
 
-def resolve(src, loc, member=None):
-    """byte offset of loc; with member, the one where that name is spelled"""
+def matches(src, loc, member):
+    """every candidate offset of loc where member is spelled"""
+    pfile, pline, col = loc
+    return [c for c in src.offsets(pfile, pline, col)
+            if src.data[c:c + len(member)] == member.encode() and token_end(src, c) == c + len(member)]
+
+
+def resolve(src, loc, member=None, before=None, after=None):
+    """byte offset of loc; with member, the one where that name is spelled.
+    A presumed line can map to two real lines (#line), so `before`/`after`
+    pick the candidate closest to an already-resolved end of the same node."""
     pfile, pline, col = loc
     cands = src.offsets(pfile, pline, col)
     if member is not None:
         cands = [c for c in cands if src.data[c:c + len(member)] == member.encode()
                  and token_end(src, c) == c + len(member)]
+    if before is not None and len(cands) > 1:
+        cands = [max([c for c in cands if c <= before], default=None)]
+    if after is not None and len(cands) > 1:
+        cands = [min([c for c in cands if c >= after], default=None)]
     return cands[0] if len(cands) == 1 else None
 
 
@@ -341,6 +354,8 @@ def main():
         kind = s['kind']
         if "'union (unnamed" in s['head'] or 'PTR32' in s['head']:
             continue  # the field is PTR32 already: a converted site, or one inside PGET/PSET
+        if 'non_odr_use_unevaluated' in s['head']:
+            continue  # the __typeof__ copy inside an existing PGET; the evaluated copy is matched too
         if rng is None:
             manual.append(('macro location', s['head']))
             continue
@@ -349,15 +364,21 @@ def main():
             continue
         if kind in ('read', 'aread'):
             if kind == 'read':
-                b = resolve(src, rng[0])
-                e = resolve(src, rng[1], s['member'])
-                if b is None or e is None or s['member'] not in member_names:
+                # after #line one presumed line can be several real ones, each
+                # its own site (the dump lists them all): take every match
+                ends = matches(src, rng[1], s['member'])
+                pairs = [(resolve(src, rng[0], before=e), e) for e in ends]
+                if not pairs or any(b is None for b, _ in pairs) or s['member'] not in member_names:
                     manual.append(('unresolved read', s['head']))
                     continue
+                for b, e in pairs[:-1]:
+                    if not skipped(src, b):
+                        reads[src.path].add((b, e + len(s['member'])))
+                b, e = pairs[-1]
                 e += len(s['member'])
             else:
-                b = resolve(src, rng[0])
                 e = resolve(src, rng[1])
+                b = resolve(src, rng[0], before=e) if e is not None else None
                 if b is None or e is None or src.data[e:e + 1] != b']':
                     manual.append(('unresolved subscript', s['head']))
                     continue
@@ -381,7 +402,6 @@ def main():
             if lhs is None:
                 manual.append(('assignment without LHS range', s['head']))
                 continue
-            lb = resolve(src, lhs[0])
             if kind == 'assign':
                 le = None
                 # the LHS ends at its member token; find it by name
@@ -396,7 +416,8 @@ def main():
                     le += 1
                 else:
                     le = None
-            re_ = resolve(src, rng[1])
+            lb = resolve(src, lhs[0], before=le) if le is not None else resolve(src, lhs[0])
+            re_ = resolve(src, rng[1], after=le) if le is not None else None
             rend = token_end(src, re_) if re_ is not None else None
             if re_ is None and lb is not None and le is not None:
                 # the RHS ends inside a macro (NULL, a cast macro): find its

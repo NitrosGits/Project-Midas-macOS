@@ -1340,18 +1340,18 @@ void bondviewFrozenCameraTick(u16 buttons, u16 oldbuttons, struct coord3d *pos, 
             {
 #if defined(VERSION_US)
                 setFontTables(ptrFontZurichBoldChars, ptrFontZurichBold);
-                hudmsgBottomShow(ptr_random06cam_entry->lang1c.lang_ptr);
+                hudmsgBottomShow(PGET(ptr_random06cam_entry->lang1c.lang_ptr));
 #else
                 hudmsgBottomShow(ptr_random06cam_entry->lang1c.lang_ptr, ptrFontZurichBoldChars, ptrFontZurichBold);
 #endif
             }
 
-            if (ptr_random06cam_entry->lang20.lang_ptr != NULL)
+            if (PGET(ptr_random06cam_entry->lang20.lang_ptr) != NULL)
             {
                 if ((camera_transition_timer < 300.0f) && ((camera_transition_timer + g_GlobalTimerDelta) >= 300.0f))
                 {
 #if defined(VERSION_US)
-                    hudmsgBottomShow(ptr_random06cam_entry->lang20.lang_ptr);
+                    hudmsgBottomShow(PGET(ptr_random06cam_entry->lang20.lang_ptr));
 #else
                     hudmsgBottomShow(ptr_random06cam_entry->lang20.lang_ptr, ptrFontZurichBoldChars, ptrFontZurichBold);
 #endif
@@ -1415,7 +1415,7 @@ void bondviewFrozenCameraTick(u16 buttons, u16 oldbuttons, struct coord3d *pos, 
 
         p = &g_CurrentSetup.pads[ptr_random06cam_entry->unk18];
         setupPad = p;
-        *stan = setupPad->stan;
+        *stan = PGET(setupPad->stan);
 
         arg6->f[0] = setupPad->pos.f[0];
         arg6->f[1] = setupPad->pos.f[1];
@@ -1616,7 +1616,7 @@ void bondviewFrozenCameraTick(u16 buttons, u16 oldbuttons, struct coord3d *pos, 
         {
             p = &g_CurrentSetup.pads[g_IntroSwirl[intro_camera_index].unk1C];
             setupPad = p;
-            *stan = setupPad->stan;
+            *stan = PGET(setupPad->stan);
 
             arg6->f[0] = setupPad->pos.f[0];
             arg6->f[1] = setupPad->pos.f[1];
@@ -1711,7 +1711,7 @@ void bondviewFrozenCameraTick(u16 buttons, u16 oldbuttons, struct coord3d *pos, 
             pos2->f[1] = g_CurrentPlayer->field_3C8;
             pos2->f[2] = g_CurrentPlayer->field_3CC;
 
-            *stan = g_CameraLookAtBondPad->stan;
+            *stan = PGET(g_CameraLookAtBondPad->stan);
 
             arg6->f[0] = g_CameraLookAtBondPad->pos.f[0];
             arg6->f[1] = g_CameraLookAtBondPad->pos.f[1];
@@ -1736,7 +1736,7 @@ void bondviewFrozenCameraTick(u16 buttons, u16 oldbuttons, struct coord3d *pos, 
             pos->f[2] = gBondViewCutscene->pos.f[2];
 
             setupPad = p;
-            *stan = setupPad->stan;
+            *stan = PGET(setupPad->stan);
 
             arg6->f[0] = setupPad->pos.f[0];
             arg6->f[1] = setupPad->pos.f[1];
@@ -1767,7 +1767,7 @@ void bondviewFrozenCameraTick(u16 buttons, u16 oldbuttons, struct coord3d *pos, 
             setupPad = (struct PadRecord*)&g_CurrentSetup.boundpads[getBoundPadNum(dword_CODE_bss_80079A14)];
         }
 
-        *stan = setupPad->stan;
+        *stan = PGET(setupPad->stan);
 
         arg6->f[0] = setupPad->pos.f[0];
         arg6->f[1] = setupPad->pos.f[1];
@@ -2005,7 +2005,7 @@ void bondviewTankModelRotationRelated(void) {
         obj = g_PlayerTankProp->obj;
 
         /// TODO: Fix Model struct Data type.
-        temp_v0 = obj->model->obj->Switches;
+        temp_v0 = PGET(obj->model)->obj->Switches;
         sp68 = (struct coord3d *)PGET(PGET(temp_v0[2])->Data);
         sp64 = (struct coord3d *)PGET(PGET(temp_v0[1])->Data);
         matrix_4x4_set_rotation_around_y(M_TAU_F - g_TankTurretOrientationAngleRad, &sp24);
@@ -2048,8 +2048,8 @@ void bondviewGetTankCollisionBounds(struct rect4f *tank_collision_bounds, struct
     sp3C = bbox->Bounds.zmin - g_TankModelPositionOffset.f[2];
     sp38 = bbox->Bounds.zmax - g_TankModelPositionOffset.f[2];
 
-    sp34 = sp4C->model->scale * cosf(tank_orientation_angle);
-    sp48 = sp4C->model->scale * sinf(tank_orientation_angle);
+    sp34 = PGET(sp4C->model)->scale * cosf(tank_orientation_angle);
+    sp48 = PGET(sp4C->model)->scale * sinf(tank_orientation_angle);
 
     tank_collision_bounds->points[0].f[0] = collision_position->f[0] + (-sp3C * sp48) + (sp44 * sp34);
     tank_collision_bounds->points[0].f[1] = collision_position->f[2] + (sp3C * sp34) + (sp44 * sp48);
@@ -2128,7 +2128,7 @@ s32 bondviewTankCollisionStatus(struct coord3d *collision_position, StandTile *a
         if (g_PlayerTankProp != NULL)
         {
             ObjectRecord *obj = g_PlayerTankProp->obj;
-            sp8C = obj->model;
+            sp8C = PGET(obj->model);
             switches = sp8C->obj->Switches;
 
             temp_v1 = PGET(PGET(switches[3])->Data);
@@ -3253,16 +3253,16 @@ void bondviewCalcUpdatePlayerCollision(struct coord3d *offset, s32 allow_scoot)
             tank_objrecord = (struct TankRecord *)g_WorldTankProp->obj;
 
             /// TODO: replace with ModelNode structs
-            farr5 = (f32*)PGET(PGET(obj->model->obj->Switches[5])->Data);
-            farr6 = (f32*)PGET(PGET(obj->model->obj->Switches[6])->Data);
+            farr5 = (f32*)PGET(PGET(PGET(obj->model)->obj->Switches[5])->Data);
+            farr6 = (f32*)PGET(PGET(PGET(obj->model)->obj->Switches[6])->Data);
             g_PlayerTankProp = g_WorldTankProp;
 
-            temp_f2 = (farr5[4] - farr5[3]) * obj->model->scale;
+            temp_f2 = (farr5[4] - farr5[3]) * PGET(obj->model)->scale;
 
             if (g_PlayerIsInTank == 1
-                || (chrpropTestPointInPolygon(&g_CurrentPlayer->field_488.collision_position, &tank_objrecord->rect, (intptr_t)tank_objrecord->collision) != 0))
+                || (chrpropTestPointInPolygon(&g_CurrentPlayer->field_488.collision_position, &tank_objrecord->rect, tank_objrecord->collision) != 0))
             {
-                temp_f2 += (farr6[4] - farr6[3]) * obj->model->scale;
+                temp_f2 += (farr6[4] - farr6[3]) * PGET(obj->model)->scale;
                 g_BondCanEnterTank = 1;
             }
 
@@ -4193,15 +4193,15 @@ void bondviewPlayerStopAudioForPause(void)
             if (obj->type == PROPDEF_VEHICHLE)
             {
                 VehichleRecord *vehicle = (VehichleRecord *)prop->obj;
-                if (vehicle->Sound && sndGetPlayingState(vehicle->Sound) != AL_STOPPED) {
-                    sndDeactivate(vehicle->Sound);
+                if (PGET(vehicle->Sound) && sndGetPlayingState(PGET(vehicle->Sound)) != AL_STOPPED) {
+                    sndDeactivate(PGET(vehicle->Sound));
                 }
             }
             else if (obj->type == PROPDEF_AIRCRAFT)
             {
                 AircraftRecord *aircraft = (AircraftRecord *)prop->obj;
-                if (aircraft->Sound && sndGetPlayingState(aircraft->Sound) != AL_STOPPED) {
-                    sndDeactivate(aircraft->Sound);
+                if (PGET(aircraft->Sound) && sndGetPlayingState(PGET(aircraft->Sound)) != AL_STOPPED) {
+                    sndDeactivate(PGET(aircraft->Sound));
                 }
             }
 
@@ -5502,7 +5502,7 @@ f32 bondviewYPositionRelated(StandTile *arg0, f32 arg1, f32 arg2)
     if (g_PlayerTankProp != NULL)
     {
         ObjectRecord * obj = ((PropRecord *)g_PlayerTankProp)->obj;
-        PropRecord *p = obj->prop;
+        PropRecord *p = PGET(obj->prop);
 
         ret = stanGetPositionYValue(p->stan, p->pos.x, p->pos.z);
 
@@ -9698,7 +9698,7 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
             tank_move_offset.f[2] = g_TankModelPositionOffset.f[2] - tank_move_offset.f[2];
 
             matrix_4x4_set_rotation_around_y(M_TAU_F - g_TankOrientationAngle, &sp2B4);
-            matrix_scalar_multiply(temp_tank->model->scale, &sp2B4);
+            matrix_scalar_multiply(PGET(temp_tank->model)->scale, &sp2B4);
             mtx4RotateVecInPlace(&sp2B4, &tank_move_offset);
             bondviewCalcUpdatePlayerCollision(&tank_move_offset, 1);
         }
@@ -9883,7 +9883,7 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
             {
                 tank_obj = g_PlayerTankProp->obj;
                 matrix_4x4_set_rotation_around_y(M_TAU_F - g_TankOrientationAngle, &sp268);
-                matrix_scalar_multiply(tank_obj->model->scale, &sp268);
+                matrix_scalar_multiply(PGET(tank_obj->model)->scale, &sp268);
 
                 sp25C.f[0] = g_TankModelPositionOffset.f[0];
                 sp25C.f[1] = g_TankModelPositionOffset.f[1];
@@ -10585,7 +10585,7 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
 
         sp140_tank_as_TankRecord = ((struct TankRecord *)g_PlayerTankProp->obj);
         sp138_tank_as_ObjectRecord = (struct  ObjectRecord*)g_PlayerTankProp->obj;
-        sp130 = (struct ModelNode_BoundingBoxRecord *)PGET(PGET(((struct ModelNode *)sp138_tank_as_ObjectRecord->model->obj->Switches)->Child)->Data);
+        sp130 = (struct ModelNode_BoundingBoxRecord *)PGET(PGET(((struct ModelNode *)PGET(sp138_tank_as_ObjectRecord->model)->obj->Switches)->Child)->Data);
 
         sp140_tank_as_TankRecord->is_firing_tank = (getCurrentPlayerWeaponId(GUNRIGHT) == ITEM_TANKSHELLS)
             && get_hands_firing_status(GUNRIGHT);
@@ -10595,7 +10595,7 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
         sp140_tank_as_TankRecord->tank_orientation_angle = g_TankOrientationAngle;
 
         matrix_4x4_set_rotation_around_y(M_TAU_F - g_TankOrientationAngle, &spF0);
-        matrix_scalar_multiply(sp138_tank_as_ObjectRecord->model->scale, &spF0);
+        matrix_scalar_multiply(PGET(sp138_tank_as_ObjectRecord->model)->scale, &spF0);
 
         spE4.f[0] = -g_TankModelPositionOffset.f[0];
         spE4.f[1] = -g_TankModelPositionOffset.f[1];
@@ -10606,10 +10606,10 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
         spE4.f[0] += g_CurrentPlayer->field_488.collision_position.f[0];
         spE4.f[2] += g_CurrentPlayer->field_488.collision_position.f[2];
 
-        sp138_tank_as_ObjectRecord->prop->stan = g_CurrentPlayer->field_488.current_tile_ptr;
+        PGET(sp138_tank_as_ObjectRecord->prop)->stan = g_CurrentPlayer->field_488.current_tile_ptr;
 
         stanlineret = walkTilesBetweenPoints_NoCallback(
-            &sp138_tank_as_ObjectRecord->prop->stan,
+            &PGET(sp138_tank_as_ObjectRecord->prop)->stan,
             g_CurrentPlayer->field_488.collision_position.f[0],
             g_CurrentPlayer->field_488.collision_position.f[2],
             spE4.f[0],
@@ -10618,7 +10618,7 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
         assert(stanlineret); // #7362
         #endif
 
-        sp140_tank_as_TankRecord->stan_y = stanGetPositionYValue(sp138_tank_as_ObjectRecord->prop->stan, spE4.f[0], spE4.f[2]);
+        sp140_tank_as_TankRecord->stan_y = stanGetPositionYValue(PGET(sp138_tank_as_ObjectRecord->prop)->stan, spE4.f[0], spE4.f[2]);
 
 #ifndef TARGET_N64
         if (portSmoothOn())
@@ -10634,19 +10634,19 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
 
         ftemp_12 = (sp140_tank_as_TankRecord->unkD0 * (1.0f - TANK_UNKD0_SCALE));
         spE4.f[1] = ftemp_12
-            - (chrpropBBOXGetYmin(sp130) * sp138_tank_as_ObjectRecord->model->scale)
+            - (chrpropBBOXGetYmin(sp130) * PGET(sp138_tank_as_ObjectRecord->model)->scale)
             + 4.0f;
 
         matrix_4x4_copy(&spF0,  &sp138_tank_as_ObjectRecord->mtx);
 
-        sp138_tank_as_ObjectRecord->runtime_pos.f[0] = sp138_tank_as_ObjectRecord->prop->pos.f[0] = spE4.f[0];
-        sp138_tank_as_ObjectRecord->runtime_pos.f[1] = sp138_tank_as_ObjectRecord->prop->pos.f[1] = spE4.f[1];
-        sp138_tank_as_ObjectRecord->runtime_pos.f[2] = sp138_tank_as_ObjectRecord->prop->pos.f[2] = spE4.f[2];
+        sp138_tank_as_ObjectRecord->runtime_pos.f[0] = PGET(sp138_tank_as_ObjectRecord->prop)->pos.f[0] = spE4.f[0];
+        sp138_tank_as_ObjectRecord->runtime_pos.f[1] = PGET(sp138_tank_as_ObjectRecord->prop)->pos.f[1] = spE4.f[1];
+        sp138_tank_as_ObjectRecord->runtime_pos.f[2] = PGET(sp138_tank_as_ObjectRecord->prop)->pos.f[2] = spE4.f[2];
 
         setupUpdateObjectRoomPosition(sp138_tank_as_ObjectRecord);
         chrobjCollisionRelated(sp138_tank_as_ObjectRecord);
         bondviewGetTankCollisionBounds(&spB4_tank_collision_bounds, &g_CurrentPlayer->field_488.collision_position, g_TankOrientationAngle);
-        chraiGetPropRoomIds(sp138_tank_as_ObjectRecord->prop, &sp94);
+        chraiGetPropRoomIds(PGET(sp138_tank_as_ObjectRecord->prop), &sp94);
 
         // update num_obj_position_data_entries
         roomGetProps(&sp94);
@@ -10654,7 +10654,7 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
         for (lookup_index=ptr_list_object_lookup_indices; *lookup_index>=0; lookup_index++)
         {
             prop = &g_Props[*lookup_index];
-            if (prop != sp138_tank_as_ObjectRecord->prop)
+            if (prop != PGET(sp138_tank_as_ObjectRecord->prop))
             {
                 if (prop->type == PROP_TYPE_CHR)
                 {
@@ -12065,7 +12065,7 @@ void mp_respawn_handler(void)
 
     start_pos.x = g_Startpad[var_v1]->pos.x;
     start_pos.z = g_Startpad[var_v1]->pos.z;
-    start_stan = g_Startpad[var_v1]->stan;
+    start_stan = PGET(g_Startpad[var_v1]->stan);
 
     stan_height = bondviewYPositionRelated(start_stan, start_pos.x, start_pos.z);
 
@@ -12108,7 +12108,7 @@ void mp_respawn_handler(void)
         extern s32 getTileRoom(StandTile *tile);
         fprintf(stderr,
                 "ge: mp spawn p%d pad=%d (%s) stanroom=%d pos=(%.0f %.0f %.0f)\n",
-                get_cur_playernum(), var_v1, g_Startpad[var_v1]->plink,
+                get_cur_playernum(), var_v1, PGET(g_Startpad[var_v1]->plink),
                 (start_stan != 0) ? getTileRoom((StandTile *) start_stan) : -1,
                 start_pos.f[0], start_pos.f[1], start_pos.f[2]);
         fflush(stderr);

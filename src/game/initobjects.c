@@ -6,7 +6,8 @@
 #include "propobj.h"
 //this file may very well be a few different sub files
 
-MonitorRecord g_InitialMonitorAnimController = {&monAnim00Bond, 0, 0xFFFF, 0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1.0, 0.0};
+MonitorRecord g_InitialMonitorAnimController = {PORT_SPTR(&monAnim00Bond), 0, 0xFFFF, 0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1.0, 0.0};
+PORT_STATIC_PTR32(g_InitialMonitorAnimController.cmdlist, &monAnim00Bond); /* cmdlist is a PTR32 word */
 struct object_animation_controller g_InitialUnknownAnimController = {&monAnim34, 0, 0xFFFF, 0, 0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1.0};
 struct object_animation_controller g_InitialTaserAnimController = {&monAnim35Taser, 0, 0xFFFF, 0, 0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.5, 0.0, 0.0, 0.5, 0.5, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 1.0};
 
@@ -118,21 +119,21 @@ void reinit_between_menus(void)
 
     for (i = 0; i < MAX_WEAPON_SLOTS; i++)
     {
-        g_WeaponSlots[i].prop = NULL;
+        PSET(g_WeaponSlots[i].prop, NULL);
     }
 
     g_NextWeaponSlot = 0;
 
     for (i = 0; i < MAX_HAT_SLOTS; i++)
     {
-        g_HatSlots[i].prop = NULL;
+        PSET(g_HatSlots[i].prop, NULL);
     }
     
     g_NextHatSlot = 0;
 
     for (i=0; i < MAX_AMMO_CRATES; i++)
     {
-        g_AmmoCrates[i].prop = NULL;
+        PSET(g_AmmoCrates[i].prop, NULL);
     }
 
     for (i = 0; i < PROJECTILES_ARR_MAX; i++)
@@ -166,7 +167,7 @@ void reinit_between_menus(void)
 */
 void initSetLevelLoadPropSwitch(struct LinkRecord *arg0)
 {
-    arg0->next = g_LevelLoadPropSwitch;
+    PSET(arg0->next, g_LevelLoadPropSwitch);
     g_LevelLoadPropSwitch = arg0;
 }
 
@@ -177,7 +178,7 @@ void initSetLevelLoadPropSwitch(struct LinkRecord *arg0)
 */
 void initSetLevelLoadPropLockDoor(struct LockDoorRecord *arg0)
 {
-    arg0->next = g_LevelLoadPropLockDoor;
+    PSET(arg0->next, g_LevelLoadPropLockDoor);
     g_LevelLoadPropLockDoor = arg0;
 }
 
@@ -188,7 +189,7 @@ void initSetLevelLoadPropLockDoor(struct LockDoorRecord *arg0)
 */
 void initSetLevelLoadPropSafeItem(struct ObjectRecord *arg0)
 {
-    arg0->prop = g_LevelLoadPropSafeItem;
+    PSET(arg0->prop, g_LevelLoadPropSafeItem);
     g_LevelLoadPropSafeItem = arg0;
 }
 

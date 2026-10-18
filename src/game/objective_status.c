@@ -51,7 +51,7 @@ TagObjectRecord *sub_GAME_7F057080(s32 TagID) //#MATCH
         {
             return tag;
         }
-        tag = tag->NextTag;
+        tag = PGET(tag->NextTag);
     }
     return NULL;
 }
@@ -71,7 +71,7 @@ ObjectRecord *objFindByTagId(s32 TagID) //#MATCH
 
     if (tag)
     {
-        obj = tag->TaggedObject;
+        obj = PGET(tag->TaggedObject);
     }
     if (obj && !(obj->runtime_bitflags & 0x10))
     {
@@ -92,7 +92,7 @@ u8 * get_ptr_text_for_watch_breifing_page(WATCH_BRIEFING_PAGE page)
 
     textptr = NULL;
 
-    for (curentry = ptr_last_briefing_setup_entry_type23; curentry != 0; curentry = curentry->nextentry)
+    for (curentry = ptr_last_briefing_setup_entry_type23; curentry != 0; curentry = PGET(curentry->nextentry))
     {
         if (page == curentry->menu)
         {
@@ -209,7 +209,7 @@ OBJECTIVESTATUS get_status_of_objective(s32 objectiveNum) //#MATCH
                         case PROPDEF_OBJECTIVE_DESTROY_OBJECT:
                         {
                             ObjectRecord *obj = objFindByTagId(objective->ObjRefID);
-                            if (obj && obj->prop && objIsHealthy(obj))
+                            if (obj && PGET(obj->prop) && objIsHealthy(obj))
                             {
                                 currentstatus = OBJECTIVESTATUS_INCOMPLETE;
                             }
@@ -234,11 +234,11 @@ OBJECTIVESTATUS get_status_of_objective(s32 objectiveNum) //#MATCH
                         case PROPDEF_OBJECTIVE_COLLECT_OBJECT:
                         {
                             ObjectRecord *obj = objFindByTagId(objective->ObjRefID);
-                            if (!obj || !obj->prop || !objIsHealthy(obj))
+                            if (!obj || !PGET(obj->prop) || !objIsHealthy(obj))
                             {
                                 currentstatus = OBJECTIVESTATUS_FAILED;
                             }
-                            else if (!bondinvHasPropInInv(obj->prop))
+                            else if (!bondinvHasPropInInv(PGET(obj->prop)))
                             {
                                 currentstatus = OBJECTIVESTATUS_INCOMPLETE;
                             }
@@ -247,7 +247,7 @@ OBJECTIVESTATUS get_status_of_objective(s32 objectiveNum) //#MATCH
                         case PROPDEF_OBJECTIVE_DEPOSIT_OBJECT:
                         {
                             ObjectRecord *obj = objFindByTagId(objective->ObjRefID);
-                            if (obj && obj->prop && bondinvHasPropInInv(obj->prop))
+                            if (obj && PGET(obj->prop) && bondinvHasPropInInv(PGET(obj->prop)))
                             {
                                 currentstatus = OBJECTIVESTATUS_INCOMPLETE;
                             }
@@ -258,7 +258,7 @@ OBJECTIVESTATUS get_status_of_objective(s32 objectiveNum) //#MATCH
                             ObjectRecord *obj = objFindByTagId(objective->ObjRefID);
                             if (!objective->TextID) //0x8
                             {
-                                if (!obj || !obj->prop || !objIsHealthy(obj))
+                                if (!obj || !PGET(obj->prop) || !objIsHealthy(obj))
                                 {
                                     currentstatus = OBJECTIVESTATUS_FAILED;
                                 }
@@ -440,7 +440,7 @@ void objectivestatusCheckRoomEntered(s32 roomid)
                 setupPad = (struct PadRecord*)&g_CurrentSetup.boundpads[getBoundPadNum((s32)var_v0->pad)];
             }
 
-            stan = setupPad->stan;
+            stan = PGET(setupPad->stan);
 
             if ((stan != NULL) && (roomid == stan->room))
             {
@@ -448,7 +448,7 @@ void objectivestatusCheckRoomEntered(s32 roomid)
             }
         }
 
-        var_v0 = var_v0->next;
+        var_v0 = PGET(var_v0->next);
     }
 }
 
@@ -465,7 +465,7 @@ void objectivestatusCheckDeposit(s32 weaponnum, s32 roomid)
     s32 padid;
     PadRecord *pad;
 
-    for (dep = ptr_last_deposit_in_room_subobject_entry_type21; dep != NULL; dep = dep->next)
+    for (dep = ptr_last_deposit_in_room_subobject_entry_type21; dep != NULL; dep = PGET(dep->next))
     {
         if (dep->flag == 0 && weaponnum == dep->weaponnum)
         {
@@ -480,7 +480,7 @@ void objectivestatusCheckDeposit(s32 weaponnum, s32 roomid)
                 pad = (PadRecord *)&g_CurrentSetup.boundpads[getBoundPadNum(padid)];
             }
 
-            if (pad->stan != NULL && roomid == pad->stan->room)
+            if (PGET(pad->stan) != NULL && roomid == PGET(pad->stan)->room)
             {
                 dep->flag = 1;
             }
@@ -505,7 +505,7 @@ void objectiveTakePictureHandler(void)
     struct criteria_picture *criteria;
 
     criteria = ptr_last_photo_obj_in_room_subobject_entry_type1E;
-    for (; criteria != NULL; criteria = criteria->next)
+    for (; criteria != NULL; criteria = PGET(criteria->next))
     {
         if (criteria->flag == 0)
         {
@@ -513,13 +513,13 @@ void objectiveTakePictureHandler(void)
             
             if (target_object != NULL)
             {
-                target_prop = target_object->prop;
+                target_prop = PGET(target_object->prop);
                 
                 if ((target_prop != NULL) 
                     && (target_prop->flags & PROPFLAG_ONSCREEN)
                     && (target_prop->zDepth >= 0.0f) // draw/render distance
                     && (objIsHealthy(target_object) != 0)
-                    && (objGetOnscreenRenderBounds(target_object->prop, &sp84, &sp7C, &sp74) != 0))
+                    && (objGetOnscreenRenderBounds(PGET(target_object->prop), &sp84, &sp7C, &sp74) != 0))
                 {
                     projectRectCornersTo2D(&sp84, &sp7C, &sp74, &sp64.right, &sp64.left);
                     

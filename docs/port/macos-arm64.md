@@ -327,6 +327,58 @@ Checked: `ptr32_check.py` `aliases` and `variants` are clean. i386 against
 67fddf2: 207 objects identical, and gunfire.c differs only in the three
 functions that copy the templates.
 
+### 2026-10-18: setup family
+
+Error count: **712 → 611**. prop.c went from 99 to 0. The audit's moved records
+went from 277 to 236; the only setup record still moving is `stagesetup`, on
+purpose (below).
+
+Also in this batch: gunfire.c's stack `ModelHeader`/`ModelHead` are now the full,
+zeroed `Model` on PC, gun.c's fix. This intentionally changes 32-bit behaviour
+(no more stack-garbage reads); it is a separate commit.
+
+Done:
+
+- **Converted to `PTR32`**: the path tables (`waypoint`, `waygroup`,
+  `PathRecord`/`patrol_path`), `AIListRecord`, `PadRecord`/`BoundPadRecord`
+  (`plink`, `stan`), `pname`, `SetupIntroCamera`, and every pointer field of the
+  propdef records: `ObjectRecord` (`prop`, `model`, collision block,
+  projectile/embedment) and its subtypes (doors, autoguns, monitors with
+  `cmdlist`/`tconfig`, vehicles, aircraft, weapons, guards) plus the
+  link/lock/safe/tag/rename/objective/criteria records and `textoverride` (a
+  view of `RenameObjectRecord`). `ptr32_rewrite.py` rewrote 892 reads and 74
+  writes in 23 files.
+- **Header view.** `struct stagesetup` keeps real pointers for `g_CurrentSetup`.
+  The loaded file is `stagesetupfile` (ten `u32` offsets), and so is
+  `g_ptrStageSetupFile`. `SETUP_PROMOTE` takes 32-bit words (header offsets,
+  or a field's `PTRW`) and returns `(u8 *) base + off`; the compiled-in branch
+  decodes with `portPtr64`.
+- **Loader** (`proplvreset2`): every in-file pointer is promoted with
+  `PSET(f, SETUP_PROMOTE(base, PTRW(f)))`, loop sentinels test `PTRW`, and the
+  pad stan lookup goes through a native local. `ailist` fields hold an AI list
+  id until they are resolved, so they are read with `PTRW`.
+- **Static tables.** `g_GlobalAILists` (18 entries) and
+  `g_InitialMonitorAnimController` use `PORT_SPTR` plus `PORT_STATIC_PTR32`.
+  `NULL` in initializers of `PTR32` fields became `0`.
+- **Sound handle slots.** `sndPlaySfx` stores the playing state through the
+  caller's slot and clears it when the sound ends, so 4-byte slots in setup
+  records (door, vehicle, aircraft and autogun sounds) are passed as
+  `SND_SLOT32(field)`, which tags the address with bit 0. snd.c reads and writes
+  slots through `sndSlotGet`/`sndSlotSet`. Untagged native slots work as before.
+- **Not pointers after all.** `TankRecord.collision` is the edge count of an
+  inline `collision_data` that `sub_GAME_7F03F540` writes at +0x80, so it is a
+  plain `s32`. chraction.c read the equipped weapon's item id through the
+  weapon prop's `->chr` member (`act_attack.attack_item` overlaying
+  `WeaponObjRecord.weaponnum`). `WEAPON_ITEM()` reads `weaponnum` directly on
+  PC, which is the same byte on 32-bit builds, and prop.c's static assert on the
+  overlay is gone.
+- romfile_setup.c stored the resolved credits pointer with `(u32)(uintptr_t)`.
+  It now uses `portPtr32`, and bondview_r.c decodes with `portPtr64`.
+
+Checked: `ptr32_check.py` `aliases` and `variants` are clean (19 EU-only sites
+fixed). i386 against 0e5b150: 207 objects identical, and prop.c differs only in
+`proplvreset2`.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -340,23 +392,16 @@ functions that copy the templates.
 
 ### Next, in order
 
-1. **gunfire.c's stack `ModelHeader`/`ModelHead`** are cast to a full `Model`
-   but only hold its first 0x20 (0x40 here) bytes. gun.c fixed the same bug on PC
-   by using a whole, zeroed `Model`. That changes 32-bit behaviour, so it needs a
-   decision first.
-2. **Setup family** (`prop.c` `SETUP_PROMOTE`, 99 errors). `stagesetup`, pads,
-   paths, waypoints, AI lists and the object records (`ObjectRecord` and its
-   subtypes; `MonitorRecord.cmdlist` becomes `PTR32(monword)`).
-3. **BG and stan** (`bg.c` `BG_SEG_TO_PTR`, 72 errors; stan.c).
-4. **Fonts and text locals** (options.c's 158 errors are mostly `s32` locals
+1. **BG and stan** (`bg.c` `BG_SEG_TO_PTR`, 72 errors; stan.c).
+2. **Fonts and text locals** (options.c's 158 errors are mostly `s32` locals
    holding `struct font *`, `struct fontchar *` and `char *`).
-5. **Audio banks** (audio_stubs.c `alBnkfNew`). Choose between `PTR32` in place
+3. **Audio banks** (audio_stubs.c `alBnkfNew`). Choose between `PTR32` in place
    and a native copy at load. Watch the `ALBankAlt`/`ALInstrumentAlt` views,
    whose 1-based `soundArray` trick only lines up with 4-byte pointers.
-6. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
+4. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
    `PORT_STATIC_PTR32`, and `debugmenu.c:55`. The macro names its record with
    `__LINE__`, so two `.inc.c` files included into one TU collide if they use
    it on the same line number. `__COUNTER__` avoids that.
-7. **`OS_PHYSICAL_TO_K0(&ptr)` misuse** (bondview2.c, options.c, front.c). Those
+5. **`OS_PHYSICAL_TO_K0(&ptr)` misuse** (bondview2.c, options.c, front.c). Those
    sites pass a pointer where a physical word belongs. Use the pointer
    directly.

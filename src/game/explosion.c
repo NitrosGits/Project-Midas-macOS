@@ -2282,7 +2282,7 @@ void explosionCreateBulletImpact(struct coord3d *pos, struct coord3d *arg1, s16 
     if (prop != NULL)
     {
         temp_s0 = prop->obj;
-        temp_s1 = &temp_s0->model->render_pos[model_render_pos_index];
+        temp_s1 = &PGET(temp_s0->model)->render_pos[model_render_pos_index];
 
         sp78.f[0] = spC4;
         sp78.f[1] = 0.0f;

@@ -166,7 +166,7 @@ void vtxstoreFixRefs(Vertex* find, Vertex* replacement)
         if (prop->type == PROP_TYPE_OBJ)
         {
             obj = prop->obj;
-            modelfile = obj->model->obj;
+            modelfile = PGET(obj->model)->obj;
             node = modelfile->RootNode;
 
             while (node != NULL)
@@ -175,7 +175,7 @@ void vtxstoreFixRefs(Vertex* find, Vertex* replacement)
 
                 if (opcode == MODELNODE_OPCODE_DLCOLLISION)
                 {
-                    rwdata = modelGetNodeRwData(obj->model, node);
+                    rwdata = modelGetNodeRwData(PGET(obj->model), node);
 
                     if (find == PGET(rwdata->DisplayListCollisions.Vertices))
                     {

@@ -1811,13 +1811,13 @@ void gunInitProjectileObject(ObjectRecord *obj, coord3d *pos, StandTile *stan, M
     PropRecord *temp_s1;
     Projectile *temp_v0;
 
-    temp_s1 = obj->prop;
+    temp_s1 = PGET(obj->prop);
 
     if (temp_s1 != NULL)
     {
         chrpropActivate(temp_s1);
         chrpropEnable(temp_s1);
-        matrix_scalar_multiply(obj->model->scale, matrix);
+        matrix_scalar_multiply(PGET(obj->model)->scale, matrix);
         objChangeShading(obj, pos, matrix, stan);
 
         // loadobjectmodel.c
@@ -1828,16 +1828,16 @@ void gunInitProjectileObject(ObjectRecord *obj, coord3d *pos, StandTile *stan, M
 
         if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
         {
-            temp_v0 = obj->projectile;
+            temp_v0 = PGET(obj->projectile);
             temp_v0->flags |= 0x41;
-            obj->projectile->ownerprop = owner;
+            PGET(obj->projectile)->ownerprop = owner;
             projectileSetSticky(temp_s1);
-            matrix_4x4_copy(arg5, &obj->projectile->mtx);
-            obj->projectile->speed.f[0] = velocity->f[0];
-            obj->projectile->speed.f[1] = velocity->f[1];
-            obj->projectile->speed.f[2] = velocity->f[2];
-            obj->projectile->obj = obj;
-            obj->projectile->unkE8 = g_GlobalTickCount;
+            matrix_4x4_copy(arg5, &PGET(obj->projectile)->mtx);
+            PGET(obj->projectile)->speed.f[0] = velocity->f[0];
+            PGET(obj->projectile)->speed.f[1] = velocity->f[1];
+            PGET(obj->projectile)->speed.f[2] = velocity->f[2];
+            PGET(obj->projectile)->obj = obj;
+            PGET(obj->projectile)->unkE8 = g_GlobalTickCount;
         }
     }
 }
@@ -1882,8 +1882,8 @@ void gunInitProjectileFromPlayer(ObjectRecord *obj, coord3d *targetpos, Mtxf *ar
     s32 pad_sp;
 
     // fake
-    if (obj->prop);
-    if (obj->prop == NULL) {
+    if (PGET(obj->prop));
+    if (PGET(obj->prop) == NULL) {
         return;
     }
 
@@ -1928,16 +1928,16 @@ void gunInitProjectileFromPlayer(ObjectRecord *obj, coord3d *targetpos, Mtxf *ar
 
     if (obj->runtime_bitflags & 0x80) {
         if (usedfallback) {
-            obj->projectile->flags |= PROJECTILEFLAG_00000100;
-            ((coord3d *)&obj->projectile->unkd4)->x = targetpos->x;
-            ((coord3d *)&obj->projectile->unkd4)->y = targetpos->y;
-            ((coord3d *)&obj->projectile->unkd4)->z = targetpos->z;
+            PGET(obj->projectile)->flags |= PROJECTILEFLAG_00000100;
+            ((coord3d *)&PGET(obj->projectile)->unkd4)->x = targetpos->x;
+            ((coord3d *)&PGET(obj->projectile)->unkd4)->y = targetpos->y;
+            ((coord3d *)&PGET(obj->projectile)->unkd4)->z = targetpos->z;
         }
 
         rooms[0] = bondviewGetCurrentPlayersRoom();
         rooms[1] = 0xff;
 
-        bgFindRoomsAlongSegment(bondviewGetCurrentPlayersPosition3(), &pos, rooms, obj->projectile->unkCC, sp54, &sp50, 0x14);
+        bgFindRoomsAlongSegment(bondviewGetCurrentPlayersPosition3(), &pos, rooms, PGET(obj->projectile)->unkCC, sp54, &sp50, 0x14);
     }
 }
 
@@ -2017,11 +2017,11 @@ void generate_player_thrown_grenade(s32 hand)
 
         if ((wor->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) != 0)
         {
-            wor->projectile->flags = (s32) (wor->projectile->flags | 2);
+            PGET(wor->projectile)->flags = (s32) (PGET(wor->projectile)->flags | 2);
 
-            wor->projectile->unk8C = 0.3f;
-            wor->projectile->unk94 = 0.13333333f;
-            wor->projectile->refreshrate = THROWN_ITEM_REFRESH_RATE;
+            PGET(wor->projectile)->unk8C = 0.3f;
+            PGET(wor->projectile)->unk94 = 0.13333333f;
+            PGET(wor->projectile)->refreshrate = THROWN_ITEM_REFRESH_RATE;
 #line 1849
             sfx_state = sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, GRENADE_THROW_SFX, NULL);
 
@@ -2103,10 +2103,10 @@ void generate_player_thrown_knife(s32 hand)
 
         if ((wor->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) != 0)
         {
-            wor->projectile->flags = (s32) (wor->projectile->flags | 2);
+            PGET(wor->projectile)->flags = (s32) (PGET(wor->projectile)->flags | 2);
 
-            wor->projectile->unk8C = 0.1f;
-            wor->projectile->refreshrate = THROWN_ITEM_REFRESH_RATE;
+            PGET(wor->projectile)->unk8C = 0.1f;
+            PGET(wor->projectile)->refreshrate = THROWN_ITEM_REFRESH_RATE;
 
             wor->runtime_bitflags |= RUNTIMEBITFLAG_THROWING_KNIFE_RELATED;
         }
@@ -2189,7 +2189,7 @@ void generate_player_thrown_object(s32 hand)
 
         if (wor != NULL)
         {
-            objDetach(wor->prop);
+            objDetach(PGET(wor->prop));
         }
 
         sub_GAME_7F05D690();
@@ -2299,10 +2299,10 @@ void generate_player_thrown_object(s32 hand)
 
         if ((wor->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) != 0)
         {
-            wor->projectile->flags = (s32) (wor->projectile->flags | 2);
+            PGET(wor->projectile)->flags = (s32) (PGET(wor->projectile)->flags | 2);
 
-            wor->projectile->unk8C = 0.1f;
-            wor->projectile->refreshrate = THROWN_ITEM_REFRESH_RATE;
+            PGET(wor->projectile)->unk8C = 0.1f;
+            PGET(wor->projectile)->refreshrate = THROWN_ITEM_REFRESH_RATE;
         #line 2218
             sfx_state = sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, GRENADE_THROW_SFX, NULL);
 
@@ -2371,9 +2371,9 @@ void gunSpawnGLGrenade(s32 handnum)
 
         if (grenadeobj->runtime_bitflags & RUNTIMEBITFLAG_00000080)
         {
-            grenadeobj->projectile->unk8C = g_GLGrenadeLaunchUnk8C;
-            grenadeobj->projectile->unk94 = g_GLGrenadeLaunchUnk94;
-            grenadeobj->projectile->refreshrate = THROWN_ITEM_REFRESH_RATE;
+            PGET(grenadeobj->projectile)->unk8C = g_GLGrenadeLaunchUnk8C;
+            PGET(grenadeobj->projectile)->unk94 = g_GLGrenadeLaunchUnk94;
+            PGET(grenadeobj->projectile)->refreshrate = THROWN_ITEM_REFRESH_RATE;
         }
     }
 }
@@ -2539,9 +2539,9 @@ void gunFireTankShell(s32 handnum)
         if ((tankprop != NULL) && (tankprop->flags & TANK_RUN_STATE_RUNNING))
         {
             tankobj = tankprop->obj;
-            spawnpos.x = tankobj->model->render_pos[4].pos.m[3][0];
-            spawnpos.y = tankobj->model->render_pos[4].pos.m[3][1];
-            spawnpos.z = tankobj->model->render_pos[4].pos.m[3][2];
+            spawnpos.x = PGET(tankobj->model)->render_pos[4].pos.m[3][0];
+            spawnpos.y = PGET(tankobj->model)->render_pos[4].pos.m[3][1];
+            spawnpos.z = PGET(tankobj->model)->render_pos[4].pos.m[3][2];
 
             mtx4TransformVecInPlace(currentPlayerGetViewToWorldMtxf(), &spawnpos);
         }
@@ -2612,25 +2612,25 @@ void gunFireTankShell(s32 handnum)
 
     if (obj->runtime_bitflags & RUNTIMEBITFLAG_00000080)
     {
-        obj->projectile->flags |= PROJECTILEFLAG_LAUNCHING;
+        PGET(obj->projectile)->flags |= PROJECTILEFLAG_LAUNCHING;
 
         if (weaponid != ITEM_TANKSHELLS)
         {
-            obj->projectile->flags |= PROJECTILEFLAG_00000020;
-            obj->projectile->unkB0 = obj->runtime_pos.y;
-            obj->projectile->unkB4 = obj->projectile->speed.y;
-            obj->projectile->unk10.x = unscaledvelocity.x;
-            obj->projectile->unk10.y = unscaledvelocity.y;
-            obj->projectile->unk10.z = unscaledvelocity.z;
-            obj->projectile->refreshrate = THROWN_ITEM_REFRESH_RATE;
+            PGET(obj->projectile)->flags |= PROJECTILEFLAG_00000020;
+            PGET(obj->projectile)->unkB0 = obj->runtime_pos.y;
+            PGET(obj->projectile)->unkB4 = PGET(obj->projectile)->speed.y;
+            PGET(obj->projectile)->unk10.x = unscaledvelocity.x;
+            PGET(obj->projectile)->unk10.y = unscaledvelocity.y;
+            PGET(obj->projectile)->unk10.z = unscaledvelocity.z;
+            PGET(obj->projectile)->refreshrate = THROWN_ITEM_REFRESH_RATE;
 
-            if (obj->projectile->sounds[0] == NULL)
+            if (PGET(obj->projectile)->sounds[0] == NULL)
             {
-                sndPlaySfx(g_musicSfxBufferPtr, 1, &obj->projectile->sounds[0]);
+                sndPlaySfx(g_musicSfxBufferPtr, 1, &PGET(obj->projectile)->sounds[0]);
             }
-            else if (obj->projectile->sounds[1] == NULL)
+            else if (PGET(obj->projectile)->sounds[1] == NULL)
             {
-                sndPlaySfx(g_musicSfxBufferPtr, 1, &obj->projectile->sounds[1]);
+                sndPlaySfx(g_musicSfxBufferPtr, 1, &PGET(obj->projectile)->sounds[1]);
             }
         }
     }

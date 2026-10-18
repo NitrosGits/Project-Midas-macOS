@@ -263,9 +263,9 @@ void gunFireTankShell(s32 handnum)
         if ((tankprop != NULL) && (tankprop->flags & TANK_RUN_STATE_RUNNING))
         {
             tankobj = tankprop->obj;
-            spawnpos.x = tankobj->model->render_pos[4].pos.m[3][0];
-            spawnpos.y = tankobj->model->render_pos[4].pos.m[3][1];
-            spawnpos.z = tankobj->model->render_pos[4].pos.m[3][2];
+            spawnpos.x = PGET(tankobj->model)->render_pos[4].pos.m[3][0];
+            spawnpos.y = PGET(tankobj->model)->render_pos[4].pos.m[3][1];
+            spawnpos.z = PGET(tankobj->model)->render_pos[4].pos.m[3][2];
 
             mtx4TransformVecInPlace(currentPlayerGetViewToWorldMtxf(), &spawnpos);
         }
@@ -353,26 +353,26 @@ void gunFireTankShell(s32 handnum)
 
     if (obj->runtime_bitflags & RUNTIMEBITFLAG_00000080)
     {
-        obj->projectile->flags |= PROJECTILEFLAG_LAUNCHING;
+        PGET(obj->projectile)->flags |= PROJECTILEFLAG_LAUNCHING;
 
         if (weaponid != ITEM_TANKSHELLS)
         {
-            obj->projectile->flags |= PROJECTILEFLAG_00000020;
-            obj->projectile->unkB0 = obj->runtime_pos.y;
-            obj->projectile->unkB4 = obj->projectile->speed.y;
-            obj->projectile->unk10.x = unscaledvelocity.x;
-            obj->projectile->unk10.y = unscaledvelocity.y;
-            obj->projectile->unk10.z = unscaledvelocity.z;
-            obj->projectile->refreshrate = THROWN_ITEM_REFRESH_RATE;
+            PGET(obj->projectile)->flags |= PROJECTILEFLAG_00000020;
+            PGET(obj->projectile)->unkB0 = obj->runtime_pos.y;
+            PGET(obj->projectile)->unkB4 = PGET(obj->projectile)->speed.y;
+            PGET(obj->projectile)->unk10.x = unscaledvelocity.x;
+            PGET(obj->projectile)->unk10.y = unscaledvelocity.y;
+            PGET(obj->projectile)->unk10.z = unscaledvelocity.z;
+            PGET(obj->projectile)->refreshrate = THROWN_ITEM_REFRESH_RATE;
 
-            if (obj->projectile->sounds[0] == NULL)
+            if (PGET(obj->projectile)->sounds[0] == NULL)
             {
                 #line 2653
-                sndPlaySfx(g_musicSfxBufferPtr, 1, &obj->projectile->sounds[0]); //according to debug this is still gun.c
+                sndPlaySfx(g_musicSfxBufferPtr, 1, &PGET(obj->projectile)->sounds[0]); //according to debug this is still gun.c
             }
-            else if (obj->projectile->sounds[1] == NULL)
+            else if (PGET(obj->projectile)->sounds[1] == NULL)
             {
-                sndPlaySfx(g_musicSfxBufferPtr, 1, &obj->projectile->sounds[1]);
+                sndPlaySfx(g_musicSfxBufferPtr, 1, &PGET(obj->projectile)->sounds[1]);
             }
         }
     }

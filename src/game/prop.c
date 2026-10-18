@@ -220,7 +220,7 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
             objInitWithModelDef(arg1, PitemZ_entries[spF0].header);
         }
 
-        modelSetScale(arg1->model, arg1->model->scale * sp78);
+        modelSetScale(PGET(arg1->model), PGET(arg1->model)->scale * sp78);
     }
     else if (arg1->flags & PROPFLAG_ASSIGNEDTOCHR)
     {
@@ -237,7 +237,7 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                 var_v0 = objInitWithModelDef(arg1, PitemZ_entries[spF0].header);
             }
 
-            modelSetScale(arg1->model, arg1->model->scale * sp78);
+            modelSetScale(PGET(arg1->model), PGET(arg1->model)->scale * sp78);
             chrpropReparent(var_v0, sp6C->prop);
         }
         #ifdef DEBUG
@@ -274,7 +274,7 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                 sp80.f[2] = sp64->pos.f[2];
             }
 
-            spCC = sp64->stan;
+            spCC = PGET(sp64->stan);
         }
         else
         {
@@ -290,7 +290,7 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                 sp80.f[1] = spD0.f[1] + (var_s0->up.f[1] * ((var_s0->bbox.ymin - var_s0->bbox.ymax) * 0.5f));
                 sp80.f[2] = spD0.f[2] + (var_s0->up.f[2] * ((var_s0->bbox.ymin - var_s0->bbox.ymax) * 0.5f));
 
-                spCC = var_s0->stan;
+                spCC = PGET(var_s0->stan);
 
                 if (walkTilesBetweenPoints_NoCallback(&spCC, var_s0->pos.f[0], var_s0->pos.f[2], spD0.f[0], spD0.f[2]) == 0)
                 {
@@ -298,7 +298,7 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                     spD0.f[1] = var_s0->pos.f[1];
                     spD0.f[2] = var_s0->pos.f[2];
 
-                    spCC = var_s0->stan;
+                    spCC = PGET(var_s0->stan);
 
                     if (!(arg1->flags & PROPFLAG_ONSCREEN) && !(arg1->flags & PROPFLAG_00001000))
                     {
@@ -315,7 +315,7 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                 spD0.f[1] = var_s0->pos.f[1];
                 spD0.f[2] = var_s0->pos.f[2];
 
-                spCC = var_s0->stan;
+                spCC = PGET(var_s0->stan);
 
                 sub_GAME_7F001BD4(var_s0, &sp80);
 
@@ -351,11 +351,11 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                         {
                             if (arg1->flags & PROPFLAG_ONSCREEN)
                             {
-                                sp58 = (var_s0->bbox.xmax - var_s0->bbox.xmin) / ((temp_v0_3->Bounds.xmax - temp_v0_3->Bounds.xmin) * arg1->model->scale);
+                                sp58 = (var_s0->bbox.xmax - var_s0->bbox.xmin) / ((temp_v0_3->Bounds.xmax - temp_v0_3->Bounds.xmin) * PGET(arg1->model)->scale);
                             }
                             else
                             {
-                                sp58 = (var_s0->bbox.xmax - var_s0->bbox.xmin) / ((temp_v0_3->Bounds.xmax - temp_v0_3->Bounds.xmin) * arg1->model->scale);
+                                sp58 = (var_s0->bbox.xmax - var_s0->bbox.xmin) / ((temp_v0_3->Bounds.xmax - temp_v0_3->Bounds.xmin) * PGET(arg1->model)->scale);
                             }
                         }
                     }
@@ -366,11 +366,11 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                         {
                             if (arg1->flags & PROPFLAG_ONSCREEN)
                             {
-                                sp50 = (var_s0->bbox.zmax - var_s0->bbox.zmin) / ((temp_v0_3->Bounds.ymax - temp_v0_3->Bounds.ymin) * arg1->model->scale);
+                                sp50 = (var_s0->bbox.zmax - var_s0->bbox.zmin) / ((temp_v0_3->Bounds.ymax - temp_v0_3->Bounds.ymin) * PGET(arg1->model)->scale);
                             }
                             else
                             {
-                                sp54 = (var_s0->bbox.ymax - var_s0->bbox.ymin) / ((temp_v0_3->Bounds.ymax - temp_v0_3->Bounds.ymin) * arg1->model->scale);
+                                sp54 = (var_s0->bbox.ymax - var_s0->bbox.ymin) / ((temp_v0_3->Bounds.ymax - temp_v0_3->Bounds.ymin) * PGET(arg1->model)->scale);
                             }
                         }
                     }
@@ -381,11 +381,11 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                         {
                             if (arg1->flags & PROPFLAG_ONSCREEN)
                             {
-                                sp54 = (var_s0->bbox.ymax - var_s0->bbox.ymin) / ((temp_v0_3->Bounds.zmax - temp_v0_3->Bounds.zmin) * arg1->model->scale);
+                                sp54 = (var_s0->bbox.ymax - var_s0->bbox.ymin) / ((temp_v0_3->Bounds.zmax - temp_v0_3->Bounds.zmin) * PGET(arg1->model)->scale);
                             }
                             else
                             {
-                                sp50 = (var_s0->bbox.zmax - var_s0->bbox.zmin) / ((temp_v0_3->Bounds.zmax - temp_v0_3->Bounds.zmin) * arg1->model->scale);
+                                sp50 = (var_s0->bbox.zmax - var_s0->bbox.zmin) / ((temp_v0_3->Bounds.zmax - temp_v0_3->Bounds.zmin) * PGET(arg1->model)->scale);
                             }
                         }
                     }
@@ -486,12 +486,12 @@ void domakedefaultobj(s32 arg0, ObjectRecord *arg1, s32 cmdindex)
                     matrix_column_2_scalar_multiply(sp54, sp8C.m[0]);
                     matrix_column_3_scalar_multiply_2(sp50, sp8C.m[0]);
 
-                    modelSetScale(arg1->model, arg1->model->scale * sp48);
+                    modelSetScale(PGET(arg1->model), PGET(arg1->model)->scale * sp48);
                 }
             }
 
-            modelSetScale(arg1->model, arg1->model->scale * sp78);
-            matrix_scalar_multiply(arg1->model->scale, sp8C.m[0]);
+            modelSetScale(PGET(arg1->model), PGET(arg1->model)->scale * sp78);
+            matrix_scalar_multiply(PGET(arg1->model)->scale, sp8C.m[0]);
 
             if (arg1->flags & PROPFLAG_ONSCREEN)
             {
@@ -742,9 +742,9 @@ void setupCctv(s32 arg0, CCTVRecord *arg1, s32 cmdindex)
          * keep its default orientation. Check every link, including
          * Switches[0]->Data and ->prop, since the code below dereferences them
          * all. */
-        if (arg1->model == NULL || arg1->prop == NULL || arg1->model->obj == NULL ||
-            arg1->model->obj->Switches == NULL || PGET(arg1->model->obj->Switches[0]) == NULL ||
-            PGET(PGET(arg1->model->obj->Switches[0])->Data) == NULL)
+        if (PGET(arg1->model) == NULL || PGET(arg1->prop) == NULL || PGET(arg1->model)->obj == NULL ||
+            PGET(arg1->model)->obj->Switches == NULL || PGET(PGET(arg1->model)->obj->Switches[0]) == NULL ||
+            PGET(PGET(PGET(arg1->model)->obj->Switches[0])->Data) == NULL)
         {
             extern int printf(const char *, ...);
             static s32 warned;
@@ -754,13 +754,13 @@ void setupCctv(s32 arg0, CCTVRecord *arg1, s32 cmdindex)
                 printf("ge: setupCctv: CCTV %d (model id %d, pad %d) has no model data - "
                        "skipping pad setup (model=%p prop=%p obj=%p)\n",
                        cmdindex, arg1->obj, arg1->lookpad,
-                       (void *) arg1->model, (void *) arg1->prop,
-                       (void *) ((arg1->model != NULL) ? arg1->model->obj : NULL));
+                       (void *) PGET(arg1->model), (void *) PGET(arg1->prop),
+                       (void *) ((PGET(arg1->model) != NULL) ? PGET(arg1->model)->obj : NULL));
             }
             return;
         }
 #endif
-        temp_a2 = (struct coord3d*)PGET(PGET(arg1->model->obj->Switches[0])->Data);
+        temp_a2 = (struct coord3d*)PGET(PGET(PGET(arg1->model)->obj->Switches[0])->Data);
 
         if (isNotBoundPad(arg1->lookpad))
         {
@@ -779,16 +779,16 @@ void setupCctv(s32 arg0, CCTVRecord *arg1, s32 cmdindex)
 
         sp3C = &arg1->unk84;
 
-        sp44.f[0] += arg1->prop->pos.f[0];
-        sp44.f[1] += arg1->prop->pos.f[1];
-        sp44.f[2] += arg1->prop->pos.f[2];
+        sp44.f[0] += PGET(arg1->prop)->pos.f[0];
+        sp44.f[1] += PGET(arg1->prop)->pos.f[1];
+        sp44.f[2] += PGET(arg1->prop)->pos.f[2];
 
         /* CCTV aim: the vanilla code, fed the camera's look-target pad
          * (arg1->lookpad) rather than the inherited ObjectRecord.pad, which is
          * its own mount. Using the mount pad made the camera aim at itself;
          * setupAutogun reads its target pad the same way. */
         matrix_4x4_set_basis_and_position_target(sp3C, 0.0f, 0.0f, 0.0f, sp44.f[0] - sp50->pos.f[0], sp44.f[1] - sp50->pos.f[1], sp44.f[2] - sp50->pos.f[2], 0.0f, 1.0f, 0.0f);
-        matrix_scalar_multiply(arg1->model->scale, sp3C->m[0]);
+        matrix_scalar_multiply(PGET(arg1->model)->scale, sp3C->m[0]);
 
         if (arg1->convert_to_f32 == 0)
         {
@@ -833,7 +833,7 @@ void setupCctv(s32 arg0, CCTVRecord *arg1, s32 cmdindex)
                     ModelRoData_BoundingBoxRecord *bb = chrobjGetBboxFromObjectRecord((ObjectRecord *) arg1);
                     fprintf(stderr,
                             "cctvprobe:   proppos=(%.2f,%.2f,%.2f) padpos=(%.2f,%.2f,%.2f) modelbbox=%s",
-                            arg1->prop->pos.f[0], arg1->prop->pos.f[1], arg1->prop->pos.f[2],
+                            PGET(arg1->prop)->pos.f[0], PGET(arg1->prop)->pos.f[1], PGET(arg1->prop)->pos.f[2],
                             sp50->pos.f[0], sp50->pos.f[1], sp50->pos.f[2],
                             bb == NULL ? "NULL\n" : "");
                     if (bb != NULL) {
@@ -871,8 +871,8 @@ void setupAutogun(s32 stageID, AutogunRecord *autogun, s32 cmdindex)
     autogun->unkB8 = -1;
     autogun->unkBC = -1;
     autogun->unkC0 = -1;
-    autogun->unkC4 = 0;
-    autogun->unkC8 = 0;
+    PSET(autogun->unkC4, 0);
+    PSET(autogun->unkC8, 0);
     autogun->unk90 = 0.0f;
     autogun->unk94 = 0.0f;
     autogun->rot_related = 0.0f;
@@ -890,7 +890,7 @@ void setupAutogun(s32 stageID, AutogunRecord *autogun, s32 cmdindex)
 #endif
 
     beam          = mempAllocBytesInBank(0x30U, MEMPOOL_STAGE);
-    autogun->beam = beam;
+    PSET(autogun->beam, beam);
     *beam = -1;
 
     autogun->is_active = FALSE;
@@ -915,7 +915,7 @@ void setupAutogun(s32 stageID, AutogunRecord *autogun, s32 cmdindex)
             pad = &g_CurrentSetup.boundpads[getBoundPadNum(autogun->padID)];
         }
 
-        prop = autogun->prop;
+        prop = PGET(autogun->prop);
 
         xdiff = pad->pos.x - prop->pos.x;
         ydiff = pad->pos.y - prop->pos.y;
@@ -966,18 +966,18 @@ void setupSingleMonitor(s32 stageID, MonitorObjRecord *monitor, s32 cmdindex)
         }
 
         prop = objInitWithAutoModel((ObjectRecord*)monitor);
-        monitor->embedment = embedmentAllocate();
+        PSET(monitor->embedment, embedmentAllocate());
 
 #ifndef TARGET_N64
         /* PORT: the monitor attaches to its owner's model, which is NULL if the
          * owner couldn't be positioned, so skip the attach and keep the
          * monitor's own model. This should be unreachable since the stan cache
          * fix, but stays as a safety net. */
-        ownerok = (owner != NULL && owner->model != NULL &&
-                   owner->model->obj != NULL &&
-                   owner->model->obj->Switches != NULL);
+        ownerok = (owner != NULL && PGET(owner->model) != NULL &&
+                   PGET(owner->model)->obj != NULL &&
+                   PGET(owner->model)->obj->Switches != NULL);
 
-        if (prop != NULL && monitor->embedment != NULL && !ownerok)
+        if (prop != NULL && PGET(monitor->embedment) != NULL && !ownerok)
         {
             extern int printf(const char *, ...);
             static s32 warned;
@@ -991,35 +991,35 @@ void setupSingleMonitor(s32 stageID, MonitorObjRecord *monitor, s32 cmdindex)
             }
         }
 
-        if (prop && monitor->embedment && ownerok)
+        if (prop && PGET(monitor->embedment) && ownerok)
 #else
         if (prop && monitor->embedment)
 #endif
         {
             monitor->runtime_bitflags |= RUNTIMEBITFLAG_EMBEDDED;
-            modelSetScale(monitor->model, monitor->model->scale * scale);
-            monitor->model->attachedto = owner->model;
+            modelSetScale(PGET(monitor->model), PGET(monitor->model)->scale * scale);
+            PGET(monitor->model)->attachedto = PGET(owner->model);
 
             if (monitor->OwnerPart == 0)
             {
-                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[0]);
+                PGET(monitor->model)->attachedto_objinst = PGET(PGET(owner->model)->obj->Switches[0]);
             }
             else if (monitor->OwnerPart == 1)
             {
-                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[1]);
+                PGET(monitor->model)->attachedto_objinst = PGET(PGET(owner->model)->obj->Switches[1]);
             }
             else if (monitor->OwnerPart == 2)
             {
-                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[2]);
+                PGET(monitor->model)->attachedto_objinst = PGET(PGET(owner->model)->obj->Switches[2]);
             }
             else
             {
-                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[3]);;
+                PGET(monitor->model)->attachedto_objinst = PGET(PGET(owner->model)->obj->Switches[3]);;
             }
 
-            chrpropReparent(prop, owner->prop);
-            matrix_4x4_set_rotation_around_x(0.36651915f, (Mtxf*)&monitor->embedment->matrix);
-            matrix_scalar_multiply(monitor->model->scale / owner->model->scale, (f32*)&monitor->embedment->matrix);
+            chrpropReparent(prop, PGET(owner->prop));
+            matrix_4x4_set_rotation_around_x(0.36651915f, (Mtxf*)&PGET(monitor->embedment)->matrix);
+            matrix_scalar_multiply(PGET(monitor->model)->scale / PGET(owner->model)->scale, (f32*)&PGET(monitor->embedment)->matrix);
         }
     }
     else
@@ -1027,9 +1027,9 @@ void setupSingleMonitor(s32 stageID, MonitorObjRecord *monitor, s32 cmdindex)
         domakedefaultobj(stageID, (ObjectRecord*)monitor, cmdindex);
     }
 
-    if ((monitor->flags & PROPFLAG_MONITOR_RENDERPOSTBG) && monitor->prop)
+    if ((monitor->flags & PROPFLAG_MONITOR_RENDERPOSTBG) && PGET(monitor->prop))
     {
-        monitor->prop->flags |= PROPFLAG_RENDERPOSTBG;
+        PGET(monitor->prop)->flags |= PROPFLAG_RENDERPOSTBG;
     }
 }
 
@@ -1079,11 +1079,11 @@ void sub_GAME_7F00324C(struct BoundPadRecord *arg0, s32 *arg1, s32 *arg2, struct
     f32 scale;
 
     sub_GAME_7F001BD4(arg0, &center);
-    sp2C = (StandTile *)arg0->stan;
+    sp2C = (StandTile *)PGET(arg0->stan);
 
     if (walkTilesBetweenPoints_NoCallback(&sp2C, arg0->pos.f[0], arg0->pos.f[2], center.f[0], center.f[2]) == 0)
     {
-        sp2C = (StandTile *)arg0->stan;
+        sp2C = (StandTile *)PGET(arg0->stan);
         center.f[0] = arg0->pos.f[0];
         center.f[1] = arg0->pos.f[1];
         center.f[2] = arg0->pos.f[2];
@@ -1230,10 +1230,10 @@ void setupDoor(s32 arg0, struct DoorRecord *door, s32 arg2)
                 sp170.f[2] = pad->pos.f[2] + (sp180.normal.f[2] * temp_f2);
             }
 
-            sp16C = pad->stan;
+            sp16C = PGET(pad->stan);
             if (walkTilesBetweenPoints_NoCallback(&sp16C, pad->pos.f[0], pad->pos.f[2], sp170.f[0], sp170.f[2]) != 0)
             {
-                pad->stan = sp16C;
+                PSET(pad->stan, sp16C);
                 pad->pos.f[0] = sp170.f[0];
                 pad->pos.f[1] = sp170.f[1];
                 pad->pos.f[2] = sp170.f[2];
@@ -1254,7 +1254,7 @@ void setupDoor(s32 arg0, struct DoorRecord *door, s32 arg2)
         }
     }
 
-    if (getposstan(&pad->pos, pad->stan, 0.0f, &sp1B8, &sp1C8_stan) != 0)
+    if (getposstan(&pad->pos, PGET(pad->stan), 0.0f, &sp1B8, &sp1C8_stan) != 0)
     {
         matrix_4x4_set_basis_and_position_target(&sp12C, 0, 0, 0, -pad->look.f[0], -pad->look.f[1], -pad->look.f[2], pad->up.f[0], pad->up.f[1], pad->up.f[2]);
         sp124 = PitemZ_entries[modelnum].header;
@@ -1407,7 +1407,7 @@ void setupDoor(s32 arg0, struct DoorRecord *door, s32 arg2)
             #endif
         }
 
-        if (door->model != NULL)
+        if (PGET(door->model) != NULL)
         {
             scale = xscale;
 
@@ -1421,7 +1421,7 @@ void setupDoor(s32 arg0, struct DoorRecord *door, s32 arg2)
                 scale = zscale;
             }
 
-            modelSetScale(door->model, door->model->scale * scale);
+            modelSetScale(PGET(door->model), PGET(door->model)->scale * scale);
         }
 
         chrpropActivate(prop);
@@ -1429,12 +1429,12 @@ void setupDoor(s32 arg0, struct DoorRecord *door, s32 arg2)
 
         if (door->linkedDoorOffset != 0)
         {
-            door->linkedDoor = (struct DoorRecord *)setupGetPtrToCommandByIndex(door->linkedDoorOffset + arg2);
+            PSET(door->linkedDoor, (struct DoorRecord *)setupGetPtrToCommandByIndex(door->linkedDoorOffset + arg2));
         }
     }
     else
     {
-        door->prop = NULL;
+        PSET(door->prop, NULL);
         #ifdef DEBUG
             osSyncPrintf("proplvreset: prop door object number %d not reset!\n",arg2 + 1);
         #endif
@@ -1459,7 +1459,10 @@ void setupDoor(s32 arg0, struct DoorRecord *door, s32 arg2)
 /* ROM loading (port/src/romfile_setup.c): a setup loaded from the ROM is the
  * N64 image (offsets), so it uses the N64 promotion. Set right after the file loads, below. */
 s32 g_portSetupFromRom;
-#define SETUP_PROMOTE(base, val) (g_portSetupFromRom ? (void *) (((u32) (base)) + ((u32) (val))) : (void *) (u32) (val))
+/* val is a 32-bit word: a header offset, or a PTR32 field's raw word (PTRW).
+ * A compiled-in setup's real pointer is that word decoded (portPtr64 is an
+ * identity in the 32-bit builds, and 64-bit builds have no compiled-in setups). */
+#define SETUP_PROMOTE(base, val) (g_portSetupFromRom ? (void *) ((u8 *) (base) + (u32) (val)) : portPtr64((u32) (val)))
 
 /* bring-up (GE_DUMP_BOND): called at load milestones to find which step
  * corrupts the path waypoints data. */
@@ -1542,24 +1545,24 @@ static u32 portMeasurePads(u32 *pads)
 {
     struct PadRecord *pad = (struct PadRecord *) pads;
 
-    while (pad->plink != NULL)
+    while (PGET(pad->plink) != NULL)
     {
         pad++;
     }
 
-    return ((uintptr_t) (pad + 1) - (uintptr_t) pads) / 4; /* include the terminator record */
+    return (u32) (((u8 *) (pad + 1) - (u8 *) pads) / 4); /* include the terminator record */
 }
 
 static u32 portMeasureBoundPads(u32 *pads)
 {
     struct BoundPadRecord *vol = (struct BoundPadRecord *) pads;
 
-    while (vol->plink != NULL)
+    while (PGET(vol->plink) != NULL)
     {
         vol++;
     }
 
-    return ((uintptr_t) (vol + 1) - (uintptr_t) pads) / 4;
+    return (u32) (((u8 *) (vol + 1) - (u8 *) pads) / 4);
 }
 
 /* Load-time setup lint: byte-swapped or garbled setup data shows up as
@@ -1569,13 +1572,8 @@ static void portLintSetup(void)
 {
     s32 bad = 0;
 
-    { /* Weapon props are read through ChrRecord, so act_attack.attack_item must
-       * overlay WeaponObjRecord.weaponnum. Keep this pinned at compile time (it
-       * has drifted before, see bondtypes.h). */
-        typedef char portAliasContract[
-            (offsetof(ChrRecord, act_attack.attack_item)
-             == offsetof(WeaponObjRecord, weaponnum)) ? 1 : -1];
-    }
+    /* (chraction.c's WEAPON_ITEM reads WeaponObjRecord.weaponnum directly on PC,
+     * so ChrRecord's act_attack.attack_item no longer has to overlay it.) */
     s32 padcount = 0;
     s32 index;
     PropDefHeaderRecord *phead;
@@ -1584,49 +1582,49 @@ static void portLintSetup(void)
 
     if (g_CurrentSetup.pads != NULL)
     {
-        for (pad = g_CurrentSetup.pads; pad->plink != NULL; pad++)
+        for (pad = g_CurrentSetup.pads; PGET(pad->plink) != NULL; pad++)
         {
-            if (pad->stan == NULL || ((StandTile *) pad->stan)->id == 0)
+            if (PGET(pad->stan) == NULL || ((StandTile *) PGET(pad->stan))->id == 0)
             {
                 /* Pad with no (or a zeroed) floor tile: find a tile from the
                  * pad's position like the padrc fallback does, then walk back
                  * toward the pad so it ends up under or near it. A wrong but
                  * real nearby tile beats crashes or spawning into the void; the
                  * lint line still reports the bad data. */
-                const char *why = (pad->stan == NULL) ? "no stan" : "ZERO-TILE stan";
+                const char *why = (PGET(pad->stan) == NULL) ? "no stan" : "ZERO-TILE stan";
                 coord3d fixpos;
                 fixpos.f[0] = pad->pos.f[0];
                 fixpos.f[1] = pad->pos.f[1];
                 fixpos.f[2] = pad->pos.f[2];
-                pad->stan = sub_GAME_7F0AFB78(&fixpos.f[0], &fixpos.f[1], &fixpos.f[2], 0);
+                PSET(pad->stan, sub_GAME_7F0AFB78(&fixpos.f[0], &fixpos.f[1], &fixpos.f[2], 0));
 
-                if (pad->stan != NULL)
+                if (PGET(pad->stan) != NULL)
                 {
                     extern s32 getTileRoom(StandTile *tile);
-                    StandTile *walked = (StandTile *) pad->stan;
+                    StandTile *walked = (StandTile *) PGET(pad->stan);
                     f32 dx, dy, dz;
                     if (walkTilesBetweenPoints_NoCallback(&walked, fixpos.f[0], fixpos.f[2],
                                                           pad->pos.f[0], pad->pos.f[2]) && walked != NULL
                         && walked->id != 0)
                     {
-                        pad->stan = walked;
+                        PSET(pad->stan, walked);
                     }
                     dx = fixpos.f[0] - pad->pos.f[0];
                     dy = fixpos.f[1] - pad->pos.f[1];
                     dz = fixpos.f[2] - pad->pos.f[2];
                     fprintf(stderr,
                             "ge: setup lint: pad %d (%s) %s - FIXED room=%d moved=%.0f pos=(%.0f %.0f %.0f)\n",
-                            (s32) (pad - g_CurrentSetup.pads), pad->plink, why,
-                            getTileRoom((StandTile *) pad->stan),
+                            (s32) (pad - g_CurrentSetup.pads), PGET(pad->plink), why,
+                            getTileRoom((StandTile *) PGET(pad->stan)),
                             sqrtf(dx * dx + dy * dy + dz * dz),
                             pad->pos.f[0], pad->pos.f[1], pad->pos.f[2]);
                 }
                 else
                 {
                     fprintf(stderr, "ge: setup lint: pad %d (%s) %s - UNRESOLVED\n",
-                            (s32) (pad - g_CurrentSetup.pads), pad->plink, why);
+                            (s32) (pad - g_CurrentSetup.pads), PGET(pad->plink), why);
                 }
-                if (pad->stan == NULL)
+                if (PGET(pad->stan) == NULL)
                 {
                     bad++;
                 }
@@ -1638,31 +1636,31 @@ static void portLintSetup(void)
 
     if (g_CurrentSetup.boundpads != NULL)
     {
-        for (vol = g_CurrentSetup.boundpads; vol->plink != NULL; vol++)
+        for (vol = g_CurrentSetup.boundpads; PGET(vol->plink) != NULL; vol++)
         {
-            if (vol->stan == NULL || ((StandTile *) vol->stan)->id == 0)
+            if (PGET(vol->stan) == NULL || ((StandTile *) PGET(vol->stan))->id == 0)
             {
                 coord3d fixpos;
                 fixpos.f[0] = vol->pos.f[0];
                 fixpos.f[1] = vol->pos.f[1];
                 fixpos.f[2] = vol->pos.f[2];
-                vol->stan = sub_GAME_7F0AFB78(&fixpos.f[0], &fixpos.f[1], &fixpos.f[2], 0);
+                PSET(vol->stan, sub_GAME_7F0AFB78(&fixpos.f[0], &fixpos.f[1], &fixpos.f[2], 0));
 
-                if (vol->stan != NULL)
+                if (PGET(vol->stan) != NULL)
                 {
-                    StandTile *walked = (StandTile *) vol->stan;
+                    StandTile *walked = (StandTile *) PGET(vol->stan);
                     if (walkTilesBetweenPoints_NoCallback(&walked, fixpos.f[0], fixpos.f[2],
                                                           vol->pos.f[0], vol->pos.f[2]) && walked != NULL
                         && walked->id != 0)
                     {
-                        vol->stan = walked;
+                        PSET(vol->stan, walked);
                     }
                 }
 
                 fprintf(stderr, "ge: setup lint: boundpad %d (%s) has no/zero stan%s\n",
-                        (s32) (vol - g_CurrentSetup.boundpads), vol->plink,
-                        (vol->stan != NULL) ? " - FIXED via position finder" : " - UNRESOLVED");
-                if (vol->stan == NULL)
+                        (s32) (vol - g_CurrentSetup.boundpads), PGET(vol->plink),
+                        (PGET(vol->stan) != NULL) ? " - FIXED via position finder" : " - UNRESOLVED");
+                if (PGET(vol->stan) == NULL)
                 {
                     bad++;
                 }
@@ -1683,7 +1681,7 @@ static void portLintSetup(void)
                 {
                     GuardRecord *g = (GuardRecord *) phead;
 
-                    if (g->Data == NULL)
+                    if (PGET(g->Data) == NULL)
                     {
                         fprintf(stderr, "ge: setup lint: guard %d (chrnum %d, pad %d) did not spawn\n",
                                 index, (s16) g->chrnum, g->PadID);
@@ -1877,12 +1875,12 @@ static void portPropDump(void)
 
                 printf("ge: prop %3d type=%2d model=%3d pad=%5d room=%3d cap=%.1f flags=%08x pos=(%.0f,%.0f,%.0f)%s\n",
                        index, obj->type, obj->obj, obj->pad,
-                       (obj->prop != NULL) ? (s32) obj->prop->rooms[0] : -1,
+                       (PGET(obj->prop) != NULL) ? (s32) PGET(obj->prop)->rooms[0] : -1,
                        obj->damage, (u32) obj->flags,
-                       (obj->prop != NULL) ? obj->prop->pos.f[0] : 0.0f,
-                       (obj->prop != NULL) ? obj->prop->pos.f[1] : 0.0f,
-                       (obj->prop != NULL) ? obj->prop->pos.f[2] : 0.0f,
-                       (obj->prop != NULL) ? "" : " NO-PROP");
+                       (PGET(obj->prop) != NULL) ? PGET(obj->prop)->pos.f[0] : 0.0f,
+                       (PGET(obj->prop) != NULL) ? PGET(obj->prop)->pos.f[1] : 0.0f,
+                       (PGET(obj->prop) != NULL) ? PGET(obj->prop)->pos.f[2] : 0.0f,
+                       (PGET(obj->prop) != NULL) ? "" : " NO-PROP");
                 break;
             }
         }
@@ -1934,7 +1932,7 @@ void proplvreset2(enum LEVELID stageId)
         s32 i5 = 0;
         s32 i8;
         f32 roompos_2;
-        struct stagesetup *local_stage;
+        stagesetupfile *local_stage;
 
         strResource[0] = setup_text_pointers[stageId][0]; // 'U' -> "U"
         strResource[1] = 0; // Terminate so strcat has a valid string.
@@ -2085,16 +2083,16 @@ void proplvreset2(enum LEVELID stageId)
         {
             for (i1 = 0; g_CurrentSetup.pathwaypoints[i1].padID >= 0; i1++)
             {
-                g_CurrentSetup.pathwaypoints[i1].neighbours = SETUP_PROMOTE(local_stage, g_CurrentSetup.pathwaypoints[i1].neighbours);
+                PSET(g_CurrentSetup.pathwaypoints[i1].neighbours, SETUP_PROMOTE(local_stage, PTRW(g_CurrentSetup.pathwaypoints[i1].neighbours)));
             }
         }
 
         if (g_CurrentSetup.waypointgroups)
         {
-            for (i2 = 0; g_CurrentSetup.waypointgroups[i2].neighbours; i2++)
+            for (i2 = 0; PTRW(g_CurrentSetup.waypointgroups[i2].neighbours); i2++)
             {
-                g_CurrentSetup.waypointgroups[i2].neighbours = SETUP_PROMOTE(local_stage, g_CurrentSetup.waypointgroups[i2].neighbours);
-                g_CurrentSetup.waypointgroups[i2].waypoints = SETUP_PROMOTE(local_stage, g_CurrentSetup.waypointgroups[i2].waypoints);
+                PSET(g_CurrentSetup.waypointgroups[i2].neighbours, SETUP_PROMOTE(local_stage, PTRW(g_CurrentSetup.waypointgroups[i2].neighbours)));
+                PSET(g_CurrentSetup.waypointgroups[i2].waypoints, SETUP_PROMOTE(local_stage, PTRW(g_CurrentSetup.waypointgroups[i2].waypoints)));
             }
         }
 
@@ -2103,20 +2101,20 @@ void proplvreset2(enum LEVELID stageId)
             AIListRecord *ailists = g_CurrentSetup.ailists;
             if (ailists)
             {
-                for (i3 = 0; g_CurrentSetup.ailists[i3].ailist != 0; i3++)
+                for (i3 = 0; PTRW(g_CurrentSetup.ailists[i3].ailist) != 0; i3++)
                 {
-                    g_CurrentSetup.ailists[i3].ailist = SETUP_PROMOTE(local_stage, g_CurrentSetup.ailists[i3].ailist);
+                    PSET(g_CurrentSetup.ailists[i3].ailist, SETUP_PROMOTE(local_stage, PTRW(g_CurrentSetup.ailists[i3].ailist)));
                 }
             }
         }
 
         if (g_CurrentSetup.patrolpaths)
         {
-            for (i3 = 0; g_CurrentSetup.patrolpaths[i3].waypoints != NULL; i3++)
+            for (i3 = 0; PTRW(g_CurrentSetup.patrolpaths[i3].waypoints) != 0; i3++)
             {
-                g_CurrentSetup.patrolpaths[i3].waypoints = SETUP_PROMOTE(local_stage, g_CurrentSetup.patrolpaths[i3].waypoints);
+                PSET(g_CurrentSetup.patrolpaths[i3].waypoints, SETUP_PROMOTE(local_stage, PTRW(g_CurrentSetup.patrolpaths[i3].waypoints)));
 
-                for (i5 = 0; g_CurrentSetup.patrolpaths[i3].waypoints[i5] >= 0; i5++)
+                for (i5 = 0; PGET(g_CurrentSetup.patrolpaths[i3].waypoints)[i5] >= 0; i5++)
                 {
                     // Empty
                 }
@@ -2132,27 +2130,36 @@ void proplvreset2(enum LEVELID stageId)
             roompos_1 = get_room_data_float2();
             pad = g_CurrentSetup.pads;
 
-            for (; pad->plink != NULL; pad++)
+            for (; PTRW(pad->plink) != 0; pad++)
             {
-                pad->plink = SETUP_PROMOTE(local_stage, pad->plink);
+                PSET(pad->plink, SETUP_PROMOTE(local_stage, PTRW(pad->plink)));
                 pad->pos.f[0] *= roompos_1;
                 pad->pos.f[1] *= roompos_1;
                 pad->pos.f[2] *= roompos_1;
         
 #ifdef DEBUG
                 {
-                    s32 sret = init_pathtable_something(pad, pad->plink, &pad->stan);
+                    StandTile *stan = PGET(pad->stan);
+                    s32 sret = init_pathtable_something(pad, PGET(pad->plink), &stan);
+                    PSET(pad->stan, stan);
                     if (sret == 0)
                     {
-                        osSyncPrintf("pad number %d has no stan! (%s)\n", (s32)(pad - g_CurrentSetup.pads), pad->plink);
+                        osSyncPrintf("pad number %d has no stan! (%s)\n", (s32)(pad - g_CurrentSetup.pads), PGET(pad->plink));
                     }
                     else if (sret == 2)
                     {
-                        osSyncPrintf("pad number %d changed stan from %s to %s\n", (s32)(pad - g_CurrentSetup.pads), pad->plink, GetStanName(pad->stan));
+                        osSyncPrintf("pad number %d changed stan from %s to %s\n", (s32)(pad - g_CurrentSetup.pads), PGET(pad->plink), GetStanName(PGET(pad->stan)));
                     }
                 }
-#else
+#elif defined(TARGET_N64)
                 init_pathtable_something(pad, pad->plink, &pad->stan);
+#else
+                {   /* PORT: stan is a PTR32 word, so resolve through a local */
+                    StandTile *stan = PGET(pad->stan);
+
+                    init_pathtable_something(pad, PGET(pad->plink), &stan);
+                    PSET(pad->stan, stan);
+                }
 #endif
 
                 if (1);
@@ -2166,14 +2173,14 @@ void proplvreset2(enum LEVELID stageId)
             roompos_2 = get_room_data_float2();
             vol = g_CurrentSetup.boundpads;
             
-            for (; vol->plink != NULL; vol++)
+            for (; PTRW(vol->plink) != 0; vol++)
             {
                 /** Ugly matching hack. 
                 *   TODO: investigate if there's a way to get rid of this.
                 */
-                if ((((uintptr_t) local_stage) ^ 0) + ((uintptr_t)vol->plink));
+                if ((((uintptr_t) local_stage) ^ 0) + ((uintptr_t)PTRW(vol->plink)));
 
-                vol->plink = SETUP_PROMOTE(local_stage, vol->plink);
+                PSET(vol->plink, SETUP_PROMOTE(local_stage, PTRW(vol->plink)));
                 vol->pos.f[0] *= roompos_2;
                 vol->pos.f[1] *= roompos_2;
                 vol->pos.f[2] *= roompos_2;
@@ -2186,18 +2193,27 @@ void proplvreset2(enum LEVELID stageId)
 
 #ifdef DEBUG
                 {
-                    s32 sret = init_pathtable_something((struct PadRecord *) vol, vol->plink, &vol->stan);
+                    StandTile *stan = PGET(vol->stan);
+                    s32 sret = init_pathtable_something((struct PadRecord *) vol, PGET(vol->plink), &stan);
+                    PSET(vol->stan, stan);
                     if (sret == 0)
                     {
-                        osSyncPrintf("vol number %d has no stan! (%s)\n", (s32)(vol - g_CurrentSetup.boundpads), vol->plink);
+                        osSyncPrintf("vol number %d has no stan! (%s)\n", (s32)(vol - g_CurrentSetup.boundpads), PGET(vol->plink));
                     }
                     else if (sret == 2)
                     {
-                        osSyncPrintf("vol number %d changed stan from %s to %s\n", (s32)(vol - g_CurrentSetup.boundpads), vol->plink, GetStanName(vol->stan));
+                        osSyncPrintf("vol number %d changed stan from %s to %s\n", (s32)(vol - g_CurrentSetup.boundpads), PGET(vol->plink), GetStanName(PGET(vol->stan)));
                     }
                 }
-#else
+#elif defined(TARGET_N64)
                 init_pathtable_something((struct PadRecord *) vol, vol->plink, &vol->stan);
+#else
+                {
+                    StandTile *stan = PGET(vol->stan);
+
+                    init_pathtable_something((struct PadRecord *) vol, PGET(vol->plink), &stan);
+                    PSET(vol->stan, stan);
+                }
 #endif
 
                 if (1);
@@ -2206,9 +2222,9 @@ void proplvreset2(enum LEVELID stageId)
 
         if (g_CurrentSetup.padnames)
         {
-            for (i1 = 0; g_CurrentSetup.padnames[i1].p; i1++)
+            for (i1 = 0; PTRW(g_CurrentSetup.padnames[i1].p); i1++)
             {
-                g_CurrentSetup.padnames[i1].p = SETUP_PROMOTE(local_stage, g_CurrentSetup.padnames[i1].p);
+                PSET(g_CurrentSetup.padnames[i1].p, SETUP_PROMOTE(local_stage, PTRW(g_CurrentSetup.padnames[i1].p)));
             }
         }
 
@@ -2217,9 +2233,9 @@ void proplvreset2(enum LEVELID stageId)
             // Required for matching.
             if (g_CurrentSetup.ailists && g_CurrentSetup.ailists);
 
-            for (i1 = 0; g_CurrentSetup.boundpadnames[i1].p; i1++)
+            for (i1 = 0; PTRW(g_CurrentSetup.boundpadnames[i1].p); i1++)
             {
-                g_CurrentSetup.boundpadnames[i1].p = SETUP_PROMOTE(local_stage, g_CurrentSetup.boundpadnames[i1].p);
+                PSET(g_CurrentSetup.boundpadnames[i1].p, SETUP_PROMOTE(local_stage, PTRW(g_CurrentSetup.boundpadnames[i1].p)));
             }
         }
 
@@ -2509,7 +2525,7 @@ void proplvreset2(enum LEVELID stageId)
                             pdef_tank->turret_vertical_angle = 0.0f;
                             pdef_tank->turret_orientation_angle = 0.0f;
                             pdef_tank->tank_orientation_angle = M_TAU_F - atan2f(pdef_tank->mtx.m[2][0], pdef_tank->mtx.m[2][2]);
-                            tank_prop = pdef_tank->prop;
+                            tank_prop = PGET(pdef_tank->prop);
 
                             if (tank_prop)
                             {
@@ -2531,11 +2547,11 @@ void proplvreset2(enum LEVELID stageId)
 
                             domakedefaultobj(stageId, (struct ObjectRecord *) pdef_veh, pdefIndex);
 
-                            if (pdef_veh->model != NULL)
+                            if (PGET(pdef_veh->model) != NULL)
                             {
-                                if (PGET(pdef_veh->model->obj->Switches[5]) != NULL)
+                                if (PGET(PGET(pdef_veh->model)->obj->Switches[5]) != NULL)
                                 {
-                                    modelGetNodeRwData(pdef_veh->model, PGET(pdef_veh->model->obj->Switches[5]))->Raw.unk00 = (pdef_veh->flags & 0x10000000) == 0;
+                                    modelGetNodeRwData(PGET(pdef_veh->model), PGET(PGET(pdef_veh->model)->obj->Switches[5]))->Raw.unk00 = (pdef_veh->flags & 0x10000000) == 0;
                                 }
                             }
 
@@ -2546,12 +2562,12 @@ void proplvreset2(enum LEVELID stageId)
                             pdef_veh->turnrot60    = 0.0f;
                             pdef_veh->roty         = 0.0f;
                             pdef_veh->speedtime60  = -1.0f;
-                            pdef_veh->ailist       = ailistFindById(pdef_veh->ailist);
+                            PSET(pdef_veh->ailist, ailistFindById(PTRW(pdef_veh->ailist))); /* the file holds the list id */
                             pdef_veh->aioffset     = 0;
                             pdef_veh->aireturnlist = -1;
-                            pdef_veh->path         = 0;
+                            PSET(pdef_veh->path, 0);
                             pdef_veh->nextstep     = 0;
-                            pdef_veh->Sound        = 0;
+                            PSET(pdef_veh->Sound, 0);
                         }
                         break;
                     case PROPDEF_AIRCRAFT:
@@ -2568,12 +2584,12 @@ void proplvreset2(enum LEVELID stageId)
                             pdef_air->yrot            = 0.0f;
                             pdef_air->speedtime60     = -1.0f;
                             pdef_air->rotaryspeedtime = -1.0f;
-                            pdef_air->ailist          = ailistFindById(pdef_air->ailist);
+                            PSET(pdef_air->ailist, ailistFindById(PTRW(pdef_air->ailist))); /* the file holds the list id */
                             pdef_air->aioffset        = 0;
                             pdef_air->aireturnlist    = -1;
                             pdef_air->nextstep        = 0;
-                            pdef_air->path            = 0;
-                            pdef_air->Sound           = 0;
+                            PSET(pdef_air->path, 0);
+                            PSET(pdef_air->Sound, 0);
                         }
                         break;
                     case PROPDEF_TAG:
@@ -2583,7 +2599,7 @@ void proplvreset2(enum LEVELID stageId)
 
                         pdef_tag = (struct TagObjectRecord *) phead;
                         taggedobj = setupCommandGetObject(stageId, pdefIndex + ((s32) pdef_tag->OffsetToObj));
-                        pdef_tag->TaggedObject = taggedobj;
+                        PSET(pdef_tag->TaggedObject, taggedobj);
 
                         if (taggedobj)
                         {
@@ -2601,7 +2617,7 @@ void proplvreset2(enum LEVELID stageId)
                         pdef_ren = (struct RenameObjectRecord *) phead;
                         i3 = pdef_ren->TagID + pdefIndex;
                         targetobj = setupCommandGetObject(stageId, i3);
-                        pdef_ren->renobj = targetobj;
+                        PSET(pdef_ren->renobj, targetobj);
 
                         if (targetobj)
                         {
@@ -2665,16 +2681,16 @@ void proplvreset2(enum LEVELID stageId)
                     {
                         struct ObjectRecord *pdef_obj = (struct ObjectRecord *) phead;
 
-                        if (pdef_obj->prop && (pdef_obj->flags & PROPFLAG_INSIDEANOTHEROBJ))
+                        if (PGET(pdef_obj->prop) && (pdef_obj->flags & PROPFLAG_INSIDEANOTHEROBJ))
                         {
                             u32 offset = pdef_obj->pad;
                             struct ObjectRecord *inobj = setupCommandGetObject(stageId, offset + pdefIndex);
 
-                            if (inobj && inobj->prop)
+                            if (inobj && PGET(inobj->prop))
                             {
                                 pdef_obj->runtime_bitflags |= RUNTIMEBITFLAG_HASOWNER;
-                                modelSetScale(pdef_obj->model, pdef_obj->model->scale);
-                                chrpropReparent(pdef_obj->prop, inobj->prop);
+                                modelSetScale(PGET(pdef_obj->model), PGET(pdef_obj->model)->scale);
+                                chrpropReparent(PGET(pdef_obj->prop), PGET(inobj->prop));
                             }
 
 #ifdef DEBUG
@@ -2729,10 +2745,10 @@ void proplvreset2(enum LEVELID stageId)
                         doorA = (struct ObjectRecord *) setupCommandGetObject(stageId, pdefIndex + index1);
                         doorB = (struct ObjectRecord *) setupGetPtrToCommandByIndex(pdefIndex + index2);
 
-                        if ((((doorA && doorA->prop) && doorB) && (doorB->type == PROPDEF_DOOR)) && doorB->prop)
+                        if ((((doorA && PGET(doorA->prop)) && doorB) && (doorB->type == PROPDEF_DOOR)) && PGET(doorB->prop))
                         {
-                            pdef_switch->first = doorA->prop;
-                            pdef_switch->second = doorB->prop;
+                            PSET(pdef_switch->first, PGET(doorA->prop));
+                            PSET(pdef_switch->second, PGET(doorB->prop));
                             initSetLevelLoadPropSwitch(pdef_switch);
                             doorA->runtime_bitflags |= RUNTIMEBITFLAG_00000001; // linked door
                         }
@@ -2764,11 +2780,11 @@ void proplvreset2(enum LEVELID stageId)
                         safe = (struct SafeRecord *) setupCommandGetObject(stageId, pdefIndex + index2);
                         door = (struct DoorRecord *) setupCommandGetObject(stageId, pdefIndex + index3);
 
-                        if (((((((safe_item && safe_item->prop) && safe) && safe->prop) && (safe->type == PROPDEF_SAFE)) && door) && door->prop) && (door->type == PROPDEF_DOOR))
+                        if (((((((safe_item && PGET(safe_item->prop)) && safe) && PGET(safe->prop)) && (safe->type == PROPDEF_SAFE)) && door) && PGET(door->prop)) && (door->type == PROPDEF_DOOR))
                         {
-                            pdef_safe->item = safe_item;
-                            pdef_safe->safe = safe;
-                            pdef_safe->door = door;
+                            PSET(pdef_safe->item, safe_item);
+                            PSET(pdef_safe->safe, safe);
+                            PSET(pdef_safe->door, door);
                             initSetLevelLoadPropSafeItem((struct ObjectRecord *) pdef_safe);
                             safe_item->flags2 |= PROPFLAG2_LINKEDTOSAFE;
                             door->flags2 |= PROPFLAG2_LINKEDTOSAFE;
@@ -2797,10 +2813,10 @@ void proplvreset2(enum LEVELID stageId)
                         door = (struct DoorRecord *) setupCommandGetObject(stageId, pdefIndex + index1);
                         lock = setupCommandGetObject(stageId, pdefIndex + index2);
 
-                        if ((((door && door->prop) && lock) && lock->prop) && (door->type == PROPDEF_DOOR))
+                        if ((((door && PGET(door->prop)) && lock) && PGET(lock->prop)) && (door->type == PROPDEF_DOOR))
                         {
-                            pdef_lock_door->door = door;
-                            pdef_lock_door->lock = lock;
+                            PSET(pdef_lock_door->door, door);
+                            PSET(pdef_lock_door->lock, lock);
                             initSetLevelLoadPropLockDoor(pdef_lock_door);
                             door->runtime_bitflags |= RUNTIMEBITFLAG_PADLOCKEDDOOR;
                         }

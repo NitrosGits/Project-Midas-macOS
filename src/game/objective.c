@@ -45,13 +45,13 @@ void something_with_stage_objectives(void)
 
 void set_parent_cur_tag_entry(struct TagObjectRecord *arg0)
 {
-    arg0->NextTag = ptr_last_tag_entry_type16;
+    PSET(arg0->NextTag, ptr_last_tag_entry_type16);
     ptr_last_tag_entry_type16 = arg0;
 }
 
 void setup_briefing_text_entry_parent(struct setup_objective_text *arg0)
 {
-    arg0->next = ptr_last_briefing_setup_entry_type23;
+    PSET(arg0->next, ptr_last_briefing_setup_entry_type23);
     ptr_last_briefing_setup_entry_type23 = arg0;
 }
 
@@ -71,20 +71,20 @@ void add_ptr_to_objective(struct objective_entry* objective)
 
 void set_parent_cur_obj_enter_room(struct criteria_roomentered *arg0)
 {
-    arg0->next = ptr_last_enter_room_subobject_entry_type20;
+    PSET(arg0->next, ptr_last_enter_room_subobject_entry_type20);
     ptr_last_enter_room_subobject_entry_type20 = arg0;
 }
 
 void set_parent_cur_obj_deposited_in_room(struct criteria_deposit *arg0)
 {
-    arg0->next = ptr_last_deposit_in_room_subobject_entry_type21;
+    PSET(arg0->next, ptr_last_deposit_in_room_subobject_entry_type21);
     ptr_last_deposit_in_room_subobject_entry_type21 = arg0;
 }
 
 
 void set_parent_cur_obj_photograph(struct criteria_picture *arg0)
 {
-    arg0->next = ptr_last_photo_obj_in_room_subobject_entry_type1E;
+    PSET(arg0->next, ptr_last_photo_obj_in_room_subobject_entry_type1E);
     ptr_last_photo_obj_in_room_subobject_entry_type1E = arg0;
 }
 

@@ -81,7 +81,7 @@ void       audioPlayFromProp2(s32 slot)
         }
         else
         {
-            if (sfx->Obj && sfx->Obj->prop)
+            if (sfx->Obj && PGET(sfx->Obj->prop))
             {
                 sfx->Volume = sub_GAME_7F0539E4(&sfx->Obj->runtime_pos);
 #ifndef TARGET_N64
@@ -727,9 +727,9 @@ s32 chraiGetAIListID(AIRecord *AIList, bool *isGlobalAIList)
 
     if (g_CurrentSetup.ailists)
     {
-        for (i = 0; g_CurrentSetup.ailists[i].ailist; i++)
+        for (i = 0; PGET(g_CurrentSetup.ailists[i].ailist); i++)
         {
-            if (g_CurrentSetup.ailists[i].ailist == AIList)
+            if (PGET(g_CurrentSetup.ailists[i].ailist) == AIList)
             {
                 *isGlobalAIList = FALSE;
                 return g_CurrentSetup.ailists[i].ID;
@@ -737,9 +737,9 @@ s32 chraiGetAIListID(AIRecord *AIList, bool *isGlobalAIList)
         }
     }
 
-    for (i = 0; g_GlobalAILists[i].ailist; i++)
+    for (i = 0; PGET(g_GlobalAILists[i].ailist); i++)
     {
-        if (g_GlobalAILists[i].ailist == AIList)
+        if (PGET(g_GlobalAILists[i].ailist) == AIList)
         {
             *isGlobalAIList = TRUE;
             return g_GlobalAILists[i].ID;
@@ -801,22 +801,22 @@ AIRecord *ailistFindById(s32 ID)
     {
         if (g_CurrentSetup.ailists)
         {
-            for (i = 0; g_CurrentSetup.ailists[i].ailist; i++)
+            for (i = 0; PGET(g_CurrentSetup.ailists[i].ailist); i++)
             {
                 if (g_CurrentSetup.ailists[i].ID == ID)
                 {
-                    return g_CurrentSetup.ailists[i].ailist;
+                    return PGET(g_CurrentSetup.ailists[i].ailist);
                 }
             }
         }
     }
     else
     {
-        for (i = 0; g_GlobalAILists[i].ailist; i++)
+        for (i = 0; PGET(g_GlobalAILists[i].ailist); i++)
         {
             if (g_GlobalAILists[i].ID == ID)
             {
-                return g_GlobalAILists[i].ailist;
+                return PGET(g_GlobalAILists[i].ailist);
             }
         }
     }
@@ -827,7 +827,7 @@ PathRecord *pathFindById(s32 ID)
 {
     int i;
 
-    for (i = 0; g_CurrentSetup.patrolpaths[i].waypoints; i++)
+    for (i = 0; PGET(g_CurrentSetup.patrolpaths[i].waypoints); i++)
     {
         if (ID == g_CurrentSetup.patrolpaths[i].ID)
         {
@@ -913,12 +913,12 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
     else if (VehichleEntityp)
     {
         Offset  = VehichleEntityp->aioffset;
-        AiListp = VehichleEntityp->ailist;
+        AiListp = PGET(VehichleEntityp->ailist);
     }
     else if (AircraftEntityp)
     {
         Offset  = AircraftEntityp->aioffset;
-        AiListp = AircraftEntityp->ailist;
+        AiListp = PGET(AircraftEntityp->ailist);
     }
 
     if (AiListp) // continue if Has ailist (check once)
@@ -975,12 +975,12 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     }
                     else if (VehichleEntityp)
                     {
-                        VehichleEntityp->ailist   = AiListp;
+                        PSET(VehichleEntityp->ailist, AiListp);
                         VehichleEntityp->aioffset = Offset;
                     }
                     else if (AircraftEntityp)
                     {
-                        AircraftEntityp->ailist   = AiListp;
+                        PSET(AircraftEntityp->ailist, AiListp);
                         AircraftEntityp->aioffset = Offset;
                     }
                     return;
@@ -1134,10 +1134,10 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     else if (AircraftEntityp)
                     {
                         zero = 0; // debug value maybe?
-                        modelSetAnimation(AircraftEntityp->model, animation_table_ptrs2[anim_id], zero, startframe, 0.5f, (s32)ai->INTERPOL_TIME60);
+                        modelSetAnimation(PGET(AircraftEntityp->model), animation_table_ptrs2[anim_id], zero, startframe, 0.5f, (s32)ai->INTERPOL_TIME60);
                         if (endframe >= 0)
                         {
-                            modelSetAnimEndFrame(AircraftEntityp->model, endframe);
+                            modelSetAnimEndFrame(PGET(AircraftEntityp->model), endframe);
                         }
                     }
                     Offset += sizeof(AiPlayAnimationRecord);
@@ -2166,7 +2166,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiIFBondCollectedObjectRecord *ai  = AiListp + Offset;
                     ObjectRecord                  *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && bondinvHasPropInInv(obj->prop))
+                    if (obj && PGET(obj->prop) && bondinvHasPropInInv(PGET(obj->prop)))
                     {
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
                     }
@@ -2194,9 +2194,9 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiIFItemIsAttachedToObjectRecord *ai   = AiListp + Offset;
                     ObjectRecord                     *obj  = objFindByTagId(ai->OBJECT_TAG);
                     bool                              pass = FALSE;
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
-                        PropRecord *prop = obj->prop->child;
+                        PropRecord *prop = PGET(obj->prop)->child;
                         while (prop)
                         {
                             if (prop->type == PROP_TYPE_WEAPON)
@@ -2238,7 +2238,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiIFObjectExistsRecord *ai  = AiListp + Offset;
                     ObjectRecord           *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
                     }
@@ -2252,7 +2252,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiIFObjectNotDestroyedRecord *ai  = AiListp + Offset;
                     ObjectRecord                 *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && objIsHealthy(obj))
+                    if (obj && PGET(obj->prop) && objIsHealthy(obj))
                     {
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
                     }
@@ -2266,7 +2266,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiIFObjectWasActivatedRecord *ai  = AiListp + Offset;
                     ObjectRecord                 *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && (obj->runtime_bitflags & RUNTIMEBITFLAG_ACTIVATED))
+                    if (obj && PGET(obj->prop) && (obj->runtime_bitflags & RUNTIMEBITFLAG_ACTIVATED))
                     {
                         obj->runtime_bitflags &= ~RUNTIMEBITFLAG_ACTIVATED;
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
@@ -2281,7 +2281,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiIFBondUsedGadgetOnObjectRecord *ai  = AiListp + Offset;
                     ObjectRecord                     *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && (obj->state & PROPSTATE_ACTIVATED))
+                    if (obj && PGET(obj->prop) && (obj->state & PROPSTATE_ACTIVATED))
                     {
                         obj->state &= ~PROPSTATE_ACTIVATED;
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
@@ -2296,15 +2296,15 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiActivateObjectRecord *ai  = AiListp + Offset;
                     ObjectRecord           *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
-                        if (obj->prop->type == PROP_TYPE_DOOR)
+                        if (PGET(obj->prop)->type == PROP_TYPE_DOOR)
                         {
-                            doorActivateWrapper(obj->prop);
+                            doorActivateWrapper(PGET(obj->prop));
                         }
-                        else if (obj->prop->type == PROP_TYPE_OBJ || obj->prop->type == PROP_TYPE_WEAPON)
+                        else if (PGET(obj->prop)->type == PROP_TYPE_OBJ || PGET(obj->prop)->type == PROP_TYPE_WEAPON)
                         {
-                            propobjInteract(obj->prop);
+                            propobjInteract(PGET(obj->prop));
                         }
                     }
                     Offset += sizeof(AiActivateObjectRecord);
@@ -2317,7 +2317,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
     #ifdef ENABLE_LOG
                     osSyncPrintf("ai_destroyobj 1 : \n");
     #endif
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         if (!objGetDestroyedLevel(obj))
                         {
@@ -2340,10 +2340,10 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiDropObjectRecord *ai  = AiListp + Offset;
                     ObjectRecord       *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && obj->prop->parent && obj->prop->parent->type == PROP_TYPE_CHR)
+                    if (obj && PGET(obj->prop) && PGET(obj->prop)->parent && PGET(obj->prop)->parent->type == PROP_TYPE_CHR)
                     {
-                        ChrRecord *chr = obj->prop->parent->chr;
-                        propobjSetDropped(obj->prop, 2);
+                        ChrRecord *chr = PGET(obj->prop)->parent->chr;
+                        propobjSetDropped(PGET(obj->prop), 2);
                         chr->hidden |= CHRHIDDEN_DROP_HELD_ITEMS;
                     }
                     Offset += sizeof(AiDropObjectRecord);
@@ -2384,10 +2384,10 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiBondCollectObjectRecord *ai  = AiListp + Offset;
                     ObjectRecord              *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
-                        TICKOP op = propPickupByPlayer(obj->prop, FALSE);
-                        propExecuteTickOperation(obj->prop, op);
+                        TICKOP op = propPickupByPlayer(PGET(obj->prop), FALSE);
+                        propExecuteTickOperation(PGET(obj->prop), op);
                     }
                     Offset += sizeof(AiBondCollectObjectRecord);
                     break;
@@ -2397,21 +2397,21 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiChrEquipObjectRecord *ai  = AiListp + Offset;
                     ObjectRecord           *obj = objFindByTagId(ai->OBJECT_TAG);
                     ChrRecord              *chr = chrFindById(ChrEntityp, ai->CHR_NUM);
-                    if (obj && obj->prop && chr)
+                    if (obj && PGET(obj->prop) && chr)
                     {
-                        if (obj->prop->parent)
+                        if (PGET(obj->prop)->parent)
                         {
-                            objDetach(obj->prop);
+                            objDetach(PGET(obj->prop));
                         }
                         else
                         {
-                            chrpropDeregisterRooms(obj->prop);
-                            chrpropDelist(obj->prop);
-                            chrpropDisable(obj->prop);
+                            chrpropDeregisterRooms(PGET(obj->prop));
+                            chrpropDelist(PGET(obj->prop));
+                            chrpropDisable(PGET(obj->prop));
                         }
                         if (obj->type != PROPDEF_COLLECTABLE || !chrEquipWeapon(obj, chr))
                         {
-                            chrpropReparent(obj->prop, chr->prop);
+                            chrpropReparent(PGET(obj->prop), chr->prop);
                         }
                     }
                     Offset += sizeof(AiChrEquipObjectRecord);
@@ -2425,7 +2425,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     u16                 padnum = ntohs(ai->PAD);
                     Mtxf                matrix;
 
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         if (isNotBoundPad(padnum))
                         {
@@ -2440,11 +2440,11 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
     #endif
                         matrix_4x4_set_basis_and_position_target(&matrix, 0, 0, 0, -pad->look.x, -pad->look.y, -pad->look.z, pad->up.x, pad->up.y, pad->up.z);
 
-                        if (obj->model)
+                        if (PGET(obj->model))
                         {
-                            matrix_scalar_multiply(obj->model->scale, &matrix);
+                            matrix_scalar_multiply(PGET(obj->model)->scale, &matrix);
                         }
-                        sub_GAME_7F04088C(obj, &pad->pos, &matrix, pad->stan, &pad->pos);
+                        sub_GAME_7F04088C(obj, &pad->pos, &matrix, PGET(pad->stan), &pad->pos);
                         setupUpdateObjectRoomPosition(obj);
                     }
                     Offset += sizeof(AiMoveObjectRecord);
@@ -2454,7 +2454,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiDoorOpenRecord *ai  = AiListp + Offset;
                     DoorRecord       *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && obj->prop->type == PROP_TYPE_DOOR)
+                    if (obj && PGET(obj->prop) && PGET(obj->prop)->type == PROP_TYPE_DOOR)
                     {
                         // DoorRecord *door = (DoorRecord *)obj;
                         doorActivate(obj, DOORSTATE_OPENING);
@@ -2466,7 +2466,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiDoorCloseRecord *ai  = AiListp + Offset;
                     DoorRecord        *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && obj->prop->type == PROP_TYPE_DOOR)
+                    if (obj && PGET(obj->prop) && PGET(obj->prop)->type == PROP_TYPE_DOOR)
                     {
                         // DoorRecord *door = (DoorRecord *)obj;
                         doorActivate(obj, DOORSTATE_CLOSING);
@@ -2479,7 +2479,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiIFDoorStateEqualRecord *ai   = AiListp + Offset;
                     ObjectRecord             *obj  = objFindByTagId(ai->OBJECT_TAG);
                     bool                      pass = FALSE;
-                    if (obj && obj->prop && obj->type == PROPDEF_DOOR)
+                    if (obj && PGET(obj->prop) && obj->type == PROPDEF_DOOR)
                     {
                         DoorRecord *door = (DoorRecord *)obj;
                         if (door->openstate == DOORSTATE_STATIONARY)
@@ -2516,7 +2516,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiIFDoorHasBeenOpenedBeforeRecord *ai  = AiListp + Offset;
                     ObjectRecord                      *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && obj->type == PROPDEF_DOOR && (obj->runtime_bitflags & RUNTIMEBITFLAG_BEENOPENED))
+                    if (obj && PGET(obj->prop) && obj->type == PROPDEF_DOOR && (obj->runtime_bitflags & RUNTIMEBITFLAG_BEENOPENED))
                     {
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
                     }
@@ -2530,7 +2530,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiDoorSetLockRecord *ai  = AiListp + Offset;
                     ObjectRecord        *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && obj->prop->type == PROP_TYPE_DOOR)
+                    if (obj && PGET(obj->prop) && PGET(obj->prop)->type == PROP_TYPE_DOOR)
                     {
                         DoorRecord *door = (DoorRecord *)obj;
                         u8          bits = ai->LOCK_FLAG;
@@ -2543,7 +2543,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiDoorUnsetLockRecord *ai  = AiListp + Offset;
                     ObjectRecord          *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && obj->prop->type == PROP_TYPE_DOOR)
+                    if (obj && PGET(obj->prop) && PGET(obj->prop)->type == PROP_TYPE_DOOR)
                     {
                         DoorRecord *door = (DoorRecord *)obj;
                         u8          bits = ai->LOCK_FLAG;
@@ -2557,7 +2557,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiIFDoorLockEqualRecord *ai   = AiListp + Offset;
                     ObjectRecord            *obj  = objFindByTagId(ai->OBJECT_TAG);
                     bool                     pass = FALSE;
-                    if (obj && obj->prop && obj->prop->type == PROP_TYPE_DOOR)
+                    if (obj && PGET(obj->prop) && PGET(obj->prop)->type == PROP_TYPE_DOOR)
                     {
                         DoorRecord *door = (DoorRecord *)obj;
                         s32         bits = ai->LOCK_FLAG;
@@ -3229,7 +3229,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiSetObjectFlagsRecord *ai    = AiListp + Offset;
                     s32                     flags = ntohl(ai->BITFIELD);
                     ObjectRecord           *obj   = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         obj->flags |= flags;
                     }
@@ -3241,7 +3241,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiUnsetObjectFlagsRecord *ai    = AiListp + Offset;
                     s32                       flags = ntohl(ai->BITFIELD);
                     ObjectRecord             *obj   = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         obj->flags &= ~flags;
                     }
@@ -3253,7 +3253,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiIFObjectFlagsHasRecord *ai    = AiListp + Offset;
                     s32                       flags = ntohl(ai->BITS);
                     ObjectRecord             *obj   = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && (obj->flags & flags) == flags)
+                    if (obj && PGET(obj->prop) && (obj->flags & flags) == flags)
                     {
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
                     }
@@ -3268,7 +3268,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiSetObjectFlags2Record *ai    = AiListp + Offset;
                     s32                      flags = ntohl(ai->BITS);
                     ObjectRecord            *obj   = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         obj->flags2 |= flags;
                     }
@@ -3280,7 +3280,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiUnsetObjectFlags2Record *ai    = AiListp + Offset;
                     s32                        flags = ntohl(ai->BITS);
                     ObjectRecord              *obj   = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         obj->flags2 &= ~flags;
                     }
@@ -3292,7 +3292,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiIFObjectFlags2HasRecord *ai    = AiListp + Offset;
                     s32                        flags = ntohl(ai->BITFIELD);
                     ObjectRecord              *obj   = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop && ((obj->flags2 & flags) == flags))
+                    if (obj && PGET(obj->prop) && ((obj->flags2 & flags) == flags))
                     {
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
                     }
@@ -3709,7 +3709,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                                 }
                             }
 
-                            if (srcweaponL && srcweaponR && cloneweaponL && cloneweaponR && srcweaponR == srcweaponL->dualweapon && srcweaponL == srcweaponR->dualweapon)
+                            if (srcweaponL && srcweaponR && cloneweaponL && cloneweaponR && srcweaponR == PGET(srcweaponL->dualweapon) && srcweaponL == PGET(srcweaponR->dualweapon))
                             {
                                 propweaponSetDual(cloneweaponL, cloneweaponR);
                             }
@@ -3915,7 +3915,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     PathRecord               *path = pathFindById(ai->PATH_NUM);
                     if (VehichleEntityp)
                     {
-                        VehichleEntityp->path     = path;
+                        PSET(VehichleEntityp->path, path);
                         VehichleEntityp->nextstep = 0;
                     }
                     Offset += sizeof(AiVehicleStartPathRecord);
@@ -3977,12 +3977,12 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiTvChangeScreenBankRecord *ai  = AiListp + Offset;
                     ObjectRecord               *obj = objFindByTagId(ai->OBJECT_TAG);
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
                         if (obj->type == PROPDEF_MONITOR)
                         {
                             MonitorObjRecord *sm = (MonitorObjRecord *)obj;
-                            monitorSetImageByNum(&sm->Monitor.cmdlist, ai->SCREEN_BANK);
+                            monitorSetImageByNum(&sm->Monitor, ai->SCREEN_BANK); /* cmdlist is at +0 */
                         }
                         else if (obj->type == PROPDEF_MULTI_MONITOR)
                         {
@@ -3990,7 +3990,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                             if (slot < 4)
                             {
                                 MultiMonitorObjRecord *mm = (MultiMonitorObjRecord *)obj; // need new size here 0x74 (116) + 0x80 (so monitor is obj + 74)
-                                monitorSetImageByNum(&mm->Monitor[slot].cmdlist, ai->SCREEN_BANK);
+                                monitorSetImageByNum(&mm->Monitor[slot], ai->SCREEN_BANK); /* cmdlist is at +0 */
                             }
                         }
                     }
@@ -4154,7 +4154,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                         pos.y           = pad->pos.y;
                         pos.z           = pad->pos.z;
                         // pos  = pad->pos; <-uses lw instead of lwc1
-                        stan            = pad->stan;
+                        stan            = PGET(pad->stan);
                         sub_GAME_7F03D058(chr->prop, FALSE);
 
                         if (chrAdjustPosForSpawn(&pos, &stan, FacingDirection, TRUE))
@@ -4254,7 +4254,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiDoorOpenInstantRecord *ai   = AiListp + Offset;
                     DoorRecord              *door = objFindByTagId(ai->OBJECT_TAG);
-                    if (door && door->prop)
+                    if (door && PGET(door->prop))
                     {
                         // DoorRecord *door   = (DoorRecord *)obj;
                         door->speed        = 0;
@@ -4351,7 +4351,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                         pad = (PadRecord *)&g_CurrentSetup.boundpads[getBoundPadNum(padnum)];
                     }
 
-                    if (pad->stan && obj && obj->prop && (pad->stan->room == obj->prop->stan->room))
+                    if (PGET(pad->stan) && obj && PGET(obj->prop) && (PGET(pad->stan)->room == PGET(obj->prop)->stan->room))
                     {
                         Offset = chraiGoToLabel(AiListp, Offset, ai->GOTOLABEL);
                     }
@@ -4567,21 +4567,21 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     AiObjectRocketLaunchRecord *ai  = AiListp + Offset;
                     ObjectRecord               *obj = objFindByTagId(ai->OBJECT_TAG);
 
-                    if (obj && obj->prop)
+                    if (obj && PGET(obj->prop))
                     {
-                        sub_GAME_7F03FDA8(obj->prop);
+                        sub_GAME_7F03FDA8(PGET(obj->prop));
 
                         if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
                         {
-                            obj->projectile->flags |= 0x601;
-                            projectileSetSticky(obj->prop);
-                            matrix_4x4_set_identity(&obj->projectile->mtx);
-                            obj->projectile->speed.x = 0;
-                            obj->projectile->speed.y = 0.016666666f; // step height?
-                            obj->projectile->speed.z = 0;
-                            obj->projectile->unk10.x = 0;
-                            obj->projectile->unk10.y = 0.29166666f; // direction to move?
-                            obj->projectile->unk10.z = 0;
+                            PGET(obj->projectile)->flags |= 0x601;
+                            projectileSetSticky(PGET(obj->prop));
+                            matrix_4x4_set_identity(&PGET(obj->projectile)->mtx);
+                            PGET(obj->projectile)->speed.x = 0;
+                            PGET(obj->projectile)->speed.y = 0.016666666f; // step height?
+                            PGET(obj->projectile)->speed.z = 0;
+                            PGET(obj->projectile)->unk10.x = 0;
+                            PGET(obj->projectile)->unk10.y = 0.29166666f; // direction to move?
+                            PGET(obj->projectile)->unk10.z = 0;
                         }
                     }
                     Offset += sizeof(AiObjectRocketLaunchRecord);

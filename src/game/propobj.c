@@ -343,7 +343,7 @@ Projectile *projectileAllocate(void)
     if (bestindex >= 0)
     {
         // Reset and return it
-        objFreeEmbedmentOrProjectile(g_Projectiles[bestindex].obj->prop);
+        objFreeEmbedmentOrProjectile(PGET(g_Projectiles[bestindex].obj->prop));
         g_Projectiles[bestindex].obj->runtime_bitflags |= RUNTIMEBITFLAG_REMOVE;
 
         projectileReset(g_Projectiles + bestindex);
@@ -364,13 +364,13 @@ void sub_GAME_7F03FDA8(PropRecord *prop)
         #ifdef DEBUG
         assert(po->move.attach->fallinfo==NULL);
         #endif
-        po->embedment->projectile = projectileAllocate();
+        PGET(po->embedment)->projectile = projectileAllocate();
     }
     else if ((po->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) == 0)
     {
-        po->projectile = projectileAllocate();
+        PSET(po->projectile, projectileAllocate());
 
-        if (po->projectile)
+        if (PGET(po->projectile))
         {
             po->runtime_bitflags |= RUNTIMEBITFLAG_HASPROJECTILE;
         }
@@ -385,11 +385,11 @@ void projectileSetSticky(PropRecord *prop)
 
     if (obj->runtime_bitflags & RUNTIMEBITFLAG_EMBEDDED)
     {
-        projectile = obj->embedment->projectile;
+        projectile = PGET(obj->embedment)->projectile;
     }
     else if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
     {
-        projectile = obj->projectile;
+        projectile = PGET(obj->projectile);
     }
 
     if (projectile)
@@ -513,7 +513,7 @@ ModelRoData_BoundingBoxRecord *chrobjGetBboxFromObjFile(ModelFileHeader *obj)
 
 struct ModelRoData_BoundingBoxRecord* chrobjGetBboxFromObjectRecord(ObjectRecord *arg0)
 {
-    return (struct ModelRoData_BoundingBoxRecord *)chrobjGetBboxFromObjFile(arg0->model->obj);
+    return (struct ModelRoData_BoundingBoxRecord *)chrobjGetBboxFromObjFile(PGET(arg0->model)->obj);
 }
 
 
@@ -670,19 +670,19 @@ void chrobjCollisionRelated(ObjectRecord *obj)
     struct ModelRoData_BoundingBoxRecord *bbox;
     Mtxf sp24;
 
-    if (obj->ptr_allocated_collisiondata_block != NULL)
+    if (PGET(obj->ptr_allocated_collisiondata_block) != NULL)
     {
         bbox = chrobjGetBboxFromObjectRecord(obj);
         matrix_4x4_copy(&obj->mtx, &sp24);
         matrix_4x4_set_position(&obj->runtime_pos, &sp24);
-        sub_GAME_7F03F540(bbox, &sp24, &obj->ptr_allocated_collisiondata_block->polygon, obj->ptr_allocated_collisiondata_block);
+        sub_GAME_7F03F540(bbox, &sp24, &PGET(obj->ptr_allocated_collisiondata_block)->polygon, PGET(obj->ptr_allocated_collisiondata_block));
 
-        obj->ptr_allocated_collisiondata_block->bottom = obj->runtime_pos.f[1] + chrpropSumMatrixPosY(bbox, &sp24);
-        obj->ptr_allocated_collisiondata_block->top = obj->runtime_pos.f[1] + chrpropSumMatrixNegY(bbox, &sp24);
+        PGET(obj->ptr_allocated_collisiondata_block)->bottom = obj->runtime_pos.f[1] + chrpropSumMatrixPosY(bbox, &sp24);
+        PGET(obj->ptr_allocated_collisiondata_block)->top = obj->runtime_pos.f[1] + chrpropSumMatrixNegY(bbox, &sp24);
 
         if (obj->type == PROPDEF_AIRCRAFT)
         {
-            obj->ptr_allocated_collisiondata_block->bottom -= 200.0f;
+            PGET(obj->ptr_allocated_collisiondata_block)->bottom -= 200.0f;
         }
     }
 }
@@ -709,12 +709,12 @@ PropRecord* objInit(ObjectRecord* obj, ModelFileHeader* model_header, PropRecord
 
     if ((prop != NULL) && (model != NULL))
     {
-        obj->model = model;
-        obj->ptr_allocated_collisiondata_block = NULL;
+        PSET(obj->model, model);
+        PSET(obj->ptr_allocated_collisiondata_block, NULL);
 
         if (obj->flags & 0x100)
         {
-            obj->ptr_allocated_collisiondata_block = mempAllocBytesInBank(0x50U, MEMPOOL_STAGE);
+            PSET(obj->ptr_allocated_collisiondata_block, mempAllocBytesInBank(0x50U, MEMPOOL_STAGE));
             obj->state = (u8) (obj->state | PROPSTATE_EXT_COLISION_BLOCK);
         }
         else
@@ -722,8 +722,8 @@ PropRecord* objInit(ObjectRecord* obj, ModelFileHeader* model_header, PropRecord
             obj->state = (u8) (obj->state & 0xFFF7);
         }
 
-        obj->prop = prop;
-        obj->projectile = NULL;
+        PSET(obj->prop, prop);
+        PSET(obj->projectile, NULL);
 
         obj->shadecol.r = 0;
         obj->shadecol.g = 0;
@@ -736,9 +736,9 @@ PropRecord* objInit(ObjectRecord* obj, ModelFileHeader* model_header, PropRecord
         obj->nextcol.a = 0;
 
         obj->maxdamage = 0.0f;
-        *((s16*)&obj->model->unk00) = -1;
-        obj->model->chr = NULL;
-        modelSetScale(obj->model, PitemZ_entries[obj->obj].scale);
+        *((s16*)&PGET(obj->model)->unk00) = -1;
+        PGET(obj->model)->chr = NULL;
+        modelSetScale(PGET(obj->model), PitemZ_entries[obj->obj].scale);
         prop->type = 1;
         prop->obj = obj;
         prop->pos.x = 0.0f;
@@ -789,7 +789,7 @@ PropRecord* objInitWithAutoModel(ObjectRecord* obj)
 // Changes the color shade on the object, e.g. when walking in a darker area or under a colored light.
 void objChangeShading(ObjectRecord* obj, coord3d* pos, Mtxf* matrix, StandTile* stan) {
 
-    PropRecord *prop = obj->prop;
+    PropRecord *prop = PGET(obj->prop);
 
     matrix_4x4_copy(matrix, &obj->mtx);
 
@@ -799,7 +799,7 @@ void objChangeShading(ObjectRecord* obj, coord3d* pos, Mtxf* matrix, StandTile* 
 
     prop->stan = stan;
 
-    sub_GAME_7F0402B4(obj->prop, &obj->nextcol);
+    sub_GAME_7F0402B4(PGET(obj->prop), &obj->nextcol);
 
     obj->shadecol.r = obj->nextcol.r;
     obj->shadecol.g = obj->nextcol.g;
@@ -812,7 +812,7 @@ void objChangeShading(ObjectRecord* obj, coord3d* pos, Mtxf* matrix, StandTile* 
 void sub_GAME_7F0407F4(ObjectRecord* obj, coord3d* pos, Mtxf* matrix, StandTile* stan)
 {
     u32 a; // Adds 4 bytes to the stack so it matches. Could be anything 4 bytes long.
-    struct ModelRoData_BoundingBoxRecord *modelunk = chrobjGetBboxFromObjFile(obj->model->obj);
+    struct ModelRoData_BoundingBoxRecord *modelunk = chrobjGetBboxFromObjFile(PGET(obj->model)->obj);
 
     pos->y = stanGetPositionYValue(stan, pos->x, pos->z) + 4.0f;
     pos->y = pos->y - chrpropSumMatrixPosY(modelunk, matrix);
@@ -833,7 +833,7 @@ void sub_GAME_7F04088C(ObjectRecord *baseobj, struct coord3d *pos, Mtxf *matrix,
     StandTile *mStan;
     Mtxf mtxcopy;
 
-    modelBoundingBox = chrobjGetBboxFromObjFile(baseobj->model->obj);
+    modelBoundingBox = chrobjGetBboxFromObjFile(PGET(baseobj->model)->obj);
     xmax = chrpropBBOXGetYmin(modelBoundingBox);
     ymin = chrpropBBOXGetYmax(modelBoundingBox);
     mStan = stan;
@@ -871,7 +871,7 @@ void sub_GAME_7F04088C(ObjectRecord *baseobj, struct coord3d *pos, Mtxf *matrix,
 
         if (roomObj)
         {
-            PropRecord *roomObjProp = roomObj->prop;
+            PropRecord *roomObjProp = PGET(roomObj->prop);
             chraiGetCollisionBounds(roomObjProp, &byrefA, &byrefB, &byrefC, &byrefD);
 
             if ((distfromTileCenter < byrefC) && (byrefD < ((mtxcopy.m[1][1] * (ymin - xmax)) + distfromTileCenter + 4.0f)))
@@ -925,7 +925,7 @@ void sub_GAME_7F040BA0(ObjectRecord *obj, coord3d *pos, Mtxf *arg2, StandTile *s
     Mtxf matrix;
     Mtxf sp2C;
 
-    spBC = chrpropBBOXGetZmin(chrobjGetBboxFromObjFile(obj->model->obj));
+    spBC = chrpropBBOXGetZmin(chrobjGetBboxFromObjFile(PGET(obj->model)->obj));
     stan = stan2;
     sp6C_ptr = &matrix;
 
@@ -962,11 +962,11 @@ void objFreeEmbedmentOrProjectile(PropRecord *prop)
     ObjectRecord *obj = prop->obj;
     if (obj->runtime_bitflags & RUNTIMEBITFLAG_EMBEDDED)
     {
-        if (obj->embedment)
+        if (PGET(obj->embedment))
         {
-            if (obj->embedment->projectile)
+            if (PGET(obj->embedment)->projectile)
             {
-                projectileFree(obj->embedment->projectile);
+                projectileFree(PGET(obj->embedment)->projectile);
             }
             #ifdef DEBUG
             else
@@ -979,15 +979,15 @@ void objFreeEmbedmentOrProjectile(PropRecord *prop)
             }
             #endif
 
-            embedmentFree(obj->embedment);
+            embedmentFree(PGET(obj->embedment));
         }
-        obj->embedment = NULL;
+        PSET(obj->embedment, NULL);
         obj->runtime_bitflags &= ~RUNTIMEBITFLAG_EMBEDDED;
     }
     else if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
     {
-        projectileFree(obj->projectile);
-        obj->projectile = NULL;
+        projectileFree(PGET(obj->projectile));
+        PSET(obj->projectile, NULL);
         obj->runtime_bitflags &= ~RUNTIMEBITFLAG_HASPROJECTILE;
     }
 }
@@ -1000,37 +1000,37 @@ void objFree(ObjectRecord* obj, s32 freeprop, s32 canregen)
     if (obj->type == PROPDEF_AUTOGUN)
     {
         AutogunRecord* record = (AutogunRecord*)obj;
-        if ((record->unkC4 != NULL) && (sndGetPlayingState(record->unkC4) != 0))
+        if ((PGET(record->unkC4) != NULL) && (sndGetPlayingState(PGET(record->unkC4)) != 0))
         {
-            sndDeactivate(record->unkC4);
+            sndDeactivate(PGET(record->unkC4));
         }
 
-        if ((record->unkC8 != NULL) && (sndGetPlayingState(record->unkC8) != 0))
+        if ((PGET(record->unkC8) != NULL) && (sndGetPlayingState(PGET(record->unkC8)) != 0))
         {
-            sndDeactivate(record->unkC8);
+            sndDeactivate(PGET(record->unkC8));
         }
     }
     else if (obj->type == PROPDEF_COLLECTABLE)
     {
         WeaponObjRecord* record = (WeaponObjRecord*) obj;
-        WeaponObjRecord* record2 = record->dualweapon;
+        WeaponObjRecord* record2 = PGET(record->dualweapon);
         if (record2 != NULL)
         {
-            record2->dualweapon = NULL;
-            record->dualweapon = NULL;
+            PSET(record2->dualweapon, NULL);
+            PSET(record->dualweapon, NULL);
         }
     }
     else if (obj->type == PROPDEF_DOOR)
     {
         DoorRecord* record = (DoorRecord*) obj;
-        if ((record->openSoundState != NULL) && (sndGetPlayingState(record->openSoundState) != 0))
+        if ((PGET(record->openSoundState) != NULL) && (sndGetPlayingState(PGET(record->openSoundState)) != 0))
         {
-            sndDeactivate(record->openSoundState);
+            sndDeactivate(PGET(record->openSoundState));
         }
 
-        if ((record->closeSoundState != NULL) && (sndGetPlayingState(record->closeSoundState) != 0))
+        if ((PGET(record->closeSoundState) != NULL) && (sndGetPlayingState(PGET(record->closeSoundState)) != 0))
         {
-            sndDeactivate(record->closeSoundState);
+            sndDeactivate(PGET(record->closeSoundState));
         }
     }
     else if (obj->type == PROPDEF_TINTED_GLASS)
@@ -1044,37 +1044,37 @@ void objFree(ObjectRecord* obj, s32 freeprop, s32 canregen)
     else if (obj->type == PROPDEF_AIRCRAFT)
     {
         AircraftRecord* record = (AircraftRecord*) obj;
-        if ((record->Sound != NULL) && (sndGetPlayingState(record->Sound) != 0))
+        if ((PGET(record->Sound) != NULL) && (sndGetPlayingState(PGET(record->Sound)) != 0))
         {
-            sndDeactivate(record->Sound);
+            sndDeactivate(PGET(record->Sound));
         }
     }
     else if (obj->type == PROPDEF_VEHICHLE)
     {
         VehichleRecord* record = (VehichleRecord*) obj;
-        if ((record->Sound != NULL) && (sndGetPlayingState(record->Sound) != 0))
+        if ((PGET(record->Sound) != NULL) && (sndGetPlayingState(PGET(record->Sound)) != 0))
         {
-            sndDeactivate(record->Sound);
+            sndDeactivate(PGET(record->Sound));
         }
     }
 
-    if (obj->prop != NULL)
+    if (PGET(obj->prop) != NULL)
     {
-        explosionClearBulletImpactRoomByFlag(obj->prop, FALSE);
-        explosionClearBulletImpactRoomByFlag(obj->prop, TRUE);
+        explosionClearBulletImpactRoomByFlag(PGET(obj->prop), FALSE);
+        explosionClearBulletImpactRoomByFlag(PGET(obj->prop), TRUE);
 
         if (canregen == 0)
         {
-            objFreeEmbedmentOrProjectile(obj->prop);
+            objFreeEmbedmentOrProjectile(PGET(obj->prop));
 
-            if (obj->prop->parent != NULL)
+            if (PGET(obj->prop)->parent != NULL)
             {
-                objDetach(obj->prop);
+                objDetach(PGET(obj->prop));
             }
 
-            chrpropDeregisterRooms(obj->prop);
+            chrpropDeregisterRooms(PGET(obj->prop));
 
-            child = obj->prop->child;
+            child = PGET(obj->prop)->child;
             while (child)
             {
                 PropRecord* next = child->prev;
@@ -1082,28 +1082,28 @@ void objFree(ObjectRecord* obj, s32 freeprop, s32 canregen)
                 child = next;
             }
 
-            if (obj->prop->type != PROP_TYPE_DOOR)
+            if (PGET(obj->prop)->type != PROP_TYPE_DOOR)
             {
-                sub_GAME_7F050DE8(obj->model);
+                sub_GAME_7F050DE8(PGET(obj->model));
             }
 
             if (obj->type == PROPDEF_AIRCRAFT)
             {
-                clear_aircraft_model_obj(obj->model);
+                clear_aircraft_model_obj(PGET(obj->model));
             }
             else
             {
-                clear_model_obj(obj->model);
+                clear_model_obj(PGET(obj->model));
             }
 
             if (freeprop != 0)
             {
-                chrpropDelist(obj->prop);
-                chrpropDisable(obj->prop);
-                chrpropFree(obj->prop);
+                chrpropDelist(PGET(obj->prop));
+                chrpropDisable(PGET(obj->prop));
+                chrpropFree(PGET(obj->prop));
             }
 
-            obj->prop = NULL;
+            PSET(obj->prop, NULL);
         }
     }
 }
@@ -1165,7 +1165,7 @@ bool projectileLineTestModel(ObjectRecord *obj, coord3d *modelRayOrigin, coord3d
     ModelNode *hitnode;
     Model *model;
 
-    model = obj->model;
+    model = PGET(obj->model);
     found = 0;
     node = NULL;
     hitnode = NULL;
@@ -1357,8 +1357,8 @@ bool projectileTestObjectCollision(ObjectRecord *obj, coord3d *worldRayOrigin, c
     f32 dz;
     PropRecord *prop;
 
-    instsize = getinstsize(modelstack[0] = obj->model);
-    prop = obj->prop;
+    instsize = getinstsize(modelstack[0] = PGET(obj->model));
+    prop = PGET(obj->prop);
     value = 0.0f;
 
     if (prop->parent == NULL) {
@@ -1387,7 +1387,7 @@ bool projectileTestObjectCollision(ObjectRecord *obj, coord3d *worldRayOrigin, c
                 }
             // Cheaper bounds test for off screen props.
             } else {
-                prop = obj->prop;
+                prop = PGET(obj->prop);
                 instsize = getinstsize(modelstack[0]);
 
                 if (projectileTestPropBoundingSphere(worldRayOrigin, worldRayDir, &obj->runtime_pos, instsize)) {
@@ -1426,7 +1426,7 @@ bool projectileTestObjectCollisionRecursive(ObjectRecord *obj, coord3d *worldRay
     PropRecord *prop;
     PropRecord *child;
 
-    prop = obj->prop;
+    prop = PGET(obj->prop);
     found = FALSE;
 
     if (projectileTestObjectCollision(obj, worldRayOrigin, worldRayEnd, worldRayDir, maxDist, modelRayOrigin, modelRayDir, &hitPos, &hitNormal, &hitDist, &hitModel, &hitNode))
@@ -1443,7 +1443,7 @@ bool projectileTestObjectCollisionRecursive(ObjectRecord *obj, coord3d *worldRay
             bestHitNormal->y = hitNormal.y;
             bestHitNormal->z = hitNormal.z;
 
-            D_80030B0C = obj->prop;
+            D_80030B0C = PGET(obj->prop);
             bodypartshot = -1;
             g_CurrentProjectileModel = hitModel;
             dword_CODE_bss_80075B74 = hitNode;
@@ -1700,7 +1700,7 @@ s32 handles_projectile_motion(struct ObjectRecord *arg0, coord3d *arg1, coord3d 
     f32 factor;
     f32 scale;
 
-    prop = arg0->prop;
+    prop = PGET(arg0->prop);
     tile = prop->stan;
     result = 1;
     D_80030B0C = NULL;
@@ -1716,13 +1716,13 @@ s32 handles_projectile_motion(struct ObjectRecord *arg0, coord3d *arg1, coord3d 
     endpos.y = arg1->y;
     endpos.z = arg1->z;
 
-    if ((!(obj->runtime_bitflags & RUNTIMEBITFLAG_00000080)) || (!(obj->projectile->flags & PROPFLAG_ENABLED)))
+    if ((!(obj->runtime_bitflags & RUNTIMEBITFLAG_00000080)) || (!(PGET(obj->projectile)->flags & PROPFLAG_ENABLED)))
     {
         goto end;
     }
 
     roomCount = 0;
-    bgFindRoomsAlongSegment(&obj->runtime_pos, &endpos, obj->projectile->unkCC, roomSet, roomNums, &roomCount, 20);
+    bgFindRoomsAlongSegment(&obj->runtime_pos, &endpos, PGET(obj->projectile)->unkCC, roomSet, roomNums, &roomCount, 20);
 
     if (roomCount > 20)
     {
@@ -1828,14 +1828,14 @@ after_bg_loop:
 
             if (arg5 == 0)
             {
-                bgFindRoomsAlongSegment(&arg0->runtime_pos, hitpos, obj->projectile->unkCC, roomSet, roomNums, &roomCount, 20);
+                bgFindRoomsAlongSegment(&arg0->runtime_pos, hitpos, PGET(obj->projectile)->unkCC, roomSet, roomNums, &roomCount, 20);
             }
         }
         else if ((result == 1) || (arg5 == 0))
         {
             if (result != 1)
             {
-                bgFindRoomsAlongSegment(&arg0->runtime_pos, &endpos, obj->projectile->unkCC, roomSet, roomNums, &roomCount, 20);
+                bgFindRoomsAlongSegment(&arg0->runtime_pos, &endpos, PGET(obj->projectile)->unkCC, roomSet, roomNums, &roomCount, 20);
             }
 
             obj->runtime_pos.x = endpos.x;
@@ -1852,7 +1852,7 @@ after_bg_loop:
             endpos.x = obj->runtime_pos.x;
             endpos.z = arg0->runtime_pos.z;
 
-            bgFindRoomsAlongSegment(&arg0->runtime_pos, &endpos, obj->projectile->unkCC, roomSet, roomNums, &roomCount, 20);
+            bgFindRoomsAlongSegment(&arg0->runtime_pos, &endpos, PGET(obj->projectile)->unkCC, roomSet, roomNums, &roomCount, 20);
 
             dist = endpos.y;
         }
@@ -1877,7 +1877,7 @@ after_bg_loop:
 
     i = 0;
 
-    if (!(obj->projectile->flags & PROPFLAG_00000008))
+    if (!(PGET(obj->projectile)->flags & PROPFLAG_00000008))
     {
         tile = prop->stan;
 
@@ -1889,12 +1889,12 @@ after_bg_loop:
         }
         else
         {
-            obj->projectile->flags |= PROPFLAG_00000008;
+            PGET(obj->projectile)->flags |= PROPFLAG_00000008;
             prop->flags |= PROPFLAG_00000008;
         }
     }
 
-    if (obj->projectile->flags & PROPFLAG_00000008)
+    if (PGET(obj->projectile)->flags & PROPFLAG_00000008)
     {
         tile = stanFindTileBelowPos(&obj->runtime_pos, roomSet, NULL);
 
@@ -1903,7 +1903,7 @@ after_bg_loop:
             prop->stan = tile;
             prop->pos.x = obj->runtime_pos.x;
             prop->pos.z = obj->runtime_pos.z;
-            obj->projectile->flags &= ~PROPFLAG_00000008;
+            PGET(obj->projectile)->flags &= ~PROPFLAG_00000008;
             prop->flags &= ~PROPFLAG_00000008;
         }
     }
@@ -1912,13 +1912,13 @@ after_bg_loop:
     {
         do
         {
-            obj->projectile->unkCC[i] = roomSet[i];
+            PGET(obj->projectile)->unkCC[i] = roomSet[i];
             i++;
         }
         while ((roomSet[i] != 0xff) && (i != 7));
     }
 
-    arg0->projectile->unkCC[i] = 0xff;
+    PGET(arg0->projectile)->unkCC[i] = 0xff;
 
 end:
     return result;
@@ -1949,7 +1949,7 @@ s32 objTryMovePropWithCollision(ObjectRecord *obj, coord3d *targetpos, coord3d *
     f32 *new_var;
     s32 pad;
 
-    prop = obj->prop;
+    prop = PGET(obj->prop);
     stan = prop->stan;
     width = objGetWidth(obj);
     result = 1;
@@ -1972,7 +1972,7 @@ s32 objTryMovePropWithCollision(ObjectRecord *obj, coord3d *targetpos, coord3d *
 
     tmp = stanGetPositionYValue(prop->stan, prop->pos.x, prop->pos.z);
 
-    if ((obj->embedment->flags & PROJECTILEFLAG_00000040) == 0)
+    if ((PGET(obj->embedment)->flags & PROJECTILEFLAG_00000040) == 0)
     {
         ymax = 0.0f;
         ymin = 1.0f;
@@ -2093,7 +2093,7 @@ done:
 */
 s32 sub_GAME_7F042EB4(struct ObjectRecord *arg0, f32 *arg1, struct coord3d *arg2, struct coord3d *arg3, s32 arg4, s32 arg5)
 {
-    if ((arg0->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) && (arg0->projectile->flags & PROJECTILEFLAG_STICKY))
+    if ((arg0->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) && (PGET(arg0->projectile)->flags & PROJECTILEFLAG_STICKY))
     {
         return handles_projectile_motion(arg0, arg1, arg2, arg3, arg4, arg5);
     }
@@ -2281,11 +2281,11 @@ void objSettle(ObjectRecord *obj, coord3d *arg1)
         return;
     }
 
-    projectile = obj->projectile;
+    projectile = PGET(obj->projectile);
 
     if (((u8 *)obj)[3] == 1) {
         projectileFree(projectile);
-        obj->projectile = 0;
+        PSET(obj->projectile, 0);
         obj->runtime_bitflags &= ~0x80;
         return;
     }
@@ -2380,7 +2380,7 @@ void objSettle(ObjectRecord *obj, coord3d *arg1)
     {
         projectile->unk64 = 0.050000001f / ((angle * 4.0f) / M_TAU_F);
     } else {
-        modelscale = obj->model->scale;
+        modelscale = PGET(obj->model)->scale;
 
         tmp = acosf(
             (((arg1->x * obj->mtx.m[0][0])
@@ -2421,63 +2421,63 @@ void objUpdateThrowKnifeSound(ObjectRecord *obj)
         return;
     }
 
-    if ((obj->projectile->flags & PROJECTILEFLAG_AIRBORNE) && ((s32)obj->projectile->unk90 <= 0) && (obj->runtime_bitflags & RUNTIMEBITFLAG_THROWING_KNIFE_RELATED)) 
+    if ((PGET(obj->projectile)->flags & PROJECTILEFLAG_AIRBORNE) && ((s32)PGET(obj->projectile)->unk90 <= 0) && (obj->runtime_bitflags & RUNTIMEBITFLAG_THROWING_KNIFE_RELATED)) 
     {
 
         s16 Throwing_knife_SFX[] = {0x5F, 0x60, 0x61};
         s32 slot;
         s32 sfxindex;
 
-        slot = obj->projectile->soundSlot;
+        slot = PGET(obj->projectile)->soundSlot;
         sfxindex = randomGetNext() % 3;
 
 #if defined(LEFTOVERDEBUG)
-        if ((s32)obj->projectile->lastSfxTimer < g_GlobalTimer - 6) {
+        if ((s32)PGET(obj->projectile)->lastSfxTimer < g_GlobalTimer - 6) {
 #else
         if ((s32)obj->projectile->lastSfxTimer < g_GlobalTimer - 5) 
         {
 #endif
-            if (obj->projectile->sounds[slot] != NULL) 
+            if (PGET(obj->projectile)->sounds[slot] != NULL) 
             {
-                if (sndGetPlayingState(obj->projectile->sounds[slot])) 
+                if (sndGetPlayingState(PGET(obj->projectile)->sounds[slot])) 
                 {
-                    sndDeactivate(obj->projectile->sounds[slot]);
+                    sndDeactivate(PGET(obj->projectile)->sounds[slot]);
                 }
             }
         }
 
-        if (obj->projectile->sounds[slot] != NULL) 
+        if (PGET(obj->projectile)->sounds[slot] != NULL) 
         {
             return;
         }
 
         if (!lvlGetControlsLockedFlag()) 
         {
-            sndPlaySfx(g_musicSfxBufferPtr, Throwing_knife_SFX[sfxindex], &obj->projectile->sounds[slot]);
+            sndPlaySfx(g_musicSfxBufferPtr, Throwing_knife_SFX[sfxindex], &PGET(obj->projectile)->sounds[slot]);
 
-            chrobjSndCreatePostEventDefault(obj->projectile->sounds[slot], &obj->prop->pos);
+            chrobjSndCreatePostEventDefault(PGET(obj->projectile)->sounds[slot], &PGET(obj->prop)->pos);
 
-            obj->projectile->lastSfxTimer = g_GlobalTimer;
-            obj->projectile->soundSlot = 1 - slot;
+            PGET(obj->projectile)->lastSfxTimer = g_GlobalTimer;
+            PGET(obj->projectile)->soundSlot = 1 - slot;
         }
     } 
     else 
     {
         obj->runtime_bitflags &= ~PROJECTILEFLAG_00000020;
 
-        if (obj->projectile->sounds[0] != NULL)
+        if (PGET(obj->projectile)->sounds[0] != NULL)
         {
-            if (sndGetPlayingState(obj->projectile->sounds[0])) 
+            if (sndGetPlayingState(PGET(obj->projectile)->sounds[0])) 
             {
-                sndDeactivate(obj->projectile->sounds[0]);
+                sndDeactivate(PGET(obj->projectile)->sounds[0]);
             }
         }
 
-        if (obj->projectile->sounds[1] != NULL) 
+        if (PGET(obj->projectile)->sounds[1] != NULL) 
         {
-            if (sndGetPlayingState(obj->projectile->sounds[1])) 
+            if (sndGetPlayingState(PGET(obj->projectile)->sounds[1])) 
             {
-                sndDeactivate(obj->projectile->sounds[1]);
+                sndDeactivate(PGET(obj->projectile)->sounds[1]);
             }
         }
     }
@@ -3315,10 +3315,10 @@ void sub_GAME_7F0439B8(ObjectRecord* obj, coord3d* pos, StandTile* stan, coord3d
     f32 temp_f0;
 
     sub_GAME_7F043838(arg3, &matrix);
-    matrix_scalar_multiply(obj->model->scale, matrix.m[0]);
+    matrix_scalar_multiply(PGET(obj->model)->scale, matrix.m[0]);
     objChangeShading(obj, pos, &matrix, stan);
 
-    temp_f0 = chrpropBBOXGetYmin(chrobjGetBboxFromObjFile(obj->model->obj));
+    temp_f0 = chrpropBBOXGetYmin(chrobjGetBboxFromObjFile(PGET(obj->model)->obj));
 
     obj->runtime_pos.f[0] -= temp_f0 * obj->mtx.m[1][0];
     obj->runtime_pos.f[1] -= temp_f0 * obj->mtx.m[1][1];
@@ -3339,9 +3339,9 @@ bool objEmbed(PropRecord *prop, PropRecord *parent, Model *model, ModelNode *nod
         Mtxf mtx3;
         Mtxf* nodemtx;
 
-        obj->embedment = embedmentAllocate();
+        PSET(obj->embedment, embedmentAllocate());
 
-        if (obj->embedment)
+        if (PGET(obj->embedment))
         {
             nodemtx = modelFindNodeMtx(model, node, 0);
 
@@ -3351,8 +3351,8 @@ bool objEmbed(PropRecord *prop, PropRecord *parent, Model *model, ModelNode *nod
             chrpropDelist(prop);
             chrpropDisable(prop);
 
-            obj->model->attachedto = model;
-            obj->model->attachedto_objinst = node;
+            PGET(obj->model)->attachedto = model;
+            PGET(obj->model)->attachedto_objinst = node;
 
             chrpropReparent(prop, parent);
 
@@ -3360,7 +3360,7 @@ bool objEmbed(PropRecord *prop, PropRecord *parent, Model *model, ModelNode *nod
             matrix_4x4_set_position(&obj->runtime_pos, &mtx1);
             matrix_4x4_multiply_homogeneous(currentPlayerGetViewToWorldMtxf(), nodemtx, &mtx2);
             matrix_4x4_invert_affine((f32 (*)[4]) &mtx2.m, (f32 (*)[4]) &mtx3.m);
-            matrix_4x4_multiply_homogeneous((Mtxf* ) &mtx3.m, &mtx1, &obj->embedment->matrix);
+            matrix_4x4_multiply_homogeneous((Mtxf* ) &mtx3.m, &mtx1, &PGET(obj->embedment)->matrix);
 
             return TRUE;
         }
@@ -3405,7 +3405,7 @@ void propExplode(PropRecord *prop, s32 /* enum EXPLOSION_DEF */ explosionType)
 
         if (prop->flags & PROPFLAG_ONSCREEN)
         {
-            mtx = getsubmatrix(prop_obj->model);
+            mtx = getsubmatrix(PGET(prop_obj->model));
 
             pos.x = mtx->m[3][0];
 			pos.y = mtx->m[3][1];
@@ -3713,7 +3713,7 @@ void sub_GAME_7F0442DC(PropRecord* prop)
     Mtxf* mtx;
 
     obj = prop->obj;
-    model = obj->model;
+    model = PGET(obj->model);
 
     if (obj->runtime_bitflags & RUNTIMEBITFLAG_REMOVE)
     {
@@ -3727,7 +3727,7 @@ void sub_GAME_7F0442DC(PropRecord* prop)
         prop->flags |= PROPFLAG_ONSCREEN;
         model->render_pos = (RenderPosView*)dynAllocate(model->obj->numMatrices << 6);
 
-        matrix_4x4_multiply_homogeneous(mtx, &obj->embedment->matrix, (Mtxf*)model->render_pos);
+        matrix_4x4_multiply_homogeneous(mtx, &PGET(obj->embedment)->matrix, (Mtxf*)model->render_pos);
         modelUpdateRelationsQuick(model, model->obj->RootNode);
         chrobjWeaponTick(prop);
 
@@ -3989,7 +3989,7 @@ s32 sub_GAME_7F0448A8(struct PropRecord *argProp)
             if ((prop->type == PROP_TYPE_VIEWER) || (prop->type == PROP_TYPE_CHR))
             {
                 temp_v0_2 = prop->obj;
-                if ((temp_v0_2 == NULL) || !((uintptr_t) temp_v0_2->model & 0x400))
+                if ((temp_v0_2 == NULL) || !((uintptr_t) PGET(temp_v0_2->model) & 0x400))
                 {
                     chrpropGetCollisionBounds(prop, &radius, &height, &arbitratyNumber);
 
@@ -4082,8 +4082,8 @@ s32 sub_GAME_7F044B38(ObjectRecord *obj)
     coord3d yawvec;
     f32 ypos;
 
-    model = obj->model;
-    prop = obj->prop;
+    model = PGET(obj->model);
+    prop = PGET(obj->prop);
     modelpoint0 = (coord3d *) PGET(PGET(model->obj->Switches[1])->Data);
     modelpoint1 = (coord3d *) PGET(PGET(model->obj->Switches[2])->Data);
     modelpoint2 = (coord3d *) PGET(PGET(model->obj->Switches[3])->Data);
@@ -4513,7 +4513,7 @@ s32 objTick(struct PropRecord *prop)
 	Mtxf spB8;
     
 	obj = prop->obj;
-	model = obj->model;
+	model = PGET(obj->model);
 
 	objMovedThisFrame = 0;
 	tickop = TICKOP_NONE;
@@ -4558,7 +4558,7 @@ s32 objTick(struct PropRecord *prop)
 
 		if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
 		{
-			projectile = obj->projectile;
+			projectile = PGET(obj->projectile);
 
 			if (projectile->ownerprop != NULL
 #if defined(VERSION_JP) || defined(VERSION_EU)
@@ -4582,7 +4582,7 @@ s32 objTick(struct PropRecord *prop)
 	{
 		if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
 		{
-			Rocket = obj->projectile;
+			Rocket = PGET(obj->projectile);
 			Rocket->age += g_ClockTimer;
 
 			if (((s32) Rocket->age) > PROJECTILE_LIFETIME_FRAMES)
@@ -4640,7 +4640,7 @@ s32 objTick(struct PropRecord *prop)
 				Rocket->refreshrate -= g_ClockTimer;
 			}
 
-			if (obj->projectile->flags & PROJECTILEFLAG_AIRBORNE)
+			if (PGET(obj->projectile)->flags & PROJECTILEFLAG_AIRBORNE)
 			{
 				airborneWeapon = (struct WeaponObjRecord *) obj;
 				projectileBBox = chrobjGetBboxFromObjectRecord(obj);
@@ -4743,7 +4743,7 @@ s32 objTick(struct PropRecord *prop)
 					if (sp548 == 0)
 					{
 						projectileFree(Rocket);
-						obj->projectile = NULL;
+						PSET(obj->projectile, NULL);
 						obj->runtime_bitflags &= ~RUNTIMEBITFLAG_HASPROJECTILE;
 						if (prop->flags & PROPFLAG_00000008)
 						{
@@ -4779,7 +4779,7 @@ s32 objTick(struct PropRecord *prop)
 							if ((playerProp2->type == PROP_TYPE_CHR) || (((playerProp2->type == PROP_TYPE_VIEWER) && (playerProp2->obj != NULL)) && (getPlayerPointerIndex(playerProp2) != get_cur_playernum())))
 							{
 								playerProp2 = D_80030B0C;
-								temp_v0_40 = obj->projectile;
+								temp_v0_40 = PGET(obj->projectile);
 								temp_s0_13 = (struct coord3d *) playerProp2->chr;
 
 								if ((((temp_v0_40->flags & PROJECTILEFLAG_AIRBORNE) && (((s32) temp_v0_40->unk90) <= 0)) && (obj->runtime_bitflags & RUNTIMEBITFLAG_THROWING_KNIFE_RELATED)) && (handles_shot_actors((struct ChrRecord *) temp_s0_13, bodypartshot, &flt_CODE_bss_80075B78, ((struct WeaponObjRecord *) obj)->weaponnum, 1) != 0))
@@ -5035,11 +5035,11 @@ s32 objTick(struct PropRecord *prop)
 						sp564.f[2] -= 400.0f;
 					}
 
-					explosionCreate(NULL, &sp564, airborneWeapon->prop->stan, 0x14, 0, 0, airborneWeapon->prop->rooms, 0);
+					explosionCreate(NULL, &sp564, PGET(airborneWeapon->prop)->stan, 0x14, 0, 0, PGET(airborneWeapon->prop)->rooms, 0);
                     //Spawn smoke every 40 frames
 					if ((((s32) g_GlobalTickCount) % 40) == 0)
 					{
-						explosionCreateSmoke(&sp564, airborneWeapon->prop->stan, 0xA, airborneWeapon->prop->rooms, 1);
+						explosionCreateSmoke(&sp564, PGET(airborneWeapon->prop)->stan, 0xA, PGET(airborneWeapon->prop)->rooms, 1);
 					}
 				}
 			}
@@ -5124,7 +5124,7 @@ s32 objTick(struct PropRecord *prop)
 				if ((projectileAlive != 0) || (Rocket->flags & PROJECTILEFLAG_00000008))
 				{
 					projectileFree(Rocket);
-					obj->projectile = NULL;
+					PSET(obj->projectile, NULL);
 					obj->runtime_bitflags &= ~RUNTIMEBITFLAG_HASPROJECTILE;
 					if (prop->flags & PROPFLAG_00000008)
 					{
@@ -5148,9 +5148,9 @@ s32 objTick(struct PropRecord *prop)
 			chrobjCollisionRelated(obj);
 			setupUpdateObjectRoomPosition(obj);
 #if defined(VERSION_EU)
-			sub_GAME_7F0402B4(obj->prop, &obj->nextcol);
+			sub_GAME_7F0402B4(PGET(obj->prop), &obj->nextcol);
 #else
-			sub_GAME_7F0402B4(obj->prop, (rgba_u8 *) sp100);
+			sub_GAME_7F0402B4(PGET(obj->prop), (rgba_u8 *) sp100);
 #endif
 			detonate_proxmine_In_range((struct coord3d *) objectMatrix);
 		}
@@ -5172,7 +5172,7 @@ s32 objTick(struct PropRecord *prop)
 
 			if (door->openstate == DOORSTATE_WAITING)
 			{
-				pad1AC = door->linkedDoor;
+				pad1AC = PGET(door->linkedDoor);
 				var_v1_5 = 1;
 				while ((pad1AC != NULL) && (pad1AC != door))
 				{
@@ -5181,7 +5181,7 @@ s32 objTick(struct PropRecord *prop)
 						var_v1_5 = 0;
 					}
 
-					pad1AC = pad1AC->linkedDoor;
+					pad1AC = PGET(pad1AC->linkedDoor);
 				}
 
 
@@ -5672,27 +5672,27 @@ s32 objTick(struct PropRecord *prop)
 
 			if (truckShouldPlayEngineSound > 0)
 			{
-				if (((poTruck->Sound == NULL) || (sndGetPlayingState(poTruck->Sound) == 0)) && (lvlGetControlsLockedFlag() == 0))
+				if (((PGET(poTruck->Sound) == NULL) || (sndGetPlayingState(PGET(poTruck->Sound)) == 0)) && (lvlGetControlsLockedFlag() == 0))
 				{
-					sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, TRUCK_RUN_SFX, &poTruck->Sound);
+					sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, TRUCK_RUN_SFX, SND_SLOT32(poTruck->Sound));
 				}
 
-				if (poTruck->Sound != NULL)
+				if (PGET(poTruck->Sound) != NULL)
 				{
-					sndCreatePostEvent(poTruck->Sound, 8, truckShouldPlayEngineSound);
+					sndCreatePostEvent(PGET(poTruck->Sound), 8, truckShouldPlayEngineSound);
 #ifndef TARGET_N64
-					portSndApplyPan(poTruck->Sound, &poTruck->runtime_pos);
+					portSndApplyPan(PGET(poTruck->Sound), &poTruck->runtime_pos);
 #endif
 				}
 			}
-			else if ((poTruck->Sound != NULL) && (sndGetPlayingState(poTruck->Sound) != 0))
+			else if ((PGET(poTruck->Sound) != NULL) && (sndGetPlayingState(PGET(poTruck->Sound)) != 0))
 			{
-				sndDeactivate(poTruck->Sound);
+				sndDeactivate(PGET(poTruck->Sound));
 			}
 
-			if (poTruck->path != NULL)
+			if (PGET(poTruck->path) != NULL)
 			{
-				temp_a1_6 = &poTruck->path->waypoints[poTruck->nextstep];
+				temp_a1_6 = &PGET(PGET(poTruck->path)->waypoints)[poTruck->nextstep];
 				currentWaypoint = &g_CurrentSetup.pathwaypoints[*temp_a1_6];
 				waypointPosition = &g_CurrentSetup.pads[currentWaypoint->padID].pos;
 				targetYaw = atan2f(waypointPosition->f[0] - poTruck->runtime_pos.f[0], waypointPosition->f[2] - poTruck->runtime_pos.f[2]);
@@ -5805,9 +5805,9 @@ s32 objTick(struct PropRecord *prop)
 						if ((waypointPosition != NULL) && (chrlvIsArrivingLaterallyAtPos(&sp450, &RocketCurrent, waypointPosition, 100.0f) != 0))
 						{
 							poTruck->nextstep++;
-							if (poTruck->path->waypoints[poTruck->nextstep] < 0)
+							if (PGET(PGET(poTruck->path)->waypoints)[poTruck->nextstep] < 0)
 							{
-								poTruck->path = NULL;
+								PSET(poTruck->path, NULL);
 								poTruck->speedaim = 0.0f;
 								poTruck->speedtime60 = 60.0f;
 							}
@@ -5858,44 +5858,44 @@ s32 objTick(struct PropRecord *prop)
 
 			ai((PropDefHeaderRecord *) render_pad2F4, 1);
 
-			temp_s0_6 = render_pad2F4->model;
+			temp_s0_6 = PGET(render_pad2F4->model);
 
 			if (temp_s0_6->anim != NULL)
 			{
 				setsuboffset(temp_s0_6, &render_pad2F4->runtime_pos);
 #if defined(VERSION_EU)
-				modelSetAnimPlaySpeed(render_pad2F4->model, 1.2f, 0.0f);
+				modelSetAnimPlaySpeed(PGET(render_pad2F4->model), 1.2f, 0.0f);
 #endif
-				temp_s0_6 = render_pad2F4->model;
+				temp_s0_6 = PGET(render_pad2F4->model);
 
 				if (temp_s0_6->anim == animation_table_ptrs2[1])
 				{
 					modelSetAnimTranslationScale(temp_s0_6, 10.438f);
-					setsubroty(render_pad2F4->model, M_PI_F);
+					setsubroty(PGET(render_pad2F4->model), M_PI_F);
 				}
 				else if (bossGetStageNum() == 22)
 				{
-					modelSetAnimTranslationScale(render_pad2F4->model, 1.0438f);
-					setsubroty(render_pad2F4->model, 2.3561945f);
+					modelSetAnimTranslationScale(PGET(render_pad2F4->model), 1.0438f);
+					setsubroty(PGET(render_pad2F4->model), 2.3561945f);
 				}
 				else if (bossGetStageNum() == 26)
 				{
-					modelSetAnimTranslationScale(render_pad2F4->model, 1.0438f);
-					setsubroty(render_pad2F4->model, 3.9269907f);
+					modelSetAnimTranslationScale(PGET(render_pad2F4->model), 1.0438f);
+					setsubroty(PGET(render_pad2F4->model), 3.9269907f);
 				}
 				else
 				{
-					modelSetAnimTranslationScale(render_pad2F4->model, 1.0438f);
-					setsubroty(render_pad2F4->model, 0.0f);
+					modelSetAnimTranslationScale(PGET(render_pad2F4->model), 1.0438f);
+					setsubroty(PGET(render_pad2F4->model), 0.0f);
 				}
 
 #ifndef TARGET_N64
-				modelTickAnimF(render_pad2F4->model, portAnimTicks(), 1);   /* fractional, see frametiming.c */
+				modelTickAnimF(PGET(render_pad2F4->model), portAnimTicks(), 1);   /* fractional, see frametiming.c */
 #else
 				modelTickAnim(render_pad2F4->model, g_ClockTimer, 1);
 #endif
-				subcalcpos(render_pad2F4->model);
-				getsuboffset(render_pad2F4->model, &render_pad2F4->runtime_pos);
+				subcalcpos(PGET(render_pad2F4->model));
+				getsuboffset(PGET(render_pad2F4->model), &render_pad2F4->runtime_pos);
 				prop->pos.f[0] = render_pad2F4->runtime_pos.f[0];
 				prop->pos.f[2] = render_pad2F4->runtime_pos.f[2];
 				if (render_pad2F4->pad < 10000)
@@ -5909,7 +5909,7 @@ s32 objTick(struct PropRecord *prop)
 
 				prop->pos.f[1] = var_v1_4->pos.f[1] + render_pad2F4->runtime_pos.f[1];
 				render_pad2F4->runtime_pos.f[1] = prop->pos.f[1];
-				setsuboffset(render_pad2F4->model, &render_pad2F4->runtime_pos);
+				setsuboffset(PGET(render_pad2F4->model), &render_pad2F4->runtime_pos);
 			}
 
 			angleDelta = render_pad2F4->speedtime60;
@@ -5951,22 +5951,22 @@ s32 objTick(struct PropRecord *prop)
 
 			if (truckShouldPlayEngineSound > 0)
 			{
-				if (((render_pad2F4->Sound == NULL) || (sndGetPlayingState(render_pad2F4->Sound) == 0)) && (lvlGetControlsLockedFlag() == 0))
+				if (((PGET(render_pad2F4->Sound) == NULL) || (sndGetPlayingState(PGET(render_pad2F4->Sound)) == 0)) && (lvlGetControlsLockedFlag() == 0))
 				{
-					sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, HELI_RUN_SFX, &render_pad2F4->Sound);
+					sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, HELI_RUN_SFX, SND_SLOT32(render_pad2F4->Sound));
 				}
 
-				if (render_pad2F4->Sound != NULL)
+				if (PGET(render_pad2F4->Sound) != NULL)
 				{
-					sndCreatePostEvent(render_pad2F4->Sound, 8, truckShouldPlayEngineSound);
+					sndCreatePostEvent(PGET(render_pad2F4->Sound), 8, truckShouldPlayEngineSound);
 #ifndef TARGET_N64
-					portSndApplyPan(render_pad2F4->Sound, &render_pad2F4->runtime_pos);
+					portSndApplyPan(PGET(render_pad2F4->Sound), &render_pad2F4->runtime_pos);
 #endif
 				}
 			}
-			else if ((render_pad2F4->Sound != NULL) && (sndGetPlayingState(render_pad2F4->Sound) != 0))
+			else if ((PGET(render_pad2F4->Sound) != NULL) && (sndGetPlayingState(PGET(render_pad2F4->Sound)) != 0))
 			{
-				sndDeactivate(render_pad2F4->Sound);
+				sndDeactivate(PGET(render_pad2F4->Sound));
 			}
 		}
 	}
@@ -6164,7 +6164,7 @@ s32 objTick(struct PropRecord *prop)
 				mtx4TransformVecInPlace(&tempMatrix2, &sp308);
 				matrix_4x4_set_rotation_around_y(sp304, &mtxs[1]);
 				matrix_4x4_set_position(&sp308, &mtxs[1]);
-				matrix_scalar_multiply(sp318->model->scale, mtxs[1].m[0]);
+				matrix_scalar_multiply(PGET(sp318->model)->scale, mtxs[1].m[0]);
 				matrix_4x4_multiply_homogeneous_in_place(camGetWorldToScreenMtxf(), &mtxs[1]);
 				temp_s0_13 = (struct coord3d *) PGET(PGET(model->obj->Switches[2])->Data);
 				matrix_4x4_set_rotation_around_z(sp300, &mtxs[2]);
@@ -6326,12 +6326,12 @@ s32 objTick(struct PropRecord *prop)
 					}
 				}
 
-				if (aircraft_render->model->anim != NULL)
+				if (PGET(aircraft_render->model)->anim != NULL)
 				{
 					sp1B0 = D_80030B34;
 					sp1B0.basemtx = camGetWorldToScreenMtxf();
 					sp1B0.mtxlist = &mtxs[0];
-					subcalcmatrices(&sp1B0, aircraft_render->model);
+					subcalcmatrices(&sp1B0, PGET(aircraft_render->model));
 				}
 				else
 				{
@@ -6549,31 +6549,31 @@ s32 objTick(struct PropRecord *prop)
 							extern s32 g_PortTickSerial;
 							printf("ge: agsnd ser=%d gt=%d ac=%d c4=%p/%d c8=%p/%d -> %s\n",
 							       g_PortTickSerial, g_GlobalTimer, autogun->unkAC,
-							       (void *) autogun->unkC4, autogun->unkC4 ? sndGetPlayingState(autogun->unkC4) : -1,
-							       (void *) autogun->unkC8, autogun->unkC8 ? sndGetPlayingState(autogun->unkC8) : -1,
-							       (autogun->unkC4 == NULL) ? "slot0" : (autogun->unkC8 == NULL) ? "slot1" : "DROPPED");
+							       (void *) PGET(autogun->unkC4), PGET(autogun->unkC4) ? sndGetPlayingState(PGET(autogun->unkC4)) : -1,
+							       (void *) PGET(autogun->unkC8), PGET(autogun->unkC8) ? sndGetPlayingState(PGET(autogun->unkC8)) : -1,
+							       (PGET(autogun->unkC4) == NULL) ? "slot0" : (PGET(autogun->unkC8) == NULL) ? "slot1" : "DROPPED");
 						}
 					}
 #endif
-					if ((autogun->unkC4 != NULL) && (sndGetPlayingState(autogun->unkC4) != 0))
+					if ((PGET(autogun->unkC4) != NULL) && (sndGetPlayingState(PGET(autogun->unkC4)) != 0))
 					{
-						sndDeactivate(autogun->unkC4);
+						sndDeactivate(PGET(autogun->unkC4));
 					}
 
-					if ((autogun->unkC8 != NULL) && (sndGetPlayingState(autogun->unkC8) != 0))
+					if ((PGET(autogun->unkC8) != NULL) && (sndGetPlayingState(PGET(autogun->unkC8)) != 0))
 					{
-						sndDeactivate(autogun->unkC8);
+						sndDeactivate(PGET(autogun->unkC8));
 					}
 
-					if (autogun->unkC4 == NULL)
+					if (PGET(autogun->unkC4) == NULL)
 					{
-						sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, GUN_B9_CANNON_SHORT_SFX, &autogun->unkC4);
-						chrobjSndCreatePostEventDefault(autogun->unkC4, &prop->pos);
+						sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, GUN_B9_CANNON_SHORT_SFX, SND_SLOT32(autogun->unkC4));
+						chrobjSndCreatePostEventDefault(PGET(autogun->unkC4), &prop->pos);
 					}
-					else if (autogun->unkC8 == NULL)
+					else if (PGET(autogun->unkC8) == NULL)
 					{
-						sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, GUN_B9_CANNON_SHORT_SFX, &autogun->unkC8);
-						chrobjSndCreatePostEventDefault(autogun->unkC8, &prop->pos);
+						sndPlaySfx((struct ALBankAlt_s *) g_musicSfxBufferPtr, GUN_B9_CANNON_SHORT_SFX, SND_SLOT32(autogun->unkC8));
+						chrobjSndCreatePostEventDefault(PGET(autogun->unkC8), &prop->pos);
 					}
 
 					autogun->unkC0 = (s32) (g_GlobalTimer + 2);
@@ -6688,7 +6688,7 @@ s32 objTick(struct PropRecord *prop)
 
 					if (sp104 != 0)
 					{
-						beam_local = autogun->beam;
+						beam_local = PGET(autogun->beam);
 						beam_local->from.f[0] = sp12C.f[0];
 						beam_local->from.f[1] = sp12C.f[1];
 						beam_local->from.f[2] = sp12C.f[2];
@@ -6815,7 +6815,7 @@ Gfx *weaponRenderTracers(Gfx *gdl)
                 match = obj_type_0d == obj->type;
                 if (match)
                 {
-                    gdl = sub_GAME_7F061E18(gdl, (BeamRecord *)((AutogunRecord *)obj)->beam, one);
+                    gdl = sub_GAME_7F061E18(gdl, (BeamRecord *)PGET(((AutogunRecord *)obj)->beam), one);
                 }
             }
             else if (type_viewer == type)
@@ -6841,7 +6841,7 @@ Gfx *weaponRenderTracers(Gfx *gdl)
 
 void save_ptr_monitor_ani_code_to_obj_ani_slot(MonitorRecord *mon, void *image)
 {
-    mon->cmdlist  = image;
+    PSET(mon->cmdlist, image);
     mon->offset = 0;
 }
 
@@ -7014,7 +7014,7 @@ void monitorSetImageByNum(MonitorRecord *mon, s32 monAnimID)
 
 void save_img_index_to_obj_ani_slot(MonitorRecord *mon, void *unk88)
 {
-    mon->tconfig = unk88;
+    PSET(mon->tconfig, unk88);
 }
 
 
@@ -7031,7 +7031,7 @@ Gfx *process_monitor_animation_microcode(Model *model, ModelNode *node, MonitorR
 
         while (!yielding) 
         {
-            struct tvcmd *m = (struct tvcmd *) &screen->cmdlist[screen->offset];
+            struct tvcmd *m = (struct tvcmd *) &PGET(screen->cmdlist)[screen->offset];
 
             switch (m->type) 
             {
@@ -7271,13 +7271,13 @@ Gfx *process_monitor_animation_microcode(Model *model, ModelNode *node, MonitorR
         vertices[2] = PGET(rodata->DisplayListCollisions.Vertices)[2];
         vertices[3] = PGET(rodata->DisplayListCollisions.Vertices)[3];
 
-        if ((uintptr_t)screen->tconfig < 100) 
+        if ((uintptr_t)PGET(screen->tconfig) < 100) 
         {
-            tconfig = &monitorimages[(s32)(uintptr_t)screen->tconfig];
+            tconfig = &monitorimages[(s32)(uintptr_t)PGET(screen->tconfig)];
         } 
         else 
         {
-            tconfig = screen->tconfig;
+            tconfig = PGET(screen->tconfig);
         }
 
         {
@@ -7420,7 +7420,7 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
         ModelRwWord *rwdataSlot;
 
         obj = prop->obj;
-        model = obj->model;
+        model = PGET(obj->model);
         destroyed = (obj->flags & PROPFLAG_00000200) != FALSE;
 
         if (destroyed)
@@ -7526,7 +7526,7 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
 
                 if (nodedata != NULL)
                 {
-                    rwdataSlot = &obj->model->datas[nodedata->DisplayListCollisions.RwDataIndex];
+                    rwdataSlot = &PGET(obj->model)->datas[nodedata->DisplayListCollisions.RwDataIndex];
 
                     if (PGET(nodedata->DisplayListCollisions.Vertices) != (Vertex *)PGET(*rwdataSlot))
                     {
@@ -7654,7 +7654,7 @@ Gfx *chrobjRenderProp(PropRecord *prop, Gfx *gdl, s32 arg2)
 
     if ((u8) obj->type != PROPDEF_TINTED_GLASS)
     {
-        temp_f0 = chrobjFogVisRangeRelated(prop, getinstsize(obj->model));
+        temp_f0 = chrobjFogVisRangeRelated(prop, getinstsize(PGET(obj->model)));
 
         if (((s32) prop->timetoregen > 0) && ((s32) prop->timetoregen < CHROBJ_TIMETOREGEN))
         {
@@ -7791,7 +7791,7 @@ Gfx *chrobjRenderProp(PropRecord *prop, Gfx *gdl, s32 arg2)
 
 ModelNode* sub_GAME_7F04B478(ObjectRecord* obj)
 {
-    ModelFileHeader* header = obj->model->obj;
+    ModelFileHeader* header = PGET(obj->model)->obj;
     ModelNode *node = header->RootNode;
 
     while (node)
@@ -7803,13 +7803,13 @@ ModelNode* sub_GAME_7F04B478(ObjectRecord* obj)
             case MODELNODE_OPCODE_DLCOLLISION:
                 return node;
             case MODELNODE_OPCODE_LOD:
-                modelApplyDistanceRelations(obj->model, node);
+                modelApplyDistanceRelations(PGET(obj->model), node);
                 break;
             case MODELNODE_OPCODE_SWITCH:
-                modelApplyToggleRelations(obj->model, node);
+                modelApplyToggleRelations(PGET(obj->model), node);
                 break;
             case MODELNODE_OPCODE_HEAD:
-                modelApplyHeadRelations(obj->model, node);
+                modelApplyHeadRelations(PGET(obj->model), node);
                 break;
         }
 
@@ -7890,7 +7890,7 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
     s32 ymin;
     s32 ymax;
     
-    model = obj->model;
+    model = PGET(obj->model);
 
     // Keep on one line for matching.
     ymin = 99999; ymax = -99999;
@@ -7910,7 +7910,7 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
         return;
     }
     
-    if (!sub_GAME_7F04B590(obj->model->obj, nodeCopy))
+    if (!sub_GAME_7F04B590(PGET(obj->model)->obj, nodeCopy))
     {
         return;
     }
@@ -7966,7 +7966,7 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
         }
     }
     
-    explosionClearBulletImpactRoom(obj->prop);
+    explosionClearBulletImpactRoom(PGET(obj->prop));
     
     if (obj->obj == PROP_TV_HOLDER)
     {
@@ -8019,10 +8019,10 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
             return;
         }
         
-        node = (ModelNode *) obj->model->obj;
-        modelscale = obj->model->scale;
+        node = (ModelNode *) PGET(obj->model)->obj;
+        modelscale = PGET(obj->model)->scale;
         node = (ModelNode *) chrobjGetBboxFromObjFile((ModelFileHeader *) node);
-        obj->prop->pos.y += (modelscale * chrpropBBOXGetYmin((ModelRoData_BoundingBoxRecord *) node)) * 0.15000001f;
+        PGET(obj->prop)->pos.y += (modelscale * chrpropBBOXGetYmin((ModelRoData_BoundingBoxRecord *) node)) * 0.15000001f;
         obj->runtime_pos.y += (modelscale * chrpropBBOXGetYmin((ModelRoData_BoundingBoxRecord *) node)) * 0.15000001f;
         return;
     }
@@ -8198,12 +8198,12 @@ void objBounce(ObjectRecord *obj, coord3d *arg1)
     coord3d rot = {0, 0, 0};
     Projectile *projectile = NULL;
 
-    sub_GAME_7F03FDA8(obj->prop);
+    sub_GAME_7F03FDA8(PGET(obj->prop));
 
     if (obj->runtime_bitflags & RUNTIMEBITFLAG_EMBEDDED) {
-        projectile = obj->embedment->projectile;
+        projectile = PGET(obj->embedment)->projectile;
     } else if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) {
-        projectile = obj->projectile;
+        projectile = PGET(obj->projectile);
     }
 
     if (projectile) {
@@ -8249,13 +8249,13 @@ void propobjSetDropped(PropRecord *prop, DROPTYPE droptype)
 
         sub_GAME_7F03FDA8(prop);
 
-        if ((obj->runtime_bitflags & RUNTIMEBITFLAG_EMBEDDED) && obj->embedment->projectile)
+        if ((obj->runtime_bitflags & RUNTIMEBITFLAG_EMBEDDED) && PGET(obj->embedment)->projectile)
         {
-            obj->embedment->projectile->droptype = droptype;
+            PGET(obj->embedment)->projectile->droptype = droptype;
         }
         else if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
         {
-            obj->projectile->droptype = droptype;
+            PGET(obj->projectile)->droptype = droptype;
         }
     }
 }
@@ -8268,7 +8268,7 @@ void objDetach(PropRecord *prop)
     if (parent)
     {
         ObjectRecord *obj = prop->obj;
-        Model *model = obj->model;
+        Model *model = PGET(obj->model);
 
         chrpropDetach(prop);
 
@@ -8312,20 +8312,20 @@ s32 objDrop(PropRecord *prop)
     PropRecord *root;
     StandTile* rootstan;
 
-    if ((obj->runtime_bitflags & RUNTIMEBITFLAG_EMBEDDED) && obj->embedment->projectile)
+    if ((obj->runtime_bitflags & RUNTIMEBITFLAG_EMBEDDED) && PGET(obj->embedment)->projectile)
     {
-        Projectile* projectile2 = obj->embedment->projectile;
-        embedmentFree(obj->embedment);
+        Projectile* projectile2 = PGET(obj->embedment)->projectile;
+        embedmentFree(PGET(obj->embedment));
 
-        obj->projectile = projectile2;
+        PSET(obj->projectile, projectile2);
         obj->runtime_bitflags &= ~RUNTIMEBITFLAG_EMBEDDED;
         obj->runtime_bitflags |= RUNTIMEBITFLAG_HASPROJECTILE;
     }
 
     if (parent && (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE))
     {
-        model = obj->model;
-        projectile = obj->projectile;
+        model = PGET(obj->model);
+        projectile = PGET(obj->projectile);
         root = parent;
 
         projectile->flags |= PROJECTILEFLAG_AIRBORNE;
@@ -8473,7 +8473,7 @@ s32 objDrop(PropRecord *prop)
 
         matrix_4x4_copy(&spB8, &obj->mtx);
 
-        sub_GAME_7F0402B4(obj->prop, &obj->nextcol);
+        sub_GAME_7F0402B4(PGET(obj->prop), &obj->nextcol);
 
         obj->shadecol.r = obj->nextcol.r;
         obj->shadecol.g = obj->nextcol.g;
@@ -8507,11 +8507,11 @@ void objFall(ObjectRecord *obj, s32 playernum)
         Projectile *projectile = NULL;
         s32 unused;
 
-        sub_GAME_7F03FDA8(obj->prop);
+        sub_GAME_7F03FDA8(PGET(obj->prop));
 
         if (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
         {
-            projectile = obj->projectile;
+            projectile = PGET(obj->projectile);
         }
 
         if (projectile)
@@ -8601,7 +8601,7 @@ void objExplode(ObjectRecord *obj, coord3d *target_pos, s32 playernum)
         }
     }
 
-    prop = obj->prop;
+    prop = PGET(obj->prop);
 #if defined(VERSION_EU)
     explosion_type = ((s8 *) object_explosion_details.typeids)[obj->obj];
 #else
@@ -9328,7 +9328,7 @@ void sub_GAME_7F04DCB4(ObjectRecord* obj)
     PropRecord* prop;
     struct ModelRoData_BoundingBoxRecord *bbox;
 
-    prop = obj->prop;
+    prop = PGET(obj->prop);
     bbox = chrobjGetBboxFromObjectRecord(obj);
     explosionClearBulletImpactRoomByFlag(prop, FALSE);
     explosionClearBulletImpactRoomByFlag(prop, TRUE);
@@ -9356,8 +9356,8 @@ void sub_GAME_7F04DD68(DoorRecord *door)
     struct ModelRwData_SwitchRecord *switchdata;
     Mtxf mtx;
 
-    prop = door->prop;
-    model = door->model;
+    prop = PGET(door->prop);
+    model = PGET(door->model);
     bbox = (struct ModelRoData_BoundingBoxRecord *) PGET(PGET(model->obj->Switches[2])->Data);
 
     door7F0526EC(door, &mtx);
@@ -9382,8 +9382,8 @@ void objBreakCCTVGlass(ObjectRecord *obj)
     Mtxf glassNodeWorldMtx;
     Model *model;
 
-    prop = obj->prop;
-    model = obj->model;
+    prop = PGET(obj->prop);
+    model = PGET(obj->model);
 
     if (prop->flags & PROPFLAG_ONSCREEN)
     {
@@ -9519,8 +9519,8 @@ ObjectRecord blank_07_object = {
     0xFFFF, //pad
     0x00000001, //flags
     0, //flags2
-    NULL, //prop
-    NULL, //model
+    0, //prop
+    0, //model
     {
        1.0f, 0.0f, 0.0f, 0.0f,
        0.0f, 1.0f, 0.0f, 0.0f,
@@ -9529,8 +9529,8 @@ ObjectRecord blank_07_object = {
     }, //mtx
     {0.0, 0.0, 0.0},//runtime_pos
     {0x00000000}, //runtime_bitflags
-    NULL, //ptr_allocated_collisiondata_block
-    NULL, //projectile/embedment
+    0, //ptr_allocated_collisiondata_block
+    0, //projectile/embedment
     0.0f, //maxdamage
     1000.0f, //damage
     {0xFF, 0xFF, 0xFF, 0x00}, //shadecol
@@ -9728,7 +9728,7 @@ apply_damage:
     }
     else
     {
-        propobjSetDropped(obj->prop, DROPTYPE_DEFAULT);
+        propobjSetDropped(PGET(obj->prop), DROPTYPE_DEFAULT);
         objExplode(obj, pos, playernum);
     }
 
@@ -9770,8 +9770,8 @@ apply_damage:
 
                         if (objInitWithModelDef((ObjectRecord *)crate, PitemZ_entries[modelnum].header) != NULL)
                         {
-                            modelSetScale(crate->model, crate->model->scale);
-                            chrpropReparent(crate->prop, obj->prop);
+                            modelSetScale(PGET(crate->model), PGET(crate->model)->scale);
+                            chrpropReparent(PGET(crate->prop), PGET(obj->prop));
                         }
 
                         break;
@@ -9845,7 +9845,7 @@ apply_damage:
     // If an object is destroyed drop its children, for example the monitor holders in Bunker.
     if (objGetDestroyedLevel(obj) == 1)
     {
-        child = obj->prop->child;
+        child = PGET(obj->prop)->child;
 
         while (child != NULL)
         {
@@ -9903,7 +9903,7 @@ dummy_label_995911:
             child = next;
         }
 
-        model = obj->model;
+        model = PGET(obj->model);
         node = NULL;
 
         if ((obj->type == PROPDEF_DOOR) && (((((DoorRecord *) obj)->doorFlags & DOORFLAG_CLIP_TO_BBOX) || (((DoorRecord *) obj)->doorType == DOORTYPE_EYE)) || (((DoorRecord *) obj)->doorType == DOORTYPE_IRIS)))
@@ -9958,7 +9958,7 @@ dummy_label_995911:
                     {
                         penetrates = FALSE;
                     }
-                    else if ((obj->model->obj->Skeleton == (&skeleton_door)) && (hitnode == PGET(obj->model->obj->Switches[3])))
+                    else if ((PGET(obj->model)->obj->Skeleton == (&skeleton_door)) && (hitnode == PGET(PGET(obj->model)->obj->Switches[3])))
                     {
                         penetrates = FALSE;
                     }
@@ -9980,7 +9980,7 @@ void sub_GAME_7F04E9BC(PropRecord* prop, struct ShotData* shotdata)
     struct ModelRoData_BoundingBoxRecord *bbox;
 
     obj = prop->obj;
-    model = obj->model;
+    model = PGET(obj->model);
     bbox = chrobjGetBboxFromObjectRecord(obj);
 
 #ifndef TARGET_N64
@@ -10087,7 +10087,7 @@ void objHit(ShotData *shotdata, BulletHit *hit)
             hitprop = hit->prop;
             room_clear_flag = 0;
 
-            if (obj->model->obj->Skeleton == &skeleton_door)
+            if (PGET(obj->model)->obj->Skeleton == &skeleton_door)
             {
                 room_clear_flag = 1;
             }
@@ -10123,7 +10123,7 @@ void objHit(ShotData *shotdata, BulletHit *hit)
 
             thing2_index = randomGetNext() % impact_sounds->thing2_len;
 
-            if (((obj->model->obj->Skeleton == &skeleton_door) && (hit->unk44 == PGET(obj->model->obj->Switches[3]))) || ((obj->model->obj->Skeleton == &skeleton_cctv) && (hit->unk44 == PGET(obj->model->obj->Switches[1]))))
+            if (((PGET(obj->model)->obj->Skeleton == &skeleton_door) && (hit->unk44 == PGET(PGET(obj->model)->obj->Switches[3]))) || ((PGET(obj->model)->obj->Skeleton == &skeleton_cctv) && (hit->unk44 == PGET(PGET(obj->model)->obj->Switches[1]))))
             {
                 room_clear_flag = 1;
             }
@@ -10145,9 +10145,9 @@ void objHit(ShotData *shotdata, BulletHit *hit)
         // Shots to CCTV camera glass do 100x normal damage.
         else if (obj->type == PROPDEF_CCTV)
         {
-            if (obj->model->obj->Skeleton == &skeleton_cctv)
+            if (PGET(obj->model)->obj->Skeleton == &skeleton_cctv)
             {
-                if (hit->unk44 == PGET(obj->model->obj->Switches[1]))
+                if (hit->unk44 == PGET(PGET(obj->model)->obj->Switches[1]))
                 {
                     damage *= 100.0f;
                     objBreakCCTVGlass(obj);
@@ -10160,7 +10160,7 @@ void objHit(ShotData *shotdata, BulletHit *hit)
         chrobjMaybeDetonateObjectIfFlags(obj, damage, &pos, shotdata->weapon, get_cur_playernum());
     }
 
-    if ((obj->model->obj->Skeleton == &skeleton_door) && (hit->countsAsPenetration == 0))
+    if ((PGET(obj->model)->obj->Skeleton == &skeleton_door) && (hit->countsAsPenetration == 0))
     {
         ((DoorRecord *)obj)->unkbd++;
 
@@ -10350,12 +10350,12 @@ void sub_GAME_7F04F244(PropRecord* prop, rect4f** polygon, s32* edges, f32* top,
     ObjectRecord* obj;
     obj = prop->obj;
 
-    if ((obj->ptr_allocated_collisiondata_block != NULL) && (obj->flags & PROPFLAG_00000100) && !(obj->state & PROPSTATE_20))
+    if ((PGET(obj->ptr_allocated_collisiondata_block) != NULL) && (obj->flags & PROPFLAG_00000100) && !(obj->state & PROPSTATE_20))
     {
-        *edges = obj->ptr_allocated_collisiondata_block->edges;
-        *polygon = &obj->ptr_allocated_collisiondata_block->polygon;
-        *bottom = obj->ptr_allocated_collisiondata_block->bottom;
-        *top = obj->ptr_allocated_collisiondata_block->top;
+        *edges = PGET(obj->ptr_allocated_collisiondata_block)->edges;
+        *polygon = &PGET(obj->ptr_allocated_collisiondata_block)->polygon;
+        *bottom = PGET(obj->ptr_allocated_collisiondata_block)->bottom;
+        *top = PGET(obj->ptr_allocated_collisiondata_block)->top;
         return;
     }
 
@@ -11359,7 +11359,7 @@ TICKOP objTickPlayer(struct PropRecord* prop)
 
     if (obj->runtime_bitflags & 0x80) 
     {
-        if (((s32)obj->projectile->refreshrate > 0) && (obj->projectile->unk90 == 0)) 
+        if (((s32)PGET(obj->projectile)->refreshrate > 0) && (PGET(obj->projectile)->unk90 == 0)) 
         {
             return TICKOP_NONE;
         }
@@ -11407,11 +11407,11 @@ TICKOP objTickPlayer(struct PropRecord* prop)
             {
                 if (get_ammo_count_for_weapon(weaponObj->weaponnum) >= get_max_ammo_for_weapon(weaponObj->weaponnum)) 
                 {
-                    if ((weaponObj->dualweapon != NULL) || (weaponObj->LinkedWeaponType >= 0)) 
+                    if ((PGET(weaponObj->dualweapon) != NULL) || (weaponObj->LinkedWeaponType >= 0)) 
                     {
-                        if (weaponObj->dualweapon != NULL) 
+                        if (PGET(weaponObj->dualweapon) != NULL) 
                         {
-                            var_a1 = weaponObj->dualweapon->weaponnum;
+                            var_a1 = PGET(weaponObj->dualweapon)->weaponnum;
                             obj_2 = var_a1;
                         } 
                         else 
@@ -11613,7 +11613,7 @@ bool objGetOnscreenRenderBounds(PropRecord *prop, coord3d *arg1, struct coord2d 
     if (prop->flags & PROPFLAG_ONSCREEN)
     {
         ObjectRecord *obj = prop->obj;
-        Mtxf *matrix = getsubmatrix(obj->model);
+        Mtxf *matrix = getsubmatrix(PGET(obj->model));
 
         arg1->z = matrix->m[3][2];
 
@@ -11628,7 +11628,7 @@ bool objGetOnscreenRenderBounds(PropRecord *prop, coord3d *arg1, struct coord2d 
             arg2->f[0] = 0;
             arg2->f[1] = 0;
 
-            modelGetXYExtents(obj->model, &arg2->f[1], &arg2->f[0], &arg3->f[1], &arg3->f[0]);
+            modelGetXYExtents(PGET(obj->model), &arg2->f[1], &arg2->f[0], &arg3->f[1], &arg3->f[0]);
 
             return TRUE;
         }
@@ -11698,13 +11698,13 @@ PropRecord *hatApplyToChr(HatRecord *hat, ChrRecord *chr, ModelFileHeader *filed
 {
     prop = objInit((ObjectRecord*)hat, filedata, prop, model);
 
-    if (prop && hat->model)
+    if (prop && PGET(hat->model))
     {
         f32 scale = hat->extrascale * (1.0f / 256.0f);
 
-        modelSetScale(hat->model, hat->model->scale * scale);
-        hat->model->attachedto = chr->model;
-        hat->model->attachedto_objinst = PGET(chr->model->obj->Switches[6]);
+        modelSetScale(PGET(hat->model), PGET(hat->model)->scale * scale);
+        PGET(hat->model)->attachedto = chr->model;
+        PGET(hat->model)->attachedto_objinst = PGET(chr->model->obj->Switches[6]);
 
         chrpropReparent(prop, chr->prop);
         chr->handle_positiondata_hat = prop;
@@ -11765,8 +11765,8 @@ PropRecord *hatCreateForChr(ChrRecord *chr, s32 modelnum, u32 flags)
             0,      // pad
             0x00004000, // flags
             0,      // flags2
-            NULL,   // prop
-            NULL,   // model
+            0,   // prop
+            0,   // model
 
             { 1.0f, 0.0f, 0.0f, 0.0f,
               0.0f, 1.0f, 0.0f, 0.0f,
@@ -11777,8 +11777,8 @@ PropRecord *hatCreateForChr(ChrRecord *chr, s32 modelnum, u32 flags)
             { 0.0f, 0.0f, 0.0f }, // runtime_pos
 
             { 0x00000000 }, // runtime_bitflags
-            NULL, // ptr_allocated_collisiondata_block
-            NULL, // projectile/embedment
+            0, // ptr_allocated_collisiondata_block
+            0, // projectile/embedment
             0.0f, // maxdamage
             1000.0f, // damage
             { 0xFF, 0xFF, 0xFF, 0x00 }, // shadecol
@@ -11825,7 +11825,7 @@ WeaponObjRecord* weaponCreate(bool musthaveprop, bool musthavemodel, ModelFileHe
     for (i = g_NextWeaponSlot; TRUE; )
     {
 
-        if (g_WeaponSlots[i].prop == NULL)
+        if (PGET(g_WeaponSlots[i].prop) == NULL)
         {
             if (!musthaveprop && !musthavemodel)
             {
@@ -11835,13 +11835,13 @@ WeaponObjRecord* weaponCreate(bool musthaveprop, bool musthavemodel, ModelFileHe
         }  else if ((g_WeaponSlots[i].runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) == 0 && (g_WeaponSlots[i].state & PROPSTATE_RESPAWN) == 0)
         {
             WeaponObjRecord* slot = &g_WeaponSlots[i];
-            if (((slot->timer <= 0) && (slot->prop->parent == NULL))
+            if (((slot->timer <= 0) && (PGET(slot->prop)->parent == NULL))
                     || (((slot->weaponnum == ITEM_REMOTEMINE) || (slot->weaponnum == ITEM_PROXIMITYMINE) || (slot->weaponnum == ITEM_TIMEDMINE))
-                            && ((slot->prop->parent == NULL) || (slot->prop->parent->type == PROP_TYPE_OBJ) || (slot->prop->parent->type == PROP_TYPE_DOOR) || (slot->prop->parent->type == PROP_TYPE_WEAPON))))
+                            && ((PGET(slot->prop)->parent == NULL) || (PGET(slot->prop)->parent->type == PROP_TYPE_OBJ) || (PGET(slot->prop)->parent->type == PROP_TYPE_DOOR) || (PGET(slot->prop)->parent->type == PROP_TYPE_WEAPON))))
             {
-                if (!musthavemodel || modelmgrCanSlotFitRwdata(slot->model, modeldef))
+                if (!musthavemodel || modelmgrCanSlotFitRwdata(PGET(slot->model), modeldef))
                 {
-                    if ((slot->prop->flags & PROPFLAG_ONSCREEN) == 0 && sp40 < 0)
+                    if ((PGET(slot->prop)->flags & PROPFLAG_ONSCREEN) == 0 && sp40 < 0)
                     {
                         sp40 = i;
                     }
@@ -11877,7 +11877,7 @@ WeaponObjRecord* weaponCreate(bool musthaveprop, bool musthavemodel, ModelFileHe
 
     if (sp40 >= 0)
     {
-        if (g_WeaponSlots[sp40].prop)
+        if (PGET(g_WeaponSlots[sp40].prop))
         {
             objFreePermanently((ObjectRecord *)&g_WeaponSlots[sp40], TRUE);
         }
@@ -11888,7 +11888,7 @@ WeaponObjRecord* weaponCreate(bool musthaveprop, bool musthavemodel, ModelFileHe
 
     if (sp4c)
     {
-        if (sp4c->prop)
+        if (PGET(sp4c->prop))
         {
             objFreePermanently((ObjectRecord *)sp4c, TRUE);
         }
@@ -11898,7 +11898,7 @@ WeaponObjRecord* weaponCreate(bool musthaveprop, bool musthavemodel, ModelFileHe
 
     if (sp3c >= 0)
     {
-        if (g_WeaponSlots[sp3c].prop)
+        if (PGET(g_WeaponSlots[sp3c].prop))
         {
             objFreePermanently((ObjectRecord *)&g_WeaponSlots[sp3c], TRUE);
         }
@@ -11909,7 +11909,7 @@ WeaponObjRecord* weaponCreate(bool musthaveprop, bool musthavemodel, ModelFileHe
 
     if (sp48)
     {
-        if (sp48->prop)
+        if (PGET(sp48->prop))
         {
             objFreePermanently((ObjectRecord *)sp48, TRUE);
         }
@@ -11939,7 +11939,7 @@ HatRecord *hatCreate(bool musthaveprop, bool musthavemodel, ModelFileHeader *mod
 
 	for (i = g_NextHatSlot; TRUE; )
 	{
-		if (g_HatSlots[i].prop == NULL)
+		if (PGET(g_HatSlots[i].prop) == NULL)
 		{
 			if (!musthaveprop && !musthavemodel)
 			{
@@ -11948,10 +11948,10 @@ HatRecord *hatCreate(bool musthaveprop, bool musthavemodel, ModelFileHeader *mod
 			}
 		}
 		else if ((g_HatSlots[i].runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) == 0
-				&& g_HatSlots[i].prop->parent == NULL
-				&& (!musthavemodel || modelmgrCanSlotFitRwdata(g_HatSlots[i].model, modeldef)))
+				&& PGET(g_HatSlots[i].prop)->parent == NULL
+				&& (!musthavemodel || modelmgrCanSlotFitRwdata(PGET(g_HatSlots[i].model), modeldef)))
 		{
-			if ((g_HatSlots[i].prop->flags & PROPFLAG_ONSCREEN) == 0 && var_s1 < 0)
+			if ((PGET(g_HatSlots[i].prop)->flags & PROPFLAG_ONSCREEN) == 0 && var_s1 < 0)
 			{
 				var_s1 = i;
 			}
@@ -11985,7 +11985,7 @@ HatRecord *hatCreate(bool musthaveprop, bool musthavemodel, ModelFileHeader *mod
 
 	if (var_s1 >= 0)
 	{
-		if (g_HatSlots[var_s1].prop)
+		if (PGET(g_HatSlots[var_s1].prop))
 		{
 			objFreePermanently((ObjectRecord*)&g_HatSlots[var_s1], TRUE);
 		}
@@ -11996,7 +11996,7 @@ HatRecord *hatCreate(bool musthaveprop, bool musthavemodel, ModelFileHeader *mod
 
 	if (sp5c)
 	{
-		if (sp5c->prop)
+		if (PGET(sp5c->prop))
 		{
 			objFreePermanently((ObjectRecord*)sp5c, TRUE);
 		}
@@ -12006,7 +12006,7 @@ HatRecord *hatCreate(bool musthaveprop, bool musthavemodel, ModelFileHeader *mod
 
 	if (var_s3 >= 0)
 	{
-		if (g_HatSlots[var_s3].prop)
+		if (PGET(g_HatSlots[var_s3].prop))
 		{
 			objFreePermanently((ObjectRecord*)&g_HatSlots[var_s3], TRUE);
 		}
@@ -12017,7 +12017,7 @@ HatRecord *hatCreate(bool musthaveprop, bool musthavemodel, ModelFileHeader *mod
 
 	if (sp58)
 	{
-		if (sp58->prop)
+		if (PGET(sp58->prop))
 		{
 			objFreePermanently((ObjectRecord*)sp58, TRUE);
 		}
@@ -12042,7 +12042,7 @@ AmmoCrateRecord *ammocrateAllocate(void)
     // Try to find a free one
     for (i = 0; i < MAX_AMMO_CRATES; i++)
     {
-        if (g_AmmoCrates[i].prop == NULL)
+        if (PGET(g_AmmoCrates[i].prop) == NULL)
         {
             return (g_AmmoCrates + i);
         }
@@ -12053,8 +12053,8 @@ AmmoCrateRecord *ammocrateAllocate(void)
     {
         if ((g_AmmoCrates[i].runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) == 0
                 && (g_AmmoCrates[i].state & PROPSTATE_RESPAWN) == 0
-                && g_AmmoCrates[i].prop->parent == NULL
-                && (g_AmmoCrates[i].prop->flags & 0x02) == 0)
+                && PGET(g_AmmoCrates[i].prop)->parent == NULL
+                && (PGET(g_AmmoCrates[i].prop)->flags & 0x02) == 0)
         {
             objFreePermanently(&g_AmmoCrates[i], TRUE);
             return (g_AmmoCrates + i);
@@ -12066,7 +12066,7 @@ AmmoCrateRecord *ammocrateAllocate(void)
     {
         if ((g_AmmoCrates[i].runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) == 0
                 && (g_AmmoCrates[i].state & PROPSTATE_RESPAWN) == 0
-                && g_AmmoCrates[i].prop->parent == NULL)
+                && PGET(g_AmmoCrates[i].prop)->parent == NULL)
         {
             objFreePermanently(&g_AmmoCrates[i], TRUE);
             return (g_AmmoCrates + i);
@@ -12239,9 +12239,9 @@ void check_guard_detonate_proxmine(void)
 void propweaponSetDual(WeaponObjRecord *leftweapon, WeaponObjRecord *rightweapon) //#MATCH
 {
     leftweapon->LinkedWeaponType  = rightweapon->weaponnum;
-    leftweapon->dualweapon        = rightweapon;
+    PSET(leftweapon->dualweapon, rightweapon);
     rightweapon->LinkedWeaponType = leftweapon->weaponnum;
-    rightweapon->dualweapon       = leftweapon;
+    PSET(rightweapon->dualweapon, leftweapon);
 }
 
 
@@ -12287,24 +12287,24 @@ bool chrEquipWeapon(WeaponObjRecord *wep, ChrRecord *chr)
     }
 
     wep2 = wep;
-    if (wep2->prop && wep2->model)
+    if (PGET(wep2->prop) && PGET(wep2->model))
     {
         if (!(wep2->flags & PROPFLAG_CONCEAL_GUN))
         {
             if (!chr->weapons_held[hand])
             {
-                wep2->model->attachedto = chr->model;
+                PGET(wep2->model)->attachedto = chr->model;
 
                 if (hand == GUNRIGHT)
                 {
-                    wep2->model->attachedto_objinst = PGET(chr->model->obj->Switches[3]);
+                    PGET(wep2->model)->attachedto_objinst = PGET(chr->model->obj->Switches[3]);
                 }
                 else
                 {
-                    wep2->model->attachedto_objinst = PGET(chr->model->obj->Switches[5]);
+                    PGET(wep2->model)->attachedto_objinst = PGET(chr->model->obj->Switches[5]);
                 }
 
-                chr->weapons_held[hand] = wep2->prop;
+                chr->weapons_held[hand] = PGET(wep2->prop);
 
                 if (wep2->flags & PROPFLAG_IS_DOUBLE && chr->weapons_held[1 - hand])
                 {
@@ -12319,7 +12319,7 @@ bool chrEquipWeapon(WeaponObjRecord *wep, ChrRecord *chr)
                 return FALSE;
             }
         }
-        chrpropReparent(wep2->prop, chr->prop);
+        chrpropReparent(PGET(wep2->prop), chr->prop);
     }
     return TRUE;
 }
@@ -12329,13 +12329,13 @@ PropRecord *sub_GAME_7F051F30(WeaponObjRecord *weapon, ChrRecord *chr, ModelFile
 {
 	prop = complete_object_data_block_return_position_entry(weapon, modeldef, prop, model);
 
-	if (prop && weapon->model)
+	if (prop && PGET(weapon->model))
 	{
 		f32 scale = weapon->extrascale * (1.0f / 256.0f);
 
-		modelSetScale(weapon->model, weapon->model->scale * scale);
+		modelSetScale(PGET(weapon->model), PGET(weapon->model)->scale * scale);
         chrEquipWeapon(weapon, chr);
-        if (weapon->model);
+        if (PGET(weapon->model));
 	}
 
 	return prop;
@@ -12367,8 +12367,8 @@ WeaponObjRecord blank_08_object_preset_1 = {
     1, //pad
     0x00000000, //flags
     0, //flags2
-    NULL, // prop
-    NULL, // model
+    0, // prop
+    0, // model
     {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
@@ -12377,8 +12377,8 @@ WeaponObjRecord blank_08_object_preset_1 = {
     }, //mtx
     { 0.0, 0.0, 0.0 }, //runtime_pos
     {0x00000000 }, //runtime_bitflags
-    NULL, //ptr_allocated_collisiondata_block
-    NULL, //projectile/embedment
+    0, //ptr_allocated_collisiondata_block
+    0, //projectile/embedment
     0.0f, //maxdamage
     1000.0f,//damage
     { 0xFF, 0xFF, 0xFF, 0x00 }, // shadecol
@@ -12386,7 +12386,7 @@ WeaponObjRecord blank_08_object_preset_1 = {
     ITEM_UNARMED, //weaponnum
     -1, //LinkedWeaponType
     -1, //timer
-    NULL //dualweapon
+    0 //dualweapon
 };
 
 
@@ -12472,8 +12472,8 @@ WeaponObjRecord blank_08_object_preset_4001 = {
     0x4001, //pad
     0x00000000, //flags
     0, //flags2
-    NULL, //prop
-    NULL, //model
+    0, //prop
+    0, //model
     {
        1.0f, 0.0f, 0.0f, 0.0f,
        0.0f, 1.0f, 0.0f, 0.0f,
@@ -12482,8 +12482,8 @@ WeaponObjRecord blank_08_object_preset_4001 = {
     }, //mtx
     {0.0, 0.0, 0.0},//runtime_pos
     {0x00000000}, //runtime_bitflags
-    NULL, //ptr_allocated_collisiondata_block
-    NULL, //projectile/embedment
+    0, //ptr_allocated_collisiondata_block
+    0, //projectile/embedment
     0.0f, //maxdamage
     1000.0f, //damage
     { 0xFF, 0xFF, 0xFF, 0x00 }, // shadecol
@@ -12491,7 +12491,7 @@ WeaponObjRecord blank_08_object_preset_4001 = {
     ITEM_UNARMED, //weaponnu
     -1, //LinkedWeaponType
     -1, //timer
-    NULL //dualweapon
+    0 //dualweapon
 };
 
 /**
@@ -12665,7 +12665,7 @@ void chrRenderHeldWeapon(void *renderContext, GUNHAND hand, Gfx **gdl)
         {
             if ((s32)(weaponObj->flags2 << 12) >= 0) 
             {
-                heldModel = weaponObj->model;
+                heldModel = PGET(weaponObj->model);
                 renderData = D_800322A4;
 
                 chrModel = chr->model;
@@ -12717,7 +12717,7 @@ TICKOP weaponTickPlayer(struct PropRecord* arg0)
 void weaponSetGunfireVisible(PropRecord *prop, s32 firing)
 {
     ObjectRecord *obj = prop->obj;
-    Model *model = obj->model;
+    Model *model = PGET(obj->model);
     ModelNode *node;
 
     if (model && model->obj->Skeleton == &skeleton_prop_weapon) {
@@ -12743,7 +12743,7 @@ void weaponSetGunfireVisible(PropRecord *prop, s32 firing)
 s32 weaponIsGunfireVisible(PropRecord *prop)
 {
     ObjectRecord *obj = prop->obj;
-    Model *model = obj->model;
+    Model *model = PGET(obj->model);
     ModelNode *node;
 
     if (model && model->obj->Skeleton == &skeleton_prop_weapon) {
@@ -12928,7 +12928,7 @@ void doorUpdateBbox(DoorRecord *door)
     struct ModelRoData_BoundingBoxRecord *door_bb;
     Mtxf sp2C;
 
-    door_bb = (struct ModelRoData_BoundingBoxRecord *)PGET(PGET(door->model->obj->RootNode->Child)->Data);
+    door_bb = (struct ModelRoData_BoundingBoxRecord *)PGET(PGET(PGET(door->model)->obj->RootNode->Child)->Data);
 
     // struct copy
     door->bbox = *door_bb;
@@ -12948,29 +12948,29 @@ void doorUpdateBbox(DoorRecord *door)
 
     if (door->perimFrac <= door->openPosition)
     {
-        door->ptr_allocated_collisiondata_block->edges = 0;
+        PGET(door->ptr_allocated_collisiondata_block)->edges = 0;
 
         return;
     }
 
     door7F0526EC(door, &sp2C);
-    sub_GAME_7F03F540(&door->bbox, &sp2C, &door->ptr_allocated_collisiondata_block->polygon, door->ptr_allocated_collisiondata_block);
+    sub_GAME_7F03F540(&door->bbox, &sp2C, &PGET(door->ptr_allocated_collisiondata_block)->polygon, PGET(door->ptr_allocated_collisiondata_block));
 
     if (door->doorType == DOORTYPE_VERTICAL)
     {
-        door->ptr_allocated_collisiondata_block->bottom = door->runtime_pos.f[1] + chrpropSumMatrixPosY(&door->bbox, &sp2C);
+        PGET(door->ptr_allocated_collisiondata_block)->bottom = door->runtime_pos.f[1] + chrpropSumMatrixPosY(&door->bbox, &sp2C);
     }
     else if (door->doorType == DOORTYPE_FALLAWAY)
     {
-        door->ptr_allocated_collisiondata_block->bottom = door->runtime_pos.f[1] - 10000.0f;
+        PGET(door->ptr_allocated_collisiondata_block)->bottom = door->runtime_pos.f[1] - 10000.0f;
     }
     else
     {
-        door->ptr_allocated_collisiondata_block->bottom = sp2C.m[3][1] + chrpropSumMatrixPosY(&door->bbox, &sp2C);
+        PGET(door->ptr_allocated_collisiondata_block)->bottom = sp2C.m[3][1] + chrpropSumMatrixPosY(&door->bbox, &sp2C);
 
         if (door->doorFlags & DOORFLAG_EXTENDEDY)
         {
-            door->ptr_allocated_collisiondata_block->bottom -= 1000.0f;
+            PGET(door->ptr_allocated_collisiondata_block)->bottom -= 1000.0f;
         }
     }
 
@@ -12979,19 +12979,19 @@ void doorUpdateBbox(DoorRecord *door)
         )
     {
 
-        door->ptr_allocated_collisiondata_block->top = door->ptr_allocated_collisiondata_block->bottom + 50.0f;
+        PGET(door->ptr_allocated_collisiondata_block)->top = PGET(door->ptr_allocated_collisiondata_block)->bottom + 50.0f;
     }
     else if (door->doorType == DOORTYPE_FALLAWAY)
     {
-        door->ptr_allocated_collisiondata_block->top = door->runtime_pos.f[1] + 1000.0f;
+        PGET(door->ptr_allocated_collisiondata_block)->top = door->runtime_pos.f[1] + 1000.0f;
     }
     else
     {
-        door->ptr_allocated_collisiondata_block->top = sp2C.m[3][1] + chrpropSumMatrixNegY(&door->bbox, &sp2C);
+        PGET(door->ptr_allocated_collisiondata_block)->top = sp2C.m[3][1] + chrpropSumMatrixNegY(&door->bbox, &sp2C);
 
         if (door->doorFlags & DOORFLAG_EXTENDEDY)
         {
-            door->ptr_allocated_collisiondata_block->top += 1000.0f;
+            PGET(door->ptr_allocated_collisiondata_block)->top += 1000.0f;
         }
     }
 
@@ -13028,7 +13028,7 @@ void doorBuildClippedVertices(DoorRecord *inDoor)
     if (inDoor->doorFlags & DOORFLAG_CLIP_TO_BBOX)
     {
         door = inDoor;
-        mdl = inDoor->model;
+        mdl = PGET(inDoor->model);
         mdlDLCNode = PGET(PGET(mdl->obj->RootNode->Child)->Child);
         src = (struct ModelRoData_DisplayList_CollisionRecord *)PGET(mdlDLCNode->Data);
         inDoor = (DoorRecord *)modelGetNodeRwData(mdl, mdlDLCNode);
@@ -13153,7 +13153,7 @@ PropRecord* doorInit(DoorRecord* door, coord3d* pos, Mtxf* mtx, StandTile* stan,
 
     prop = objInitWithAutoModel((ObjectRecord* ) door);
     scale = PitemZ_entries[door->obj].scale;
-    door->ptr_allocated_collisiondata_block = mempAllocBytesInBank(0x50U, MEMPOOL_STAGE);
+    PSET(door->ptr_allocated_collisiondata_block, mempAllocBytesInBank(0x50U, MEMPOOL_STAGE));
 
     matrix_4x4_copy(mtx, &door->mtx);
     matrix_scalar_multiply(scale, door->mtx.m[0]);
@@ -13171,18 +13171,18 @@ PropRecord* doorInit(DoorRecord* door, coord3d* pos, Mtxf* mtx, StandTile* stan,
     door->speed = 0.0f;
     door->openstate = DOORSTATE_STATIONARY;
     door->unkbd = 0;
-    door->linkedDoor = NULL;
+    PSET(door->linkedDoor, NULL);
 
     if (door->doorFlags & DOORFLAG_CLIP_TO_BBOX) {
-        union ModelRoData *rodata = PGET(PGET(PGET(door->model->obj->RootNode->Child)->Child)->Data);
-        door->unkcc = mempAllocBytesInBank(rodata->DisplayListCollisions.numVertices * sizeof(Vertex), MEMPOOL_STAGE);
+        union ModelRoData *rodata = PGET(PGET(PGET(PGET(door->model)->obj->RootNode->Child)->Child)->Data);
+        PSET(door->unkcc, mempAllocBytesInBank(rodata->DisplayListCollisions.numVertices * sizeof(Vertex), MEMPOOL_STAGE));
     } else {
-        door->unkcc = NULL;
+        PSET(door->unkcc, NULL);
     }
 
     door->portalNumber = -1;
-    door->openSoundState = 0;
-    door->closeSoundState = 0;
+    PSET(door->openSoundState, 0);
+    PSET(door->closeSoundState, 0);
 
     prop->type = PROP_TYPE_DOOR;
     prop->door = door;
@@ -13198,7 +13198,7 @@ PropRecord* doorInit(DoorRecord* door, coord3d* pos, Mtxf* mtx, StandTile* stan,
 
     doorUpdateBbox(door);
     doorBuildClippedVertices(door);
-    sub_GAME_7F0402B4(door->prop, &door->nextcol);
+    sub_GAME_7F0402B4(PGET(door->prop), &door->nextcol);
 
     door->shadecol.r = door->nextcol.r;
     door->shadecol.g = door->nextcol.g;
@@ -13585,13 +13585,13 @@ void sub_GAME_7F053A3C(DoorRecord* arg0)
     s32 close_playing;
     s32 sp1C;
 
-    open_playing = (arg0->openSoundState != NULL) && (sndGetPlayingState(arg0->openSoundState) != 0);
-    close_playing = (arg0->closeSoundState != NULL) && (sndGetPlayingState(arg0->closeSoundState) != 0);
+    open_playing = (PGET(arg0->openSoundState) != NULL) && (sndGetPlayingState(PGET(arg0->openSoundState)) != 0);
+    close_playing = (PGET(arg0->closeSoundState) != NULL) && (sndGetPlayingState(PGET(arg0->closeSoundState)) != 0);
 
     if ((open_playing != 0) || (close_playing != 0))
     {
 
-        sp1C = sub_GAME_7F0539E4(&arg0->prop->pos);
+        sp1C = sub_GAME_7F0539E4(&PGET(arg0->prop)->pos);
 
         if (lvlGetControlsLockedFlag() != 0)
         {
@@ -13603,9 +13603,9 @@ void sub_GAME_7F053A3C(DoorRecord* arg0)
             #ifdef DEBUG
             assert( po->audiostate!=NULL);
             #endif
-            sndCreatePostEvent(arg0->openSoundState, 8, sp1C);
+            sndCreatePostEvent(PGET(arg0->openSoundState), 8, sp1C);
 #ifndef TARGET_N64
-            portSndApplyPan(arg0->openSoundState, &arg0->prop->pos);
+            portSndApplyPan(PGET(arg0->openSoundState), &PGET(arg0->prop)->pos);
 #endif
         }
 
@@ -13614,9 +13614,9 @@ void sub_GAME_7F053A3C(DoorRecord* arg0)
             #ifdef DEBUG
             assert( po->audiostate2!=NULL);
             #endif
-            sndCreatePostEvent(arg0->closeSoundState, 8, sp1C);
+            sndCreatePostEvent(PGET(arg0->closeSoundState), 8, sp1C);
 #ifndef TARGET_N64
-            portSndApplyPan(arg0->closeSoundState, &arg0->prop->pos);
+            portSndApplyPan(PGET(arg0->closeSoundState), &PGET(arg0->prop)->pos);
 #endif
         }
     }
@@ -13625,14 +13625,14 @@ void sub_GAME_7F053A3C(DoorRecord* arg0)
 
 void door7F053B10(DoorRecord *door) //#MATCH
 {
-    if (door->openSoundState && sndGetPlayingState(door->openSoundState))
+    if (PGET(door->openSoundState) && sndGetPlayingState(PGET(door->openSoundState)))
     {
-        sndDeactivate(door->openSoundState);
+        sndDeactivate(PGET(door->openSoundState));
     }
 
-    if (door->closeSoundState && sndGetPlayingState(door->closeSoundState))
+    if (PGET(door->closeSoundState) && sndGetPlayingState(PGET(door->closeSoundState)))
     {
-        sndDeactivate(door->closeSoundState);
+        sndDeactivate(PGET(door->closeSoundState));
     }
 }
 
@@ -13645,13 +13645,13 @@ void doorPlayOpenSound0(DoorRecord *door) {
 
     door7F053B10(door);
 
-    if (door->openSoundState == NULL)
+    if (PGET(door->openSoundState) == NULL)
     {
-        pendingState = &door->openSoundState;
+        pendingState = SND_SLOT32(door->openSoundState);
     }
-    else if (door->closeSoundState == NULL)
+    else if (PGET(door->closeSoundState) == NULL)
     {
-        pendingState = &door->closeSoundState;
+        pendingState = SND_SLOT32(door->closeSoundState);
     }
 
     switch (door->doorOpenSound)
@@ -13745,7 +13745,7 @@ void doorPlayOpenSound0(DoorRecord *door) {
         soundState = sndPlaySfx(g_musicSfxBufferPtr, TRAIN_SLIDE_DOOR_SLIDE_SFX, NULL);
         if (soundState != NULL)
         {
-            chrobjSndCreatePostEventDefault(soundState, &door->prop->pos);
+            chrobjSndCreatePostEventDefault(soundState, &PGET(door->prop)->pos);
         }
         soundState = sndPlaySfx(g_musicSfxBufferPtr, METAL_SLIDE_OPEN_SFX, NULL);
         if (pendingState != NULL)
@@ -13757,7 +13757,7 @@ void doorPlayOpenSound0(DoorRecord *door) {
 
     if (soundState != NULL)
     {
-        chrobjSndCreatePostEventDefault(soundState, &door->prop->pos);
+        chrobjSndCreatePostEventDefault(soundState, &PGET(door->prop)->pos);
     }
 
     sub_GAME_7F053A3C(door);
@@ -13774,13 +13774,13 @@ void doorPlayOpenSound1(DoorRecord *door) {
 
     door7F053B10(door);
 
-    if (door->openSoundState == NULL)
+    if (PGET(door->openSoundState) == NULL)
     {
-        pendingState = &door->openSoundState;
+        pendingState = SND_SLOT32(door->openSoundState);
     }
-    else if (door->closeSoundState == NULL)
+    else if (PGET(door->closeSoundState) == NULL)
     {
-        pendingState = &door->closeSoundState;
+        pendingState = SND_SLOT32(door->closeSoundState);
     }
 
     switch (door->doorOpenSound)
@@ -13859,7 +13859,7 @@ void doorPlayOpenSound1(DoorRecord *door) {
         soundState = sndPlaySfx(g_musicSfxBufferPtr, TRAIN_SLIDE_DOOR_SLIDE_SFX, NULL);
         if (soundState != NULL)
         {
-            chrobjSndCreatePostEventDefault(soundState, &door->prop->pos);
+            chrobjSndCreatePostEventDefault(soundState, &PGET(door->prop)->pos);
         }
         soundState = sndPlaySfx(g_musicSfxBufferPtr, METAL_SLIDE_OPEN_SFX, NULL);
         if (pendingState != NULL)
@@ -13871,7 +13871,7 @@ void doorPlayOpenSound1(DoorRecord *door) {
 
     if (soundState != NULL)
     {
-        chrobjSndCreatePostEventDefault(soundState, &door->prop->pos);
+        chrobjSndCreatePostEventDefault(soundState, &PGET(door->prop)->pos);
     }
 
     sub_GAME_7F053A3C(door);
@@ -13930,7 +13930,7 @@ void doorPlayCloseSound0(DoorRecord *door) {
 
     if (soundState != NULL)
     {
-        chrobjSndCreatePostEventDefault(soundState, &door->prop->pos);
+        chrobjSndCreatePostEventDefault(soundState, &PGET(door->prop)->pos);
     }
 
     sub_GAME_7F053A3C(door);
@@ -14004,7 +14004,7 @@ void doorPlayCloseSound1(DoorRecord *door)
     if (door); // Fix for recomp not matching
 
     if (soundState != NULL) {
-        chrobjSndCreatePostEventDefault(soundState, &door->prop->pos);
+        chrobjSndCreatePostEventDefault(soundState, &PGET(door->prop)->pos);
     }
 
     sub_GAME_7F053A3C(door);
@@ -14024,7 +14024,7 @@ void doorStartOpen(DoorRecord *door)
 
     if (door->doorType == DOORTYPE_FALLAWAY)
     {
-        struct collision_data *col = door->ptr_allocated_collisiondata_block;
+        struct collision_data *col = PGET(door->ptr_allocated_collisiondata_block);
         door->flags |= PROPFLAG_CANNOT_ACTIVATE;
         door->perimFrac = 0;
 
@@ -14050,12 +14050,12 @@ void doorFinishOpen(DoorRecord *door)
 
     if (door->doorType == DOORTYPE_FALLAWAY)
     {
-        sub_GAME_7F03FDA8(door->prop);
+        sub_GAME_7F03FDA8(PGET(door->prop));
 
         if (door->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
         {
-            door->projectile->flags |= 1;
-            matrix_4x4_set_identity(&door->projectile->mtx);
+            PGET(door->projectile)->flags |= 1;
+            matrix_4x4_set_identity(&PGET(door->projectile)->mtx);
         }
     }
 }
@@ -14126,12 +14126,12 @@ void doorActivate(DoorRecord *door, DOORSTATE State) //#MATCH
 
     doorSetOpenState(door, State);
 
-    linkeddoor = door->linkedDoor;
+    linkeddoor = PGET(door->linkedDoor);
 
     while (linkeddoor && linkeddoor != door)
     {
         doorSetOpenState(linkeddoor, LinkedState);
-        linkeddoor = linkeddoor->linkedDoor;
+        linkeddoor = PGET(linkeddoor->linkedDoor);
     };
 }
 
@@ -14717,7 +14717,7 @@ void door7F054FB4(DoorRecord *door)
             var_s4 = 1;
         }
 
-        var_s1 = var_s1->linkedDoor;
+        var_s1 = PGET(var_s1->linkedDoor);
 
         if (var_s1 == door)
         {
@@ -14731,14 +14731,14 @@ void door7F054FB4(DoorRecord *door)
         while (var_s1 != NULL)
         {
             doorUpdateBbox(var_s1);
-            var_s5 = sub_GAME_7F0448A8(var_s1->prop);
+            var_s5 = sub_GAME_7F0448A8(PGET(var_s1->prop));
 
             if (var_s5 == 0)
             {
                 break;
             }
 
-            var_s1 = var_s1->linkedDoor;
+            var_s1 = PGET(var_s1->linkedDoor);
 
             if (var_s1 == door)
             {
@@ -14780,7 +14780,7 @@ void door7F054FB4(DoorRecord *door)
                     doorFinishClose(var_s1);
                 }
 
-                sub_GAME_7F0402B4(var_s1->prop, &var_s1->nextcol);
+                sub_GAME_7F0402B4(PGET(var_s1->prop), &var_s1->nextcol);
             }
             else
             {
@@ -14794,17 +14794,17 @@ void door7F054FB4(DoorRecord *door)
         }
         else if  (var_s1->doorFlags & DOORFLAG_CLIP_TO_BBOX)
         {
-            temp_a0 = var_s1->model;
+            temp_a0 = PGET(var_s1->model);
             temp_a1 = PGET(PGET(temp_a0->obj->RootNode->Child)->Child);
             temp_s0 = (struct ModelRoData_DisplayList_CollisionRecord *)PGET(temp_a1->Data);
             temp_v0_3 = (struct ModelRwData_DisplayList_CollisionRecord*)modelGetNodeRwData(temp_a0, temp_a1);
 
-            if (PGET(temp_v0_3->Vertices) != var_s1->unkcc)
+            if (PGET(temp_v0_3->Vertices) != PGET(var_s1->unkcc))
             {
                 for (var_a0 = 0; var_a0 < temp_s0->numVertices; var_a0++)
                 {
                     // struct copy
-                    var_s1->unkcc[var_a0] = PGET(temp_v0_3->Vertices)[var_a0];
+                    PGET(var_s1->unkcc)[var_a0] = PGET(temp_v0_3->Vertices)[var_a0];
                 }
 #ifndef TARGET_N64
                 { /* port: unkcc is rewritten in place with the stopped door's
@@ -14812,12 +14812,12 @@ void door7F054FB4(DoorRecord *door)
                    * stale and must be dropped (roc_hooks.c; otherwise e.g.
                    * Train's closed door draws as a sliver) */
                     extern void portPartCacheVerticesFreed(const void *vtx);
-                    portPartCacheVerticesFreed(var_s1->unkcc);
+                    portPartCacheVerticesFreed(PGET(var_s1->unkcc));
                 }
 #endif
             }
 
-            PSET(temp_v0_3->Vertices, var_s1->unkcc);
+            PSET(temp_v0_3->Vertices, PGET(var_s1->unkcc));
         }
 
 #ifndef TARGET_N64
@@ -14826,7 +14826,7 @@ void door7F054FB4(DoorRecord *door)
         var_s1->lastcalc60i = g_GlobalTimer;
 #endif
 
-        var_s1 = var_s1->linkedDoor;
+        var_s1 = PGET(var_s1->linkedDoor);
 
         if (var_s1 == door)
         {
@@ -14987,12 +14987,12 @@ bool door7F0555F8(DoorRecord *door, bool altcoordsystem)
 
         if ((sp50 >= -limit) && (sp50 <= limit) && (sp4c >= -limit) && (sp4c <= limit))
         {
-            g_InteractProp = door->prop;
+            g_InteractProp = PGET(door->prop);
             checkmore = FALSE;
         }
         else
         {
-            sibling = door->linkedDoor;
+            sibling = PGET(door->linkedDoor);
 
             while (sibling != NULL && sibling != door && (sp50 >= 0.0f || sp4c < 0.0f))
             {
@@ -15008,12 +15008,12 @@ bool door7F0555F8(DoorRecord *door, bool altcoordsystem)
                     sp4c = sp3c;
                 }
 
-                sibling = sibling->linkedDoor;
+                sibling = PGET(sibling->linkedDoor);
             }
 
             if ((sp4c - sp50) < M_PI_F && (sp50 < 0.0f) && (sp4c > 0.0f))
             {
-                g_InteractProp = door->prop;
+                g_InteractProp = PGET(door->prop);
                 checkmore = FALSE;
             }
         }
@@ -15184,7 +15184,7 @@ void doorsChooseSwingDirection(PropRecord *chrprop, DoorRecord *door)
             do
             {
                 sibling->flags ^= PROPFLAG_DOOR_OPENTOFRONT;
-                sibling = sibling->linkedDoor;
+                sibling = PGET(sibling->linkedDoor);
             } while (sibling && sibling != door);
         }
     }
@@ -15549,7 +15549,7 @@ void sub_GAME_7F056690(void)
             s1 = s2->obj;
             if (s1->state & 0x80)
             {
-                s3 = s1->model;
+                s3 = PGET(s1->model);
                 t0 = sub_GAME_7F04B478(s1);
                 if (t0 == NULL)
                 {
@@ -15561,7 +15561,7 @@ void sub_GAME_7F056690(void)
                 {
                     return;
                 }
-                if (sub_GAME_7F04B590(s1->model->obj, t0) != 0)
+                if (sub_GAME_7F04B590(PGET(s1->model)->obj, t0) != 0)
                 {
                     new_var = &s3->datas[s0->RwDataIndex];
                     if ((uintptr_t)PGET(s0->Vertices) != (uintptr_t)PGET(*new_var))

@@ -49,7 +49,7 @@ void init_path_table_links(void)
         {
             neighbourIndex = 0;
 
-            while ((neighbourNum = ((waypoint *) currentWaypoint)->neighbours[neighbourIndex]) >= 0)
+            while ((neighbourNum = PGET(((waypoint *) currentWaypoint)->neighbours)[neighbourIndex]) >= 0)
             {
                 if (neighbourNum == waypointIndex)
                 {
@@ -76,12 +76,12 @@ void init_path_table_links(void)
                     reverseIndex = 0;
                     linkedWaypoint = &waypoints[neighbourNum];
 
-                    while ((linkedWaypoint->neighbours[reverseIndex] >= 0) && (waypointIndex != linkedWaypoint->neighbours[reverseIndex]))
+                    while ((PGET(linkedWaypoint->neighbours)[reverseIndex] >= 0) && (waypointIndex != PGET(linkedWaypoint->neighbours)[reverseIndex]))
                     {
                         reverseIndex++;
                     }
  
-                    if (waypointIndex != linkedWaypoint->neighbours[reverseIndex])
+                    if (waypointIndex != PGET(linkedWaypoint->neighbours)[reverseIndex])
                     {
 #ifdef DEBUG
                         if (g_CurrentSetup.padnames == NULL)
@@ -148,14 +148,14 @@ void init_path_table_links(void)
             validationGroupIndex = 0;
             validationGroup = groups;
 
-            if (validationGroup->neighbours != NULL)
+            if (PGET(validationGroup->neighbours) != NULL)
             {
                 validationGroupCursors[-3] = groups;
 
                 do
                 {
                     groupNeighbourIndex = 0;
-                    waypointNum = validationGroup->neighbours[groupNeighbourIndex];
+                    waypointNum = PGET(validationGroup->neighbours)[groupNeighbourIndex];
 
                     while (waypointNum >= 0)
                     {
@@ -180,7 +180,7 @@ void init_path_table_links(void)
                             linkedGroup = &groups[waypointNum];
                             reverseIndex = 0;
 
-                            while ((linkedGroup->neighbours[reverseIndex] >= 0) && (validationGroupIndex != linkedGroup->neighbours[reverseIndex]))
+                            while ((PGET(linkedGroup->neighbours)[reverseIndex] >= 0) && (validationGroupIndex != PGET(linkedGroup->neighbours)[reverseIndex]))
                             {
                                 reverseIndex++;
 
@@ -192,7 +192,7 @@ void init_path_table_links(void)
                                 }
                             }
  
-                            if (validationGroupIndex != linkedGroup->neighbours[reverseIndex])
+                            if (validationGroupIndex != PGET(linkedGroup->neighbours)[reverseIndex])
                             {
                                 if (g_CurrentSetup.boundpadnames != NULL)
                                 {
@@ -236,14 +236,14 @@ void init_path_table_links(void)
                                 }
                         }
                         groupNeighbourIndex++;
-                        waypointNum = validationGroup->neighbours[groupNeighbourIndex];
+                        waypointNum = PGET(validationGroup->neighbours)[groupNeighbourIndex];
                     }
  
                     validationGroupIndex++;
                     validationGroupCursors[-3]++;
                     validationGroup = validationGroupCursors[-3];
                 }
-                while (validationGroupCursors[-3]->neighbours != NULL);
+                while (PGET(validationGroupCursors[-3]->neighbours) != NULL);
             }
         }
         if ((waypoints != NULL) && (groups != NULL))
@@ -253,7 +253,7 @@ void init_path_table_links(void)
                 floodGroup = groups;
                 validationWaypoint = waypoints + hasError * 0;
 
-                if (floodGroup->neighbours != NULL)
+                if (PGET(floodGroup->neighbours) != NULL)
                 {
                     currentWaypoint = groups;
                     assignmentGroupCursor = floodGroup;
@@ -265,7 +265,7 @@ void init_path_table_links(void)
                         if (assignmentGroupCursor);
                         if (assignmentGroupCursor);
 
-                        member = floodGroup->waypoints;
+                        member = PGET(floodGroup->waypoints);
 
                         while ((*member) >= 0)
                         {
@@ -295,14 +295,14 @@ void init_path_table_links(void)
                             }
 
                             waypointIndex += 4;
-                            member = (s32 *) (((char *) floodGroup->waypoints) + waypointIndex);
+                            member = (s32 *) (((char *) PGET(floodGroup->waypoints)) + waypointIndex);
                         }
  
                         currentWaypoint++;
                         floodGroup = currentWaypoint;
                         assignmentGroupIndex++;
                     }
-                    while (currentWaypoint->neighbours != NULL);
+                    while (PGET(currentWaypoint->neighbours) != NULL);
                 }
  
             }
@@ -339,12 +339,12 @@ void init_path_table_links(void)
  
             }
 
-            if (groups->neighbours != NULL)
+            if (PGET(groups->neighbours) != NULL)
             {
                 do
                 {
                     memberIndex = 0;
-                    floodWaypointNum = floodGroup->waypoints[memberIndex];
+                    floodWaypointNum = PGET(floodGroup->waypoints)[memberIndex];
 
                     while (floodWaypointNum >= 0)
                     {
@@ -362,13 +362,13 @@ void init_path_table_links(void)
                         }
 
                         memberIndex++;
-                        floodWaypointNum = floodGroup->waypoints[memberIndex];
+                        floodWaypointNum = PGET(floodGroup->waypoints)[memberIndex];
                     }
  
                     while (1)
                     {
                         memberIndex = 0;
-                        floodWaypointNum = floodGroup->waypoints[memberIndex];
+                        floodWaypointNum = PGET(floodGroup->waypoints)[memberIndex];
                         changed = 0;
                         disconnected = 0;
 
@@ -379,7 +379,7 @@ void init_path_table_links(void)
                             if (floodWaypoint->dist == 1)
                             {
                                 floodReverseIndex = 0;
-                                linkedWaypointNum = floodWaypoint->neighbours[floodReverseIndex];
+                                linkedWaypointNum = PGET(floodWaypoint->neighbours)[floodReverseIndex];
 
                                 if (linkedWaypointNum >= 0)
                                 {
@@ -394,18 +394,18 @@ void init_path_table_links(void)
                                         }
 
                                         floodReverseIndex++;
-                                        linkedWaypointNum = floodWaypoint->neighbours[floodReverseIndex];
+                                        linkedWaypointNum = PGET(floodWaypoint->neighbours)[floodReverseIndex];
                                     }
                                     while (linkedWaypointNum >= 0);
                                 }
                             }
 
                             memberIndex++;
-                            floodWaypointNum = floodGroup->waypoints[memberIndex];
+                            floodWaypointNum = PGET(floodGroup->waypoints)[memberIndex];
                         }
  
                         memberIndex = 0;
-                        floodWaypointNum = floodGroup->waypoints[memberIndex];
+                        floodWaypointNum = PGET(floodGroup->waypoints)[memberIndex];
 
                         while (floodWaypointNum >= 0)
                         {
@@ -418,7 +418,7 @@ void init_path_table_links(void)
                                 break;
                             }
 
-                            floodWaypointNum = floodGroup->waypoints[memberIndex];
+                            floodWaypointNum = PGET(floodGroup->waypoints)[memberIndex];
                         }
  
                         if ((!changed) || (!disconnected))
@@ -452,7 +452,7 @@ void init_path_table_links(void)
                     currentWaypoint = ((waygroup *) currentWaypoint) + 1;
                     floodGroup = (waygroup *) currentWaypoint;
                 }
-                while (((waygroup *) currentWaypoint)->neighbours != NULL);
+                while (PGET(((waygroup *) currentWaypoint)->neighbours) != NULL);
             }
         }
     }

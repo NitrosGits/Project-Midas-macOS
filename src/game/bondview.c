@@ -379,8 +379,8 @@ WeaponObjRecord dummy_08_pp7_obj[] = {
     0x4000,
     0x00000000,
     0x00000000,
-    NULL,
-    NULL,
+    0,
+    0,
     {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
@@ -389,8 +389,8 @@ WeaponObjRecord dummy_08_pp7_obj[] = {
     },
     {0.0f, 0.0f, 0.0f},
     {0x00000000},
-    NULL,
-    NULL,
+    0,
+    0,
     0.0f,
     1000.0f,
     {0xff, 0xff, 0xff, 0x00},
@@ -401,7 +401,7 @@ WeaponObjRecord dummy_08_pp7_obj[] = {
     ITEM_WPPK,
     -1,
     -1,
-    NULL
+    0
 };
 
 
@@ -1295,9 +1295,9 @@ void portStartpadVisibilityUpdate(void)
     {
         u8 v = 0;
 
-        if (g_CurrentPlayer->bondhealth > 0.0f && g_Startpad[j] != NULL && g_Startpad[j]->stan != NULL)
+        if (g_CurrentPlayer->bondhealth > 0.0f && g_Startpad[j] != NULL && PGET(g_Startpad[j]->stan) != NULL)
         {
-            const s32 room = getTileRoom(g_Startpad[j]->stan);
+            const s32 room = getTileRoom(PGET(g_Startpad[j]->stan));
 
             if (getROOMID_isRendered(room) > 0)
             {

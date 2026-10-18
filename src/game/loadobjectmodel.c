@@ -323,7 +323,7 @@ s32 setupGetCommandIndexByProp(struct PropRecord *prop)
     {
         for (i = 0; object->type != PROPDEF_END; i++)
         {
-            if ((void*)((struct ObjectRecord *)object)->prop == (void*)prop)
+            if ((void*)PGET(((struct ObjectRecord *)object)->prop) == (void*)prop)
             {
                 return i;
             }
@@ -394,7 +394,7 @@ void setupUpdateObjectRoomPosition(ObjectRecord *obj)
     struct ModelRoData_BoundingBoxRecord *sp30;
     f32 phi_f20;
 
-    temp_s1 = obj->prop;
+    temp_s1 = PGET(obj->prop);
     phi_f20 = 0.0f;
     chrpropDeregisterRooms(temp_s1);
 
@@ -559,7 +559,7 @@ ObjectRecord *setupFindObjForReuse(s32 wanttype, ObjectRecord **offscreenobjptr,
             {
                 ObjectRecord *obj = (ObjectRecord *)cmd;
 
-                if (obj->prop == NULL)
+                if (PGET(obj->prop) == NULL)
                 {
                     if (!musthaveprop && !musthavemodel)
                     {
@@ -569,10 +569,10 @@ ObjectRecord *setupFindObjForReuse(s32 wanttype, ObjectRecord **offscreenobjptr,
                 else if (wanttype != PROP_TYPE_SMOKE
                         && (obj->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE) == 0
                         && (obj->state & PROPSTATE_RESPAWN) == 0
-                        && obj->prop->parent == NULL
-                        && (!musthavemodel || modelmgrCanSlotFitRwdata(obj->model, modeldef)))
+                        && PGET(obj->prop)->parent == NULL
+                        && (!musthavemodel || modelmgrCanSlotFitRwdata(PGET(obj->model), modeldef)))
                 {
-                    if (offscreenobj == NULL && (obj->prop->flags & PROPFLAG_ONSCREEN) == 0)
+                    if (offscreenobj == NULL && (PGET(obj->prop)->flags & PROPFLAG_ONSCREEN) == 0)
                     {
                         offscreenobj = obj;
                     }

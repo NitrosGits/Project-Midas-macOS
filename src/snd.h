@@ -125,6 +125,20 @@ typedef struct ALSoundState_s {
 
 } ALSoundState;
 
+/*
+ * Sound handle slots. sndPlaySfx's pendingState is really a caller's slot: the
+ * sound system stores the playing state through its link.next word and clears
+ * it when the sound ends. PORT: setup records keep those slots as PTR32 words,
+ * so a 64-bit build has 4- and 8-byte slots; SND_SLOT32(field) passes a 4-byte
+ * one, tagged with bit 0 of its address (snd.c sndSlotGet/sndSlotSet). In the
+ * 32-bit builds it is the plain field address, as before.
+ */
+#ifdef GE_64BIT
+#define SND_SLOT32(f) ((ALSoundState *) ((uintptr_t) &PTRW(f) | 1))
+#else
+#define SND_SLOT32(f) ((ALSoundState *) &(f))
+#endif
+
 /**
  * This is a guess struct, used by music setup function call into snd.
  * The method call makes it seem like this should be ALSndpConfig,

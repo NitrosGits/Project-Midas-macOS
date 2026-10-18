@@ -512,12 +512,12 @@ static void portSpawnWepTrace(void)
         extern f32 getinstsize(Model *);
         PropRecord *p = g_PortSpawnWepProps[i];
         ObjectRecord *o = p->obj;
-        f32 instsize = (o != NULL && o->model != NULL) ? getinstsize(o->model) : -1.0f;
-        f32 visfrac = (o != NULL && o->model != NULL) ? chrobjFogVisRangeRelated(p, instsize) : -1.0f;
+        f32 instsize = (o != NULL && PGET(o->model) != NULL) ? getinstsize(PGET(o->model)) : -1.0f;
+        f32 visfrac = (o != NULL && PGET(o->model) != NULL) ? chrobjFogVisRangeRelated(p, instsize) : -1.0f;
         printf("ge: spawnweptrace: %d pos=(%.0f,%.0f,%.0f) flags=%x onscreen=%d room0=%d scale=%f instsize=%f visfrac=%f timetoregen=%d\n",
                i, p->pos.x, p->pos.y, p->pos.z, (int)p->flags,
                (p->flags & PROPFLAG_ONSCREEN) != 0, (int)p->rooms[0],
-               (o != NULL && o->model != NULL) ? o->model->scale : -1.0f,
+               (o != NULL && PGET(o->model) != NULL) ? PGET(o->model)->scale : -1.0f,
                instsize, visfrac, (int)p->timetoregen);
     }
 }
@@ -616,7 +616,7 @@ static void portSpawnWeaponTick(void)
             WeaponObjRecord *w =
                 (WeaponObjRecord *)create_new_item_instance_of_model(model, (u8)item);
 
-            if (w != NULL && w->prop != NULL)
+            if (w != NULL && PGET(w->prop) != NULL)
             {
                 Mtxf mtx;
                 Mtxf rotmtx;
@@ -643,11 +643,11 @@ static void portSpawnWeaponTick(void)
                                         &mtx, &vel, &rotmtx, bondprop);
                 if (g_PortSpawnWepCount < 8)
                 {
-                    g_PortSpawnWepProps[g_PortSpawnWepCount++] = w->prop;
+                    g_PortSpawnWepProps[g_PortSpawnWepCount++] = PGET(w->prop);
                 }
             }
             printf("ge: spawnweapon: model %d item %d -> %s\n",
-                   model, item, (w != NULL && w->prop != NULL) ? "spawned" : "FAILED");
+                   model, item, (w != NULL && PGET(w->prop) != NULL) ? "spawned" : "FAILED");
         }
         e += len;
         if (*e == ',')

@@ -54,7 +54,7 @@ void alloc_false_GUARDdata_to_exec_global_action(void)
 
     // Count the number of background AI lists
     i = 0;
-    while (g_CurrentSetup.ailists[i].ailist)
+    while (PGET(g_CurrentSetup.ailists[i].ailist))
     {
         if (g_CurrentSetup.ailists[i].ID >= 0x1000)
         {
@@ -73,7 +73,7 @@ void alloc_false_GUARDdata_to_exec_global_action(void)
 
         // Initialise BG chrs
         i = 0;
-        while (g_CurrentSetup.ailists[i].ailist)
+        while (PGET(g_CurrentSetup.ailists[i].ailist))
         {
             if (g_CurrentSetup.ailists[i].ID >= 0x1000)
             {
@@ -82,7 +82,7 @@ void alloc_false_GUARDdata_to_exec_global_action(void)
                 g_ActiveChrs[count] = tmp;
 
                 g_ActiveChrs[count].chrnum = 0xFE;
-                g_ActiveChrs[count].ailist = g_CurrentSetup.ailists[i].ailist;
+                g_ActiveChrs[count].ailist = PGET(g_CurrentSetup.ailists[i].ailist);
                 g_ActiveChrs[count].aioffset = 0;
                 g_ActiveChrs[count].aireturnlist = -1;
                 g_ActiveChrs[count].actiontype = ACT_NULL;
@@ -97,7 +97,7 @@ void alloc_false_GUARDdata_to_exec_global_action(void)
 
 void debug_object_load_all_models(void)
 {
-    u8 *cmd = &g_CurrentSetup.ailists[0].ailist->cmd;
+    u8 *cmd = &PGET(g_CurrentSetup.ailists[0].ailist)->cmd;
     s32 i = 0;
     u16 id;
 
@@ -143,7 +143,7 @@ void debug_object_load_all_models(void)
         }
 
         i++;
-        cmd = &g_CurrentSetup.ailists[i].ailist->cmd;
+        cmd = &PGET(g_CurrentSetup.ailists[i].ailist)->cmd;
     } while (cmd);
 }
 

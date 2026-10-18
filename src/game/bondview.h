@@ -283,8 +283,8 @@ typedef struct textoverride {
 	/*0x14*/ u32 shorttext;
 	/*0x18*/ u32 longtext; //longname
 	/*0x1c*/ u32 pickuptext;
-	/*0x20*/ struct textoverride *next;
-	/*0x24*/ struct ObjectRecord *obj;
+	/*0x20*/ PTR32(struct textoverride) next;
+	/*0x24*/ PTR32(struct ObjectRecord) obj;
 } textoverride;
 
 

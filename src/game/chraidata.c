@@ -801,27 +801,48 @@ u8 m_RemoveSelf[] = {
 
 /*D:8003744C */
 /* global ai lists (glists) */
+/* PORT: AIListRecord.ailist is a PTR32 word (it is laid over setup files too),
+ * so PORT_SPTR leaves 0 and PORT_STATIC_PTR32 fills each entry in at boot
+ * (identity in the 32-bit builds). */
 AIListRecord g_GlobalAILists[] = {
-    {m_AimAtBond               , GAILIST_AIM_AT_BOND},
-    {m_DeadAI                  , GAILIST_DEAD_AI},
-    {m_StandardGuard           , GAILIST_STANDARD_GUARD},
-    {m_IdleAnimations          , GAILIST_PLAY_IDLE_ANIMATION},
-    {m_BashKeyboard            , GAILIST_BASH_KEYBOARD},
-    {m_SimpleGuardDeaf         , GAILIST_SIMPLE_GUARD_DEAF},
-    {m_AttackBond              , GAILIST_ATTACK_BOND},
-    {m_SimpleGuard             , GAILIST_SIMPLE_GUARD},
-    {m_RunToBond               , GAILIST_RUN_TO_BOND},
-    {m_SimpleGuardAlarmRaiser  , GAILIST_SIMPLE_GUARD_ALARM_RAISER},
-    {m_StartleAndRunToBond     , GAILIST_STARTLE_AND_RUN_TO_BOND},
-    {m_TryCloneSendOrRunToBond , GAILIST_TRY_CLONE_SEND_OR_RUN_TO_BOND},
-    {m_StandardClone           , GAILIST_STANDARD_CLONE},
-    {m_RunToBondPersistent     , GAILIST_PERSISTENTLY_CHASE_AND_ATTACK_BOND},
-    {m_WaitOneSecond           , GAILIST_WAIT_ONE_SECOND},
-    {m_EndLevel                , GAILIST_END_LEVEL},
-    {m_DrawPistolAndAttackBond , GAILIST_DRAW_TT33_AND_ATTCK_BOND},
-    {m_RemoveSelf              , GAILIST_REMOVE_CHR},
-    {NULL, 0}
+    {PORT_SPTR(m_AimAtBond)               , GAILIST_AIM_AT_BOND},
+    {PORT_SPTR(m_DeadAI)                  , GAILIST_DEAD_AI},
+    {PORT_SPTR(m_StandardGuard)           , GAILIST_STANDARD_GUARD},
+    {PORT_SPTR(m_IdleAnimations)          , GAILIST_PLAY_IDLE_ANIMATION},
+    {PORT_SPTR(m_BashKeyboard)            , GAILIST_BASH_KEYBOARD},
+    {PORT_SPTR(m_SimpleGuardDeaf)         , GAILIST_SIMPLE_GUARD_DEAF},
+    {PORT_SPTR(m_AttackBond)              , GAILIST_ATTACK_BOND},
+    {PORT_SPTR(m_SimpleGuard)             , GAILIST_SIMPLE_GUARD},
+    {PORT_SPTR(m_RunToBond)               , GAILIST_RUN_TO_BOND},
+    {PORT_SPTR(m_SimpleGuardAlarmRaiser)  , GAILIST_SIMPLE_GUARD_ALARM_RAISER},
+    {PORT_SPTR(m_StartleAndRunToBond)     , GAILIST_STARTLE_AND_RUN_TO_BOND},
+    {PORT_SPTR(m_TryCloneSendOrRunToBond) , GAILIST_TRY_CLONE_SEND_OR_RUN_TO_BOND},
+    {PORT_SPTR(m_StandardClone)           , GAILIST_STANDARD_CLONE},
+    {PORT_SPTR(m_RunToBondPersistent)     , GAILIST_PERSISTENTLY_CHASE_AND_ATTACK_BOND},
+    {PORT_SPTR(m_WaitOneSecond)           , GAILIST_WAIT_ONE_SECOND},
+    {PORT_SPTR(m_EndLevel)                , GAILIST_END_LEVEL},
+    {PORT_SPTR(m_DrawPistolAndAttackBond) , GAILIST_DRAW_TT33_AND_ATTCK_BOND},
+    {PORT_SPTR(m_RemoveSelf)              , GAILIST_REMOVE_CHR},
+    {0, 0}
 };
+PORT_STATIC_PTR32(g_GlobalAILists[0].ailist, m_AimAtBond);
+PORT_STATIC_PTR32(g_GlobalAILists[1].ailist, m_DeadAI);
+PORT_STATIC_PTR32(g_GlobalAILists[2].ailist, m_StandardGuard);
+PORT_STATIC_PTR32(g_GlobalAILists[3].ailist, m_IdleAnimations);
+PORT_STATIC_PTR32(g_GlobalAILists[4].ailist, m_BashKeyboard);
+PORT_STATIC_PTR32(g_GlobalAILists[5].ailist, m_SimpleGuardDeaf);
+PORT_STATIC_PTR32(g_GlobalAILists[6].ailist, m_AttackBond);
+PORT_STATIC_PTR32(g_GlobalAILists[7].ailist, m_SimpleGuard);
+PORT_STATIC_PTR32(g_GlobalAILists[8].ailist, m_RunToBond);
+PORT_STATIC_PTR32(g_GlobalAILists[9].ailist, m_SimpleGuardAlarmRaiser);
+PORT_STATIC_PTR32(g_GlobalAILists[10].ailist, m_StartleAndRunToBond);
+PORT_STATIC_PTR32(g_GlobalAILists[11].ailist, m_TryCloneSendOrRunToBond);
+PORT_STATIC_PTR32(g_GlobalAILists[12].ailist, m_StandardClone);
+PORT_STATIC_PTR32(g_GlobalAILists[13].ailist, m_RunToBondPersistent);
+PORT_STATIC_PTR32(g_GlobalAILists[14].ailist, m_WaitOneSecond);
+PORT_STATIC_PTR32(g_GlobalAILists[15].ailist, m_EndLevel);
+PORT_STATIC_PTR32(g_GlobalAILists[16].ailist, m_DrawPistolAndAttackBond);
+PORT_STATIC_PTR32(g_GlobalAILists[17].ailist, m_RemoveSelf);
 
 
 /*D:800374E4 Also happens to be the same indices as levelID */

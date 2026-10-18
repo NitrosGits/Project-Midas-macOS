@@ -481,7 +481,7 @@ int bondinvAddWeaponByProp(PropRecord *prop)
             s8 weaponnum = weapon->weaponnum;
             added = bondinvAddInvItem(weaponnum);
 
-            otherweapon = weapon->dualweapon;
+            otherweapon = PGET(weapon->dualweapon);
             if (otherweapon)
             {
                 if (weapon->flags & PROPFLAG_WEAPON_LEFTHANDED)
@@ -492,9 +492,9 @@ int bondinvAddWeaponByProp(PropRecord *prop)
                 {
                     added = bondinvHasDualWeapon(weaponnum, otherweapon->weaponnum) == 0;
                 }
-                weapon->dualweapon->LinkedWeaponType = weaponnum;
-                weapon->dualweapon->dualweapon       = NULL;
-                weapon->dualweapon                   = NULL;
+                PGET(weapon->dualweapon)->LinkedWeaponType = weaponnum;
+                PSET(PGET(weapon->dualweapon)->dualweapon, NULL);
+                PSET(weapon->dualweapon, NULL);
             }
             else
             {
@@ -986,12 +986,12 @@ textoverride *bondinvGetTextbyObj(ObjectRecord *obj)
 
     while (override)
     {
-        if (override->obj == obj)
+        if (PGET(override->obj) == obj)
         {
             return override;
         }
 
-        override = override->next;
+        override = PGET(override->next);
     }
 
     return NULL;
@@ -1008,7 +1008,7 @@ textoverride *bondinvGetTextbyWeaponID(ITEM_IDS weaponnum)
             return override;
         }
 
-        override = override->next;
+        override = PGET(override->next);
     }
 
     return NULL;
@@ -1358,7 +1358,7 @@ int bondinvGetYrotWatchForIndex(int index)
 
 void bondinvAddTextOverride(textoverride *override)
 {
-    override->next                 = g_CurrentPlayer->textoverrides;
+    PSET(override->next, g_CurrentPlayer->textoverrides);
     g_CurrentPlayer->textoverrides = override;
 }
 

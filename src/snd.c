@@ -6,6 +6,37 @@
 #include <os_extension.h>
 #include "music.h"
 #include "snd.h"
+
+/* PORT: read or write a caller's handle slot (see SND_SLOT32 in snd.h) */
+#ifdef GE_64BIT
+static ALSoundState *sndSlotGet(ALSoundState *slot)
+{
+    uintptr_t s = (uintptr_t) slot;
+
+    if (s & 1)
+    {
+        return (ALSoundState *) portPtr64(*(u32 *) (s & ~(uintptr_t) 1));
+    }
+    return (ALSoundState *) slot->link.next;
+}
+
+static void sndSlotSet(ALSoundState *slot, ALSoundState *value)
+{
+    uintptr_t s = (uintptr_t) slot;
+
+    if (s & 1)
+    {
+        *(u32 *) (s & ~(uintptr_t) 1) = portPtr32(value);
+    }
+    else
+    {
+        slot->link.next = (void *) value;
+    }
+}
+#else
+#define sndSlotGet(slot) ((ALSoundState *) (slot)->link.next)
+#define sndSlotSet(slot, value) ((slot)->link.next = (void *) (value))
+#endif
 //likely named gslibaudio.c from xbla
 /**
  * EU .data, offset from start of data_seg : 0x3620
@@ -1095,10 +1126,17 @@ void sndUnlinkClearSound(ALSoundState *state)
 
     if (state->state != NULL)
     {
+#ifdef TARGET_N64
         if (state == (ALSoundState *)state->state->link.next)
         {
             state->state->link.next = NULL;
         }
+#else
+        if (state == sndSlotGet(state->state))
+        {
+            sndSlotSet(state->state, NULL);
+        }
+#endif
 
         state->state = NULL;
     }
@@ -1264,7 +1302,11 @@ ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundS
 
     if (pendingState != NULL)
     {
+#ifdef TARGET_N64
         pendingState->link.next = (void*)nextState;
+#else
+        sndSlotSet(pendingState, nextState);
+#endif
     }
 
     return nextState;

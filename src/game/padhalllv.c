@@ -57,7 +57,7 @@ waypoint* waypointRefineNearestToPos(coord3d* pos, s32 arg1, waypoint* arg2)
     waypoint* ret;
     waypoint* waypoints;
 
-    neighbor = arg2->neighbours;
+    neighbor = PGET(arg2->neighbours);
     ret = arg2;
 
     if (neighbor != NULL)
@@ -139,12 +139,12 @@ bool waygroupsPropagateDist(struct waygroup *group, s32 arg1)
 {
     bool result = FALSE;
 
-    while (group->neighbours)
+    while (PGET(group->neighbours))
     {
         if (group->dist == arg1)
         {
             result = TRUE;
-            waygroupsSetUnvisitedDist(group->neighbours, arg1 + 1);
+            waygroupsSetUnvisitedDist(PGET(group->neighbours), arg1 + 1);
         }
 
         group++;
@@ -160,7 +160,7 @@ bool waygroupsFloodDist(struct waygroup *from, struct waygroup *to, struct waygr
     struct waygroup *group;
     s32 i;
 
-    for (group = groups; group->neighbours; group++)
+    for (group = groups; PGET(group->neighbours); group++)
     {
         group->dist = -1;
     }
@@ -189,7 +189,7 @@ bool waygroupsMarkRoute(waygroup *from, waygroup *to, waygroup *groups)
         while (i >= 0)
         {
             curto->dist += 10000;
-            curto = waygroupFindByDist(curto->neighbours, i);
+            curto = waygroupFindByDist(PGET(curto->neighbours), i);
             i--;
         }
 
@@ -220,7 +220,7 @@ s32 waygroupFindRoute(waygroup* from, waygroup* to, waygroup** arr, s32 arrlen)
 
         while (i <= to->dist && i < arrlen)
         {
-            curfrom = waygroupFindByDist(curfrom->neighbours, i);
+            curfrom = waygroupFindByDist(PGET(curfrom->neighbours), i);
             *arrptr = curfrom;
             arrptr++;
             i++;
@@ -281,10 +281,10 @@ bool waypointsPropagateDist(s32 *pointnums, s32 arg1, s32 groupnum)
     {
         waypoint *point = &points[*pointnums];
 
-        if (arg1 == point->dist && point->neighbours)
+        if (arg1 == point->dist && PGET(point->neighbours))
         {
             result = TRUE;
-            waypointsSetUnvisitedDist(point->neighbours, arg1 + 1, groupnum);
+            waypointsSetUnvisitedDist(PGET(point->neighbours), arg1 + 1, groupnum);
         }
 
         pointnums++;
@@ -299,7 +299,7 @@ void do_BFS_withinPathSet(waypoint *from, waypoint *to, s32 arg2)
     waygroup *groups = g_CurrentSetup.waypointgroups;
     waypoint *points = g_CurrentSetup.pathwaypoints;
     waypoint *point;
-    s32 *pointnums = groups[from->groupNum].waypoints;
+    s32 *pointnums = PGET(groups[from->groupNum].waypoints);
     s32 i;
     bool more;
 
@@ -316,7 +316,7 @@ void do_BFS_withinPathSet(waypoint *from, waypoint *to, s32 arg2)
 
     for (i = 0; (arg2 || to->dist < 0) && more; i++)
     {
-        more = waypointsPropagateDist(groups[from->groupNum].waypoints, i, from->groupNum);
+        more = waypointsPropagateDist(PGET(groups[from->groupNum].waypoints), i, from->groupNum);
     }
 }
 
@@ -334,7 +334,7 @@ void waypointMarkRoute(waypoint *from, waypoint *to)
     while (value >= 0)
     {
         curto->dist += 10000;
-        curto = findPadWithDistAndSet(curto->neighbours, value, from->groupNum);
+        curto = findPadWithDistAndSet(PGET(curto->neighbours), value, from->groupNum);
 
         value--;
     }
@@ -362,7 +362,7 @@ s32 waypointFindRouteInGroup(waypoint *from, waypoint *to, waypoint **arr, s32 a
 
         while (i <= to->dist && i < arrlen)
         {
-            curfrom = findPadWithDistAndSet(curfrom->neighbours, i, from->groupNum);
+            curfrom = findPadWithDistAndSet(PGET(curfrom->neighbours), i, from->groupNum);
             *arrptr = curfrom;
             arrptr++;
             i++;
@@ -380,13 +380,13 @@ void sub_GAME_7F08F438(waygroup *groupa, waygroup *groupb, waypoint **pointa, wa
 {
     waypoint *points = g_CurrentSetup.pathwaypoints;
     waygroup *groups = g_CurrentSetup.waypointgroups;
-    s32 *groupapointnums = groupa->waypoints;
+    s32 *groupapointnums = PGET(groupa->waypoints);
     s32 stack;
 
     while (*groupapointnums >= 0)
     {
         waypoint *groupapoint = &points[*groupapointnums];
-        s32 *neighbournums = groupapoint->neighbours;
+        s32 *neighbournums = PGET(groupapoint->neighbours);
 
         while (*neighbournums >= 0)
         {
@@ -435,7 +435,7 @@ s32 waypointFindRoute(waypoint *frompoint, waypoint *topoint, waypoint **arr, s3
             for (i = fromgroup->dist + 1; i <= togroup->dist && arrlen >= 2; i++)
             {
                 s32 numwritten;
-                waygroup *nextfromgroup = waygroupFindByDist(curfromgroup->neighbours, i);
+                waygroup *nextfromgroup = waygroupFindByDist(PGET(curfromgroup->neighbours), i);
                 waypoint *tmppoint;
                 waypoint *nextfrompoint;
 
@@ -573,14 +573,14 @@ waypoint *waypointFindNextStepToward(waypoint *pointa, waypoint *pointb)
             resetWaypointDistances();
             do_BFS_withinPathSet(pointb, pointa, 1);
 
-            result = waypointFindRandomByDist(pointa->neighbours, -1);
+            result = waypointFindRandomByDist(PGET(pointa->neighbours), -1);
 
             if (result)
             {
                 return result;
             }
 
-            result = waypointFindRandomByDist(pointa->neighbours, pointa->dist + 1);
+            result = waypointFindRandomByDist(PGET(pointa->neighbours), pointa->dist + 1);
 
             if (result)
             {
@@ -593,7 +593,7 @@ waypoint *waypointFindNextStepToward(waypoint *pointa, waypoint *pointb)
 
             if (groupa->dist >= 0)
             {
-                waygroup *tmpgroup = waygroupFindRandomByDist(groupa->neighbours, -1);
+                waygroup *tmpgroup = waygroupFindRandomByDist(PGET(groupa->neighbours), -1);
 
                 if (tmpgroup)
                 {
@@ -615,7 +615,7 @@ waypoint *waypointFindNextStepToward(waypoint *pointa, waypoint *pointb)
                 }
                 else
                 {
-                    waygroup *tmpgroup = waygroupFindByDist(groupa->neighbours, groupa->dist - 1);
+                    waygroup *tmpgroup = waygroupFindByDist(PGET(groupa->neighbours), groupa->dist - 1);
 
                     if (tmpgroup)
                     {
@@ -624,7 +624,7 @@ waypoint *waypointFindNextStepToward(waypoint *pointa, waypoint *pointb)
 
                         sub_GAME_7F08F438(groupa, tmpgroup, &sp30, &sp2c);
                         do_BFS_withinPathSet(sp30, pointa, 1);
-                        result = findPadWithDistAndSet(pointa->neighbours, pointa->dist + 1, pointa->groupNum);
+                        result = findPadWithDistAndSet(PGET(pointa->neighbours), pointa->dist + 1, pointa->groupNum);
 
                         if (result)
                         {

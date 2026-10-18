@@ -177,7 +177,7 @@ s32 bss_80075CFC;
 stagesetup g_CurrentSetup; //Public Working Setup
 
 //CODE.bss:80075D28
-stagesetup                        *g_ptrStageSetupFile;
+stagesetupfile                    *g_ptrStageSetupFile; /* the file as loaded: offsets */
 
 PropRecord *g_ActivePropsTail = 0;
 PropRecord *g_ActivePropsHead = 0;
@@ -1914,10 +1914,10 @@ void chrpropTick(void)
                             pad = obj->pad;
                             setupobj = setupCommandGetObject(lvlGetCurrentStageToLoad(), cmdindex + pad);
 
-                            if ((setupobj != NULL) && (setupobj->prop != NULL))
+                            if ((setupobj != NULL) && (PGET(setupobj->prop) != NULL))
                             {
-                                modelSetScale(obj->model, obj->model->scale);
-                                chrpropReparent(obj->prop, setupobj->prop);
+                                modelSetScale(PGET(obj->model), PGET(obj->model)->scale);
+                                chrpropReparent(PGET(obj->prop), PGET(setupobj->prop));
                                 skip_regen_sfx = TRUE;
                             }
 #ifdef DEBUG
@@ -1947,7 +1947,7 @@ void chrpropTick(void)
 
                         obj->maxdamage = 0.0f;
                         obj->state &= ~PROPSTATE_DESTROYED;
-                        sub_GAME_7F050DE8(obj->model);
+                        sub_GAME_7F050DE8(PGET(obj->model));
                     }
 
                     if (obj->type == PROPDEF_ARMOUR)
@@ -1967,7 +1967,7 @@ void chrpropTick(void)
             if (obj->type == PROPDEF_AUTOGUN)
             {
                 autogun = prop->obj;
-                gunAdvanceBeamTimer((BeamRecord *) ((AutogunRecord *) autogun)->beam);
+                gunAdvanceBeamTimer((BeamRecord *) PGET(((AutogunRecord *) autogun)->beam));
             }
         }
         else if (prop->type == PROP_TYPE_EXPLOSION)
@@ -3048,8 +3048,8 @@ void chrpropUpdateRoomList(PropRecord *prop, coord3d *bbmin, coord3d *bbmax, f32
 
         if (obj != NULL
             && obj->runtime_bitflags & 0x80
-            && obj->projectile->flags & PROJECTILEFLAG_00000008) {
-            src = obj->projectile->unkCC;
+            && PGET(obj->projectile)->flags & PROJECTILEFLAG_00000008) {
+            src = PGET(obj->projectile)->unkCC;
         } else {
             src = prop->rooms;
         }
@@ -3232,13 +3232,13 @@ void sub_GAME_7F03E6A0(PropRecord *prop)
 
     if (obj->runtime_bitflags & RUNTIMEBITFLAG_00000001)
     {
-        for (link = g_LevelLoadPropSwitch; link != NULL; link = link->next)
+        for (link = g_LevelLoadPropSwitch; link != NULL; link = PGET(link->next))
         {
-            if (prop == link->first)
+            if (prop == PGET(link->first))
             {
-                if (link->second != NULL)
+                if (PGET(link->second) != NULL)
                 {
-                    doorActivateWrapper(link->second);
+                    doorActivateWrapper(PGET(link->second));
                 }
             }
         }
@@ -3255,14 +3255,14 @@ bool doorIsPadlockFree(DoorRecord* door)
 
         while (padlockeddoor)
         {
-            if (door == padlockeddoor->door
-                    && padlockeddoor->lock
-                    && padlockeddoor->lock->prop
-                    && objIsHealthy(padlockeddoor->lock)) {
+            if (door == PGET(padlockeddoor->door)
+                    && PGET(padlockeddoor->lock)
+                    && PGET(PGET(padlockeddoor->lock)->prop)
+                    && objIsHealthy(PGET(padlockeddoor->lock))) {
                 return FALSE;
             }
 
-            padlockeddoor = padlockeddoor->next;
+            padlockeddoor = PGET(padlockeddoor->next);
         }
     }
 
@@ -3278,17 +3278,17 @@ bool objCanPickupFromSafe(ObjectRecord *obj)
 
         while (link)
         {
-            ObjectRecord *loopobj = link->item;
+            ObjectRecord *loopobj = PGET(link->item);
 
-            if (obj == link->item && link->door && link->door->prop)
+            if (obj == PGET(link->item) && PGET(link->door) && PGET(PGET(link->door)->prop))
             {
-                if (link->door->openPosition <= 0.5f)
+                if (PGET(link->door)->openPosition <= 0.5f)
                 {
                     return FALSE;
                 }
             }
 
-            link = link->next;
+            link = PGET(link->next);
         }
     }
 
@@ -3298,7 +3298,7 @@ bool objCanPickupFromSafe(ObjectRecord *obj)
 
 void sub_GAME_7F03E830(ObjectRecord* arg0)
 {
-    PropRecord* prop = arg0->prop;
+    PropRecord* prop = PGET(arg0->prop);
     stanGetPositionYValue(prop->stan, prop->pos.x, prop->pos.z);
 }
 

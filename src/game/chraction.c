@@ -33,6 +33,17 @@
 #include "frametiming.h" /* portTickCadence - see the guard accuracy note in chrlvUpdateShotbondsum */
 #ifndef TARGET_N64
 #include "cheat.h" /* cheatIsActive(CHEAT_PORT_ENEMY_FF) - chrlvFireWeaponRelated */
+
+/* The equipped weapon's item id. The decompiled code reads the weapon prop
+ * through its ->chr union member, where act_attack(walk/roll).attack_item
+ * overlays WeaponObjRecord.weaponnum (0x80). That only holds while ChrRecord
+ * keeps its 32-bit layout, so PC builds read the weapon record itself (the
+ * same byte in the 32-bit builds). */
+#ifdef TARGET_N64
+#define WEAPON_ITEM(chrview, act) ((chrview)->act.attack_item)
+#else
+#define WEAPON_ITEM(chrview, act) (((WeaponObjRecord *) (chrview))->weaponnum)
+#endif
 #endif
 
 #ifndef TARGET_N64
@@ -263,7 +274,7 @@ void expand_09_characters(s32 stageid, GuardRecord *arg1, s32 arg2)
 
     pad = &g_CurrentSetup.pads[arg1->PadID];
 
-    if (getposstan(&pad->pos, pad->stan, 20.0f, &sp48, &sp54) != 0)
+    if (getposstan(&pad->pos, PGET(pad->stan), 20.0f, &sp48, &sp54) != 0)
     {
         headid = -1;
         bodyid = (arg1->BodyID == 0xFFFF)
@@ -309,7 +320,7 @@ void expand_09_characters(s32 stageid, GuardRecord *arg1, s32 arg2)
                     temp_v0_5->chrflags |= CHRFLAG_INVINCIBLE;
                 }
 
-                arg1->Data = temp_v0_5;
+                PSET(arg1->Data, temp_v0_5);
             }
         }
     }
@@ -1251,10 +1262,10 @@ void chrlvInitActAttack(ChrRecord *self, struct anim_group_info **arg1, s32 arg2
         {
             temp_chr = chrGetEquippedWeaponProp(self, i)->chr;
 
-            if (bondwalkItemGetAutomaticFiringRate((s32) temp_chr->act_attack.attack_item) < 0)
+            if (bondwalkItemGetAutomaticFiringRate((s32) WEAPON_ITEM(temp_chr, act_attack)) < 0)
             {
                 sp60.p[i] = 1;
-                if ((s32)temp_chr->act_attack.attack_item == ITEM_LASER)
+                if ((s32)WEAPON_ITEM(temp_chr, act_attack) == ITEM_LASER)
                 {
                     phi_s6 = 0;
                 }
@@ -1265,7 +1276,7 @@ void chrlvInitActAttack(ChrRecord *self, struct anim_group_info **arg1, s32 arg2
                 phi_s7 = 1;
             }
 
-            if (((s32)temp_chr->act_attack.attack_item == ITEM_ROCKETLAUNCH) || ((s32)temp_chr->act_attack.attack_item == ITEM_GRENADELAUNCH))
+            if (((s32)WEAPON_ITEM(temp_chr, act_attack) == ITEM_ROCKETLAUNCH) || ((s32)WEAPON_ITEM(temp_chr, act_attack) == ITEM_GRENADELAUNCH))
             {
                 sp58.p[i] = 1;
             }
@@ -1623,12 +1634,12 @@ void chrlvInitActAttackWalk(ChrRecord *chr, s32 arg1)
         {
             tmp_chr = chrGetEquippedWeaponProp(chr, i)->chr;
 
-            if (bondwalkItemGetAutomaticFiringRate((s32) tmp_chr->act_attackwalk.attack_item) < 0)
+            if (bondwalkItemGetAutomaticFiringRate((s32) WEAPON_ITEM(tmp_chr, act_attackwalk)) < 0)
             {
                 sp68.p[i] = 1;
             }
 
-            if ((tmp_chr->act_attackwalk.attack_item == ITEM_ROCKETLAUNCH) || (tmp_chr->act_attackwalk.attack_item == ITEM_GRENADELAUNCH))
+            if ((WEAPON_ITEM(tmp_chr, act_attackwalk) == ITEM_ROCKETLAUNCH) || (WEAPON_ITEM(tmp_chr, act_attackwalk) == ITEM_GRENADELAUNCH))
             {
                 sp60.p[i] = 1;
             }
@@ -1767,10 +1778,10 @@ void chrlvInitActAttackRoll(ChrRecord *chr, GUNHAND side)
         {
             temp_v1_2 = chrGetEquippedWeaponProp(chr, i)->chr;
 
-            if (bondwalkItemGetAutomaticFiringRate((s32) temp_v1_2->act_attackroll.attack_item) < 0)
+            if (bondwalkItemGetAutomaticFiringRate((s32) WEAPON_ITEM(temp_v1_2, act_attackroll)) < 0)
             {
                 sp54.p[i] = 1;
-                if (temp_v1_2->act_attackroll.attack_item == ITEM_LASER)
+                if (WEAPON_ITEM(temp_v1_2, act_attackroll) == ITEM_LASER)
                 {
                     phi_s3 = 0;
                 }
@@ -1781,7 +1792,7 @@ void chrlvInitActAttackRoll(ChrRecord *chr, GUNHAND side)
                 sp5C = 1;
             }
 
-            if ((temp_v1_2->act_attackroll.attack_item == ITEM_ROCKETLAUNCH) || (temp_v1_2->act_attackroll.attack_item == ITEM_GRENADELAUNCH))
+            if ((WEAPON_ITEM(temp_v1_2, act_attackroll) == ITEM_ROCKETLAUNCH) || (WEAPON_ITEM(temp_v1_2, act_attackroll) == ITEM_GRENADELAUNCH))
             {
                 sp4C.p[i] = 1;
             }
@@ -2839,7 +2850,7 @@ waypoint *get_ptrpreset_in_table_matching_tile(StandTile *tile)
         wp = head;
         while (wp->padID >= 0) {
             PadRecord* var_v0 = &g_CurrentSetup.pads[wp->padID];
-            if (tile == var_v0->stan) {
+            if (tile == PGET(var_v0->stan)) {
                 return wp;
             }
             wp++;
@@ -2897,7 +2908,7 @@ waypoint *chrlvStanPathRelated(coord3d *arg0, StandTile *arg1)
         {
             temp_f20 = chrlvPadPresetRelated(arg0, ret);
 
-            for (n = ret->neighbours; *n >= 0; n++)
+            for (n = PGET(ret->neighbours); *n >= 0; n++)
             {
                 wayp = &g_CurrentSetup.pathwaypoints[*n];
 
@@ -2956,7 +2967,7 @@ s32 chrlvStanRoomRelated(ChrRecord *self, coord3d *arg1, StandTile *tile)
 */
 s32 chrlvStanRoomRelatedPad(ChrRecord *self, PadRecord *arg1)
 {
-    return chrlvStanRoomRelated(self, &arg1->pos, arg1->stan);
+    return chrlvStanRoomRelated(self, &arg1->pos, PGET(arg1->stan));
 }
 
 
@@ -3010,7 +3021,7 @@ void chrlvActGoposRelated(ChrRecord *self, coord3d *target_point, StandTile **ta
         target_point->f[1] = pad->pos.f[1];
         target_point->f[2] = pad->pos.f[2];
 
-        *target_stan = pad->stan;
+        *target_stan = PGET(pad->stan);
     }
     else
     {
@@ -3244,7 +3255,7 @@ s32 chrlvPatrolCalculateStep(ChrRecord *self, bool *forward, s32 numsteps)
         {
             nextstep++;
 
-            if (self->act_patrol.path->data[nextstep] < 0)
+            if (PGET(self->act_patrol.path->data)[nextstep] < 0)
             {
                 nextstep -= 2;
 
@@ -3301,7 +3312,7 @@ PadRecord *chrlvGetPatrolStepPad(ChrRecord *self, s32 numsteps)
     forward = self->act_patrol.forward;
     step = chrlvPatrolCalculateStep(self, &forward, numsteps);
 
-    data = &self->act_patrol.path->data[step];
+    data = &PGET(self->act_patrol.path->data)[step];
 
     wp = &g_CurrentSetup.pathwaypoints[*data];
 
@@ -3870,11 +3881,11 @@ void set_actor_on_path(ChrRecord *self, struct patrol_path *path)
     f32 dx;
     f32 dz;
 
-    if (path->data[0] >= 0)
+    if (PGET(path->data)[0] >= 0)
     {
         do
         {
-            dataptr = &path->data[count];
+            dataptr = &PGET(path->data)[count];
             pta = &g_CurrentSetup.pathwaypoints[*dataptr];
             new_var = &g_CurrentSetup.pads[pta->padID];
             pad = new_var;
@@ -3889,7 +3900,7 @@ void set_actor_on_path(ChrRecord *self, struct patrol_path *path)
                     f32 v[7];
                     once++;
                     v[0] = (f32) (uintptr_t) path;
-                    v[1] = (f32) (uintptr_t) path->data;
+                    v[1] = (f32) (uintptr_t) PGET(path->data);
                     v[2] = (f32) *dataptr;
                     v[3] = (f32) count;
                     v[4] = (f32) (uintptr_t) pta;
@@ -3900,7 +3911,7 @@ void set_actor_on_path(ChrRecord *self, struct patrol_path *path)
             }
 #endif
 
-            if ((pad->stan != NULL) && (pad->stan == prop->stan))
+            if ((PGET(pad->stan) != NULL) && (PGET(pad->stan) == prop->stan))
             {
                 dx = pad->pos.f[0] - prop->pos.f[0];
                 dz = pad->pos.f[2] - prop->pos.f[2];
@@ -3916,7 +3927,7 @@ void set_actor_on_path(ChrRecord *self, struct patrol_path *path)
 
             count++;
         }
-        while (path->data[count] >= 0);
+        while (PGET(path->data)[count] >= 0);
     }
 
     if (next_step < 0)
@@ -5080,7 +5091,7 @@ bool chrGoToPad(ChrRecord *self, s32 padid, SPEED speed)
             pad = (PadRecord *)&g_CurrentSetup.boundpads[getBoundPadNum(padid)];
         }
 
-        stan = pad->stan;
+        stan = PGET(pad->stan);
         if (stan)
         {
             //if pad is not vertical
@@ -5778,8 +5789,8 @@ void sub_GAME_7F02BFE4(ChrRecord *self, s32 arg1, s32 arg2)
     temp_v1 = prop->chr;
     phi_a1 = 0;
 
-    sp33 = bondwalkItemGetSoundTriggerRate((s32) temp_v1->act_attack.attack_item);
-    sp30 = bondwalkItemGetSound((s32) temp_v1->act_attack.attack_item);
+    sp33 = bondwalkItemGetSoundTriggerRate((s32) WEAPON_ITEM(temp_v1, act_attack));
+    sp30 = bondwalkItemGetSound((s32) WEAPON_ITEM(temp_v1, act_attack));
 
 #ifndef TARGET_N64
     { /* diagnostic (GE_DUMP_BOND): log the item id read from the weapon prop and the
@@ -5791,7 +5802,7 @@ void sub_GAME_7F02BFE4(ChrRecord *self, s32 arg1, s32 arg2)
         if (dump && arg2 != 0)
         {
             printf("gunsnd: chr=%d hand=%d item=%d snd=0x%x rate=%d\n",
-                    self->chrnum, arg1, temp_v1->act_attack.attack_item, (u16) sp30, sp33);
+                    self->chrnum, arg1, WEAPON_ITEM(temp_v1, act_attack), (u16) sp30, sp33);
         }
     }
 #endif
@@ -6202,7 +6213,7 @@ s32 chrlvUpdateAimendsideback(ChrRecord *self, struct weapon_firing_animation_ta
             if ((weapon_prop != NULL) && (weapon_prop->flags & 2) && (dxdydz_square < 1000000.0f))
             {
                 obj = weapon_prop->obj;
-                weapon_prop_model = obj->model;
+                weapon_prop_model = PGET(obj->model);
                 intersect_flag = 0;
 
                 if (PGET(weapon_prop_model->obj->Switches[0]))
@@ -6716,7 +6727,7 @@ s32 sub_GAME_7F02D630(ChrRecord *self, GUNHAND hand, coord3d *arg2)
     if ((weapon_prop != NULL) )
     {
         obj = weapon_prop->obj;
-        weapon_prop_model = obj->model;
+        weapon_prop_model = PGET(obj->model);
 
         if ((weapon_prop->flags & 2))
         {
@@ -6820,24 +6831,24 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
         if (
             (sp44 == 0)
             || (self->seen_bond_time >= (g_GlobalTimer - CHRLV_SEEN_RECENT_CHECK))
-            || (bondwalkItemGetAutomaticFiringRate(prop_selfchr->act_attack.attack_item) < 0))
+            || (bondwalkItemGetAutomaticFiringRate(WEAPON_ITEM(prop_selfchr, act_attack)) < 0))
         {
             sp268 = 0;
             sp264 = 0;
 
             self->firecount[hand]++;
 
-            if (bondwalkItemGetAutomaticFiringRate(prop_selfchr->act_attack.attack_item) < 0)
+            if (bondwalkItemGetAutomaticFiringRate(WEAPON_ITEM(prop_selfchr, act_attack)) < 0)
             {
                 sp268 = 1;
                 sp264 = 1;
             }
-            else if (((s32) self->firecount[hand] % bondwalkItemGetAutomaticFiringRate(prop_selfchr->act_attack.attack_item)) == 0)
+            else if (((s32) self->firecount[hand] % bondwalkItemGetAutomaticFiringRate(WEAPON_ITEM(prop_selfchr, act_attack))) == 0)
             {
                 sp268 = 1;
 
-                if ((((s32) self->firecount[hand] % (s32) (bondwalkItemGetAutomaticFiringRate(prop_selfchr->act_attack.attack_item) * 2)) == 0)
-                    || (prop_selfchr->act_attack.attack_item == ITEM_LASER))
+                if ((((s32) self->firecount[hand] % (s32) (bondwalkItemGetAutomaticFiringRate(WEAPON_ITEM(prop_selfchr, act_attack)) * 2)) == 0)
+                    || (WEAPON_ITEM(prop_selfchr, act_attack) == ITEM_LASER))
                 {
                     sp264 = 1;
                 }
@@ -6920,7 +6931,7 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
 
                     sp20C = (dx * dx) + (dy * dy) + (dz * dz);
 
-                    if (prop_selfchr->act_attack.attack_item == ITEM_ROCKETLAUNCH)
+                    if (WEAPON_ITEM(prop_selfchr, act_attack) == ITEM_ROCKETLAUNCH)
                     {
                         if (((dx * dx) + (dy * dy) + (dz * dz)) > 160000.0f)
                         {
@@ -6963,27 +6974,27 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
 
                                 if (sp208->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
                                 {
-                                    sp208->projectile->flags |= 0x80;
+                                    PGET(sp208->projectile)->flags |= 0x80;
                                     sp208->timer = -1;
-                                    sp208->projectile->flags |= 0x20;
+                                    PGET(sp208->projectile)->flags |= 0x20;
 
-                                    sp208->projectile->unkB0 = sp208->runtime_pos.y;
-                                    sp208->projectile->unkB4 = sp208->projectile->speed.f[1];
+                                    PGET(sp208->projectile)->unkB0 = sp208->runtime_pos.y;
+                                    PGET(sp208->projectile)->unkB4 = PGET(sp208->projectile)->speed.f[1];
 
                                   /*  sp208->projectile->unk10.x = sp1AC.f[0];
                                     sp208->projectile->unk10.y = sp1AC.f[1];
                                     sp208->projectile->unk10.z = sp1AC.f[2];*/
-                                    sp208->projectile->unk10.x = sp1AC.f[0];
-                                    sp208->projectile->unk10.y = sp1AC.f[1];
-                                    sp208->projectile->unk10.z = sp1AC.f[2];
+                                    PGET(sp208->projectile)->unk10.x = sp1AC.f[0];
+                                    PGET(sp208->projectile)->unk10.y = sp1AC.f[1];
+                                    PGET(sp208->projectile)->unk10.z = sp1AC.f[2];
 
-                                    if (sp208->projectile->sounds[0] == NULL)
+                                    if (PGET(sp208->projectile)->sounds[0] == NULL)
                                     {
-                                        sndPlaySfx((struct ALBankAlt_s *)g_musicSfxBufferPtr, ROCKET_LAUNCH_SFX, (ALSoundState *)&sp208->projectile->sounds[0]);
+                                        sndPlaySfx((struct ALBankAlt_s *)g_musicSfxBufferPtr, ROCKET_LAUNCH_SFX, (ALSoundState *)&PGET(sp208->projectile)->sounds[0]);
                                     }
-                                    else if (sp208->projectile->sounds[1] == NULL)
+                                    else if (PGET(sp208->projectile)->sounds[1] == NULL)
                                     {
-                                        sndPlaySfx((struct ALBankAlt_s *)g_musicSfxBufferPtr, ROCKET_LAUNCH_SFX, (ALSoundState *)&sp208->projectile->sounds[1]);
+                                        sndPlaySfx((struct ALBankAlt_s *)g_musicSfxBufferPtr, ROCKET_LAUNCH_SFX, (ALSoundState *)&PGET(sp208->projectile)->sounds[1]);
                                     }
                                 }
                             }
@@ -6993,7 +7004,7 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
                             sp27C = 0;
                         }
                     }
-                    else if (prop_selfchr->act_attack.attack_item == ITEM_GRENADELAUNCH)
+                    else if (WEAPON_ITEM(prop_selfchr, act_attack) == ITEM_GRENADELAUNCH)
                     {
                         if (((dx * dx) + (dy * dy) + (dz * dz)) > 160000.0f)
                         {
@@ -7012,12 +7023,12 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
 
                                 if (sp128->runtime_bitflags & RUNTIMEBITFLAG_HASPROJECTILE)
                                 {
-                                    sp128->projectile->unk8C = 0.3f;
-                                    sp128->projectile->unk94 = 0.13333333f;
+                                    PGET(sp128->projectile)->unk8C = 0.3f;
+                                    PGET(sp128->projectile)->unk94 = 0.13333333f;
 #ifdef REFRESH_PAL
-                                    sp128->projectile->refreshrate = 50;
+                                    PGET(sp128->projectile)->refreshrate = 50;
 #else
-                                    sp128->projectile->refreshrate = 60;
+                                    PGET(sp128->projectile)->refreshrate = 60;
 #endif
                                 }
                             }
@@ -7037,7 +7048,7 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
 
                             if (((dx * dx) + (dy * dy) + (dz * dz)) <= sp20C)
                             {
-                                chrlvUpdateShotbondsum(self, &sp234, &sp230, prop_selfchr->act_attack.attack_item);
+                                chrlvUpdateShotbondsum(self, &sp234, &sp230, WEAPON_ITEM(prop_selfchr, act_attack));
                                 sp22C = sp230 == 0;
 
                                 if ((sp234 != 0) && ((self->actiontype == ACT_ATTACK) || (self->actiontype == ACT_ATTACKROLL)))
@@ -7060,7 +7071,7 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
                             sp258.f[1] = player_prop->pos.f[1];
                             sp258.f[2] = player_prop->pos.f[2];
                             sp254 = player_prop->stan;
-                            recall_joy2_hits_edit_detail_edit_flag(prop_selfchr->act_attack.attack_item, &player_prop->type, -1);
+                            recall_joy2_hits_edit_detail_edit_flag(WEAPON_ITEM(prop_selfchr, act_attack), &player_prop->type, -1);
                         }
                         else
                         {
@@ -7083,7 +7094,7 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
 
                             if (stanSavedColl_posData != NULL)
                             {
-                                recall_joy2_hits_edit_detail_edit_flag(prop_selfchr->act_attack.attack_item, &stanSavedColl_posData->type, -1);
+                                recall_joy2_hits_edit_detail_edit_flag(WEAPON_ITEM(prop_selfchr, act_attack), &stanSavedColl_posData->type, -1);
 
                                 if (stanSavedColl_posData->type == PROP_TYPE_CHR)
                                 {
@@ -7119,12 +7130,12 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
                                             extern s32 g_PortStrayHitByModel;
 
                                             printf("ge: enemyff: chr %d's shot hit chr %d (item %d, part %d by %s)\n", (int) self->chrnum,
-                                                   (int) stanSavedColl_posData->chr->chrnum, (int) prop_selfchr->act_attack.attack_item, (int) ffpart,
+                                                   (int) stanSavedColl_posData->chr->chrnum, (int) WEAPON_ITEM(prop_selfchr, act_attack), (int) ffpart,
                                                    g_PortStrayHitByModel ? "model" : "height");
                                         }
-                                        handles_shot_actors(stanSavedColl_posData->chr, ffpart, &sp220, prop_selfchr->act_attack.attack_item, 0);
+                                        handles_shot_actors(stanSavedColl_posData->chr, ffpart, &sp220, WEAPON_ITEM(prop_selfchr, act_attack), 0);
 #else
-                                        handles_shot_actors(stanSavedColl_posData->chr, 0xF, &sp220, prop_selfchr->act_attack.attack_item, 0);
+                                        handles_shot_actors(stanSavedColl_posData->chr, 0xF, &sp220, WEAPON_ITEM(prop_selfchr, act_attack), 0);
 #endif
                                     }
                                 }
@@ -7132,21 +7143,21 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
                                 {
                                     chrobjMaybeDetonateObjectIfFlags(
                                         stanSavedColl_posData->obj,
-                                        gunItemGetDestructionAmount(prop_selfchr->act_attack.attack_item),
+                                        gunItemGetDestructionAmount(WEAPON_ITEM(prop_selfchr, act_attack)),
                                         &sp258,
-                                        prop_selfchr->act_attack.attack_item,
+                                        WEAPON_ITEM(prop_selfchr, act_attack),
                                         get_cur_playernum());
                                 }
                             }
                             else
                             {
-                                recall_joy2_hits_edit_flag(prop_selfchr->act_attack.attack_item, &sp258, -1);
+                                recall_joy2_hits_edit_flag(WEAPON_ITEM(prop_selfchr, act_attack), &sp258, -1);
                             }
                         }
 
                         if (sp264 != 0)
                         {
-                            switch (prop_selfchr->act_attack.attack_item)
+                            switch (WEAPON_ITEM(prop_selfchr, act_attack))
                             {
                                 case ITEM_WPPK:
                                 case ITEM_WPPKSIL:
@@ -7175,7 +7186,7 @@ void chrlvFireWeaponRelated(ChrRecord *self, s32 hand)
 
                         if (sp264 != 0)
                         {
-                            CapBeamLengthAndDecideIfRendered(&self->beams[hand], prop_selfchr->act_attack.attack_item, &sp240, &sp258);
+                            CapBeamLengthAndDecideIfRendered(&self->beams[hand], WEAPON_ITEM(prop_selfchr, act_attack), &sp240, &sp258);
                         }
                     }
                 }
@@ -9546,7 +9557,7 @@ void chrlvTickGoPos(ChrRecord *self)
                 {
                     pad = &g_CurrentSetup.pads[wp->padID];
                     wp_pos = &pad->pos;
-                    wp_stan = pad->stan;
+                    wp_stan = PGET(pad->stan);
                 }
                 else
                 {
@@ -9576,7 +9587,7 @@ void chrlvTickGoPos(ChrRecord *self)
             {
                 pad = &g_CurrentSetup.pads[wp->padID];
                 wp_pos = &pad->pos;
-                wp_stan = pad->stan;
+                wp_stan = PGET(pad->stan);
             }
             else
             {
@@ -9598,7 +9609,7 @@ void chrlvTickGoPos(ChrRecord *self)
     {
         pad = &g_CurrentSetup.pads[wp->padID];
         wp_pos = &pad->pos;
-        wp_stan = pad->stan;
+        wp_stan = PGET(pad->stan);
     }
     else
     {
@@ -9644,7 +9655,7 @@ void chrlvTickPatrol(ChrRecord *self)
         }
         else
         {
-            chrlvTravelTickMagic(self, &self->act_patrol.waydata, D_80030984, &temp_v0->pos, temp_v0->stan);
+            chrlvTravelTickMagic(self, &self->act_patrol.waydata, D_80030984, &temp_v0->pos, PGET(temp_v0->stan));
         }
     }
     else
@@ -9666,7 +9677,7 @@ void chrlvTickPatrol(ChrRecord *self)
 #ifndef TARGET_N64
         portAiDbgCrumb(self, &temp_v0->pos, "walk");
 #endif
-        chrlvTravelTick(self, &temp_v0->pos, temp_v0->stan, &self->act_patrol.waydata);
+        chrlvTravelTick(self, &temp_v0->pos, PGET(temp_v0->stan), &self->act_patrol.waydata);
     }
 }
 
@@ -10151,7 +10162,7 @@ coord3d *chrlvGetChrOrPresetLocation(ChrRecord *self, s32 flags, s32 lookup_id, 
             preset_pad = (PadRecord *)&g_CurrentSetup.boundpads[getBoundPadNum(padid)];
         }
 
-        *stan = (StandTile *) preset_pad->stan;
+        *stan = (StandTile *) PGET(preset_pad->stan);
 
         return &preset_pad->pos;
     }
@@ -10250,7 +10261,7 @@ bool check_if_room_for_preset_loaded(ChrRecord *self, s32 padnum)
         pad = (PadRecord *)&g_CurrentSetup.boundpads[getBoundPadNum(padnum)];
     }
 
-    padstan = pad->stan;
+    padstan = PGET(pad->stan);
 
     if (padstan)
     {
@@ -10895,9 +10906,9 @@ s32 chrlvFindPathNeighborRelated(coord3d *bondpos, StandTile *stan, f32 rot, u8 
         }
 
         for (
-            neighbor_index = 0, path_id = waypoint->neighbours[neighbor_index];
+            neighbor_index = 0, path_id = PGET(waypoint->neighbours)[neighbor_index];
             path_id>=0;
-            neighbor_index++, path_id = waypoint->neighbours[neighbor_index]
+            neighbor_index++, path_id = PGET(waypoint->neighbours)[neighbor_index]
             )
         {
             if (sub_GAME_7F033780(&g_CurrentSetup.pathwaypoints[path_id], bondpos, rot) != 0)
@@ -11285,7 +11296,7 @@ PropRecord *chrSpawnAtPad(ChrRecord *self, s32 bodynum, s32 headnum, s32 padid, 
     #ifdef ENABLE_LOG
     osSyncPrintf("%s%s new char x = %f, y = %f, z = %f \n", "", "", pad->pos.x, pad->pos.y, pad->pos.z);
     #endif
-    return chrSpawnAtCoord(bodynum, headnum, &pad->pos, pad->stan, atan2f(pad->look.f[0], pad->look.f[2]), ailist, flags);
+    return chrSpawnAtCoord(bodynum, headnum, &pad->pos, PGET(pad->stan), atan2f(pad->look.f[0], pad->look.f[2]), ailist, flags);
 }
 
 
@@ -11329,9 +11340,9 @@ bool chrIfInPadRoom(ChrRecord *self, s32 chrnum, s32 padnum)
         pad = (PadRecord *)&g_CurrentSetup.boundpads[getBoundPadNum(padnum)];
     }
 
-    if (pad->stan && chr)
+    if (PGET(pad->stan) && chr)
     {
-        if (chr->prop && (pad->stan->room == chr->prop->stan->room))
+        if (chr->prop && (PGET(pad->stan)->room == chr->prop->stan->room))
         {
             return TRUE;
         }
@@ -11374,14 +11385,14 @@ bool check_if_actor_is_at_preset(ChrRecord *self, s32 padnum)
             {
                 extern int printf(const char *, ...);
                 printf("paddbg: pad=%d bound=%d stan=%p padroom=%d bondroom=%d padpos=(%.0f,%.0f,%.0f)\n",
-                        padnum, isNotBoundPad(padnum) ? 0 : 1, (void *) pad->stan, pad->stan ? (int) pad->stan->room : -1,
+                        padnum, isNotBoundPad(padnum) ? 0 : 1, (void *) PGET(pad->stan), PGET(pad->stan) ? (int) PGET(pad->stan)->room : -1,
                         bondprop->stan ? (int) bondprop->stan->room : -1, pad->pos.x, pad->pos.y, pad->pos.z);
             }
         }
     }
 #endif
 
-    if (pad->stan && (pad->stan->room == bondprop->stan->room))
+    if (PGET(pad->stan) && (PGET(pad->stan)->room == bondprop->stan->room))
     {
         return TRUE;
     }
@@ -11513,12 +11524,12 @@ bool chrDropItem(ChrRecord *self, s32 modelnum, u8 weaponid)
 {
     WeaponObjRecord *NewModel = (WeaponObjRecord *)create_new_item_instance_of_model(modelnum, weaponid);
 
-    if (NewModel && NewModel->prop)
+    if (NewModel && PGET(NewModel->prop))
     {
-        modelSetScale(NewModel->model, NewModel->model->scale);
-        chrpropReparent(NewModel->prop, self->prop);
+        modelSetScale(PGET(NewModel->model), PGET(NewModel->model)->scale);
+        chrpropReparent(PGET(NewModel->prop), self->prop);
         NewModel->timer = CHRLV_DEFAULT_TIMER;
-        propobjSetDropped(NewModel->prop, 1);
+        propobjSetDropped(PGET(NewModel->prop), 1);
         self->hidden = self->hidden | CHRHIDDEN_DROP_HELD_ITEMS;
 
         return TRUE;

@@ -193,13 +193,13 @@ void bondviewLoadSetupIntroSection(void)
                             extern s32 getTileRoom(StandTile *tile);
                             extern s32 isPointInsideTriStandTileUnscaled_Maybe(StandTile *tile, f32 p_x, f32 p_z);
                             PadRecord *sp = g_Startpad[startpadcount];
-                            s32 sound = (sp->stan != NULL) && (sp->stan->id != 0)
-                                     && isPointInsideTriStandTileUnscaled_Maybe(sp->stan, sp->pos.f[0], sp->pos.f[2]);
+                            s32 sound = (PGET(sp->stan) != NULL) && (PGET(sp->stan)->id != 0)
+                                     && isPointInsideTriStandTileUnscaled_Maybe(PGET(sp->stan), sp->pos.f[0], sp->pos.f[2]);
                             fprintf(stderr,
                                     "ge: startpad %d = pad %d (%s) stanroom=%d pos=(%.0f %.0f %.0f)%s\n",
                                     startpadcount,
-                                    ((struct SetupIntroSpawn*)intro_record)->index, sp->plink,
-                                    (sp->stan != NULL) ? getTileRoom(sp->stan) : -1,
+                                    ((struct SetupIntroSpawn*)intro_record)->index, PGET(sp->plink),
+                                    (PGET(sp->stan) != NULL) ? getTileRoom(PGET(sp->stan)) : -1,
                                     sp->pos.f[0], sp->pos.f[1], sp->pos.f[2],
                                     sound ? "" : " - EXCLUDED (no sound tile under pad)");
                             fflush(stderr);
@@ -317,7 +317,7 @@ void bondviewLoadSetupIntroSection(void)
                 {
                     if (get_cur_playernum() == 0)
                     {
-                        ((struct SetupIntroCamera*)intro_record)->prev = g_CurrentSetupIntroCamera;
+                        PSET(((struct SetupIntroCamera*)intro_record)->prev, g_CurrentSetupIntroCamera);
                         g_CurrentSetupIntroCamera = (struct SetupIntroCamera*)intro_record;
                         g_SetupIntroCameraCount = g_SetupIntroCameraCount + 1;
 
@@ -332,12 +332,12 @@ void bondviewLoadSetupIntroSection(void)
 #else
                         /* PORT: the text id sits in the low half of the raw word,
                          * which u16[1] only reaches on big-endian, so read it explicitly. */
-                        ((struct SetupIntroCamera*)intro_record)->lang1c.lang_ptr = langGet(((struct SetupIntroCamera*)intro_record)->lang1c.lang_index[0]);
+                        PSET(((struct SetupIntroCamera*)intro_record)->lang1c.lang_ptr, langGet(((struct SetupIntroCamera*)intro_record)->lang1c.lang_index[0]));
 #endif
 
                         if (((struct SetupIntroCamera*)intro_record)->lang20.lang_index != 0)
                         {
-                            ((struct SetupIntroCamera*)intro_record)->lang20.lang_ptr = langGet((u16)((struct SetupIntroCamera*)intro_record)->lang20.lang_index);
+                            PSET(((struct SetupIntroCamera*)intro_record)->lang20.lang_ptr, langGet((u16)((struct SetupIntroCamera*)intro_record)->lang20.lang_index));
                         }
                     }
 
@@ -378,7 +378,7 @@ void bondviewLoadSetupIntroSection(void)
                     /* PORT: the compiled-in setup already stores a real pointer
                      * (&credits_data_0), so skip the N64 base+offset rebase
                      * that broke the Cuba credits. */
-                    credits = (CreditsEntry*)intro_credits->unk04;
+                    credits = (CreditsEntry*)portPtr64(intro_credits->unk04);
 #endif
                     credits_pointer = credits;
 
@@ -412,7 +412,7 @@ void bondviewLoadSetupIntroSection(void)
         while (rand_camera_index > 0)
         {
             rand_camera_index--;
-            ptr_random06cam_entry = ptr_random06cam_entry->prev;
+            ptr_random06cam_entry = PGET(ptr_random06cam_entry->prev);
         }
     }
 
@@ -458,14 +458,14 @@ void bondviewLoadSetupIntroSection(void)
         start_pos.f[2] = g_Startpad[rand_pad_index]->pos.f[2];
 
 
-        start_stan = g_Startpad[rand_pad_index]->stan;
+        start_stan = PGET(g_Startpad[rand_pad_index]->stan);
 
 #ifndef TARGET_N64
         { /* MP debug: initial spawn placement (mirror of the respawn log) */
             extern s32 getTileRoom(StandTile *tile);
             fprintf(stderr,
                     "ge: mp spawn p%d startpad=%d (%s) stanroom=%d pos=(%.0f ? %.0f)\n",
-                    get_cur_playernum(), rand_pad_index, g_Startpad[rand_pad_index]->plink,
+                    get_cur_playernum(), rand_pad_index, PGET(g_Startpad[rand_pad_index]->plink),
                     (start_stan != 0) ? getTileRoom((StandTile *) start_stan) : -1,
                     start_pos.f[0], start_pos.f[2]);
             fflush(stderr);

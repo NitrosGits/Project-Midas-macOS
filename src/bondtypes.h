@@ -112,7 +112,7 @@ typedef struct AIRecord1s
 
 typedef struct AIListRecord
 {
-    AIRecord *ailist;
+    PTR32(AIRecord) ailist;
     int       ID;
 } AIListRecord;
 
@@ -1719,8 +1719,8 @@ typedef union
         coord3d    pos;   /*0x00*/
         coord3d    up;    /*0x0c*/
         coord3d    look;  /*0x18*/
-        char      *plink; /*0x24 canonical name */
-        StandTile *stan;  /*0x28 canonical name */
+        PTR32(char)      plink; /*0x24 canonical name */
+        PTR32(StandTile) stan;  /*0x28 canonical name */
     } PadRecord;
 
     /**
@@ -1733,8 +1733,8 @@ typedef union
         coord3d    pos;       /*0x00*/
         coord3d    up;        /*0x0c*/
         coord3d    look;      /*0x18*/
-        char *     plink;     /*0x24 canonical name */
-        StandTile *stan;      /*0x28 canonical name */
+        PTR32(char) plink;     /*0x24 canonical name */
+        PTR32(StandTile) stan;      /*0x28 canonical name */
         //temporary fix for no inheritance support by glibtools
         bbox     bbox;      /*0x2c - 0x40 confirmed*/
     } BoundPadRecord;
@@ -1764,7 +1764,7 @@ typedef union
     typedef struct waypoint
     {
         s32  padID;      // Pad ID to anchor waypoint to.
-        s32 *neighbours; // Array of neighbouring (connected) waypoint IDs (ending in -1)
+        PTR32(s32) neighbours; // Array of neighbouring (connected) waypoint IDs (ending in -1)
         s32  groupNum;   // index entry in the waygroup table that contains this path entry
         s32  dist;       // Initialise to 0, used by engine for pathfinding Heuristics between waypoints within a set.
     } waypoint;
@@ -1776,8 +1776,8 @@ typedef union
      */
     typedef struct waygroup
     {
-        s32 *neighbours; // Array of neighbouring (connected) waygroup IDs (ending in -1)
-        s32 *waypoints;  // Array of waypoint IDs (ending in -1)
+        PTR32(s32) neighbours; // Array of neighbouring (connected) waygroup IDs (ending in -1)
+        PTR32(s32) waypoints;  // Array of waypoint IDs (ending in -1)
         s32  dist;       // Initialise to 0, used by engine for pathfinding Heuristics between sets
     } waygroup;
 
@@ -1787,7 +1787,7 @@ typedef union
      */
     typedef struct PathRecord
     {
-        s32 *waypoints; // array of waypoint IDs in path (ending in -1)
+        PTR32(s32) waypoints; // array of waypoint IDs in path (ending in -1)
         u8   ID;        // path ID
         u8   isLoop;    // 0x05 Path loops
         u16  len;       /*0x06 unused*/
@@ -2113,7 +2113,7 @@ typedef union
 
     struct patrol_path
     {
-        s32 *data;
+        PTR32(s32) data;
         u8   unk04;
         u8   flags;
         u16  len;
@@ -2746,8 +2746,8 @@ typedef union
             x1    used on stuff in egyptian, sevx
         */
         u32         flags2;
-        PropRecord *prop;  /*0x10*/
-        Model      *model; /*0x14*/
+        PTR32(PropRecord) prop;  /*0x10*/
+        PTR32(Model)      model; /*0x14*/
                            // mtx realrot;
 #if 0
         void *runtime_MATRIX0; /*0x18*/
@@ -2818,11 +2818,11 @@ typedef union
             */
             u32 runtime_bitflags;
         };
-        collision_data *ptr_allocated_collisiondata_block;
+        PTR32(collision_data) ptr_allocated_collisiondata_block;
 
         union {
-            struct Projectile *projectile; // 0x6c
-            struct Embedment *embedment; // 0x6c
+            PTR32(struct Projectile) projectile; // 0x6c
+            PTR32(struct Embedment) embedment; // 0x6c
         };
 
         f32             maxdamage; // 0x70
@@ -2994,9 +2994,9 @@ typedef union
         * Connected door. Opening/closing this door will also open the linkedDoor.
         * Offset 0xc8.
         */
-        struct DoorRecord *linkedDoor;
+        PTR32(struct DoorRecord) linkedDoor;
 
-        Vertex*            unkcc; /*0xcc*/
+        PTR32(Vertex) unkcc; /*0xcc*/
 
         struct ModelRoData_BoundingBoxRecord bbox;
 
@@ -3021,9 +3021,9 @@ typedef union
          * If you reset this to 0 (NULL pointer), then the door opening
          * sound never stops playing.
          */
-        ALSoundState *openSoundState;
+        PTR32(ALSoundState) openSoundState;
 
-        ALSoundState *closeSoundState;
+        PTR32(ALSoundState) closeSoundState;
 
         /**
          * Copy of global timer value.
@@ -3143,9 +3143,9 @@ typedef union
         s32 unkB8;
         s32 unkBC;
         s32  unkC0;
-        ALSoundState *unkC4;
-        ALSoundState *unkC8;
-        struct beam *beam;
+        PTR32(ALSoundState) unkC4;
+        PTR32(ALSoundState) unkC8;
+        PTR32(struct beam) beam;
 
         /**
          * Offset 0xd0.
@@ -3220,7 +3220,7 @@ typedef union
          */
         //s16 unk62; /*0x62*/
 
-        struct WeaponObjRecord *dualweapon; // other weapon when dual wielding /*0x84*/
+        PTR32(struct WeaponObjRecord) dualweapon; // other weapon when dual wielding /*0x84*/
     } WeaponObjRecord;
 
     #define New_WeaponObjRecord(pad)               \
@@ -3250,7 +3250,7 @@ typedef union
         */
         u16        bitflags;     /*0x14*/
         s16        HeadID;       /*0x16*/
-        ChrRecord *Data;         /*0x18*/
+        PTR32(ChrRecord) Data;         /*0x18*/
     } GuardRecord;
 
     #define New_GuardRecord(pad)                   \
@@ -3270,10 +3270,10 @@ typedef union
     //[This struct uses original names]
     typedef struct MonitorRecord
     {
-        monword *cmdlist;   // 0x80	4	image pointer for this monitor
+        PTR32(monword) cmdlist;   // 0x80	4	image pointer for this monitor
         u16 offset;     // 0x84	2	[runtime] cur. #commands from start of routine
         s16 pause60;    // 0x86	2	[runtime] loop counter
-        struct sImageTableEntry *tconfig;      //0x88	4	[runtime] monitor image# or p->image header
+        PTR32(struct sImageTableEntry) tconfig;      //0x88	4	[runtime] monitor image# or p->image header
         f32 rot;        // 0x8C 4 [runtime][float] rotation
         f32 xscale;     // 0x90	4	[runtime] [float] cur. horizontal zoom
         f32 xscalefrac; // 0x94	4	[runtime] [float] cur. h.zoom time
@@ -3355,15 +3355,15 @@ typedef union
         inherits PropDefHeaderRecord;
         union
         {
-            struct PropRecord *first;
+            PTR32(struct PropRecord) first;
             s32 Index1;
         };
         union
         {
-            struct PropRecord *second;
+            PTR32(struct PropRecord) second;
             s32 Index2;
         };
-        struct LinkRecord *next;
+        PTR32(struct LinkRecord) next;
     } LinkRecord;
     #define New_LinkRecord(ID1, ID2)                      \
         {                                                 \
@@ -3432,8 +3432,8 @@ typedef union
         inherits                PropDefHeaderRecord;
         u16                     ID;
         s16                     OffsetToObj; //offset from tag
-        struct TagObjectRecord *NextTag;
-        ObjectRecord *          TaggedObject;
+        PTR32(struct TagObjectRecord) NextTag;
+        PTR32(ObjectRecord) TaggedObject;
     } TagObjectRecord;
 #define New_TagObjectRecord(Object)                \
     {                                              \
@@ -3458,7 +3458,7 @@ typedef union
         s32                           ObjRefID;            /*4*/
         u32                           TextID;              /*8*/
         DIFFICULTY                    MinDificulty;        /*c*/
-        WatchMenuObjectiveTextRecord *nextentry;           /*10*/
+        PTR32(WatchMenuObjectiveTextRecord) nextentry;           /*10*/
     } MissionObjectiveRecord;
     #define New_MissionObjectiveRecord(TextID)         \
         {                                              \
@@ -3531,7 +3531,7 @@ typedef union
         u16      unk4;
         u16 unk6;
         u32      unk8;
-        PropRecord *lastprop;
+        PTR32(PropRecord) lastprop;
     } PhotographObjectRecord;
     #define New_CollectObjectRecord(TagID)         \
         {                                          \
@@ -3606,7 +3606,7 @@ typedef union
         s32 unk18;
         s32 unk1c;
         s32 unk20;
-        ObjectRecord *renobj;
+        PTR32(ObjectRecord) renobj;
     } RenameObjectRecord;
     #define New_RenameObjectRecord(TagID)          \
         {                                          \
@@ -3619,15 +3619,15 @@ typedef union
         inherits PropDefHeaderRecord;
         union
         {
-            struct DoorRecord*     door;
+            PTR32(struct DoorRecord) door;
             s32 Index1;
         };
         union
         {
-            struct ObjectRecord*   lock;
+            PTR32(struct ObjectRecord) lock;
             s32 Index2;
         };
-        struct LockDoorRecord* next;
+        PTR32(struct LockDoorRecord) next;
     } LockDoorRecord;
     #define New_RenameObjectRecord(TagID)          \
         {                                          \
@@ -3640,7 +3640,7 @@ typedef union
     typedef struct VehichleRecord
     {
         inherits    ObjectRecord;
-        AIRecord *  ailist;       /*0x80*/
+        PTR32(AIRecord) ailist;       /*0x80*/
         u16         aioffset;     /*0x84*/
         s16         aireturnlist; /*0x86*/
         f32         speed;        /*0x88 ?*/
@@ -3650,9 +3650,9 @@ typedef union
         f32         speedtime60;  /*0x98 CONFIRNMED*/
         f32         turnrot60;    /*0x9c*/
         f32         roty;         /*0xa0*/
-        PathRecord *path;         /*0xa4*/
+        PTR32(PathRecord) path;         /*0xa4*/
         s32         nextstep;     /*0xa8*/
-        struct ALSoundState *Sound;      /*0xac*/
+        PTR32(struct ALSoundState) Sound;      /*0xac*/
     } VehichleRecord;
     // VehichleRecord *pVehichleData;//not Global, local to Object or function
     // VehichleRecord *pAircraftData;//not Global, local to Object or function
@@ -3667,7 +3667,7 @@ typedef union
     typedef struct AircraftRecord
     {
         inherits      ObjectRecord;
-        AIRecord *    ailist;          /*0x80*/
+        PTR32(AIRecord) ailist;          /*0x80*/
         u16           aioffset;        /*0x84*/
         s16           aireturnlist;    /*0x86*/
         f32           rotoryrot;       /*0x88 changes when onscreen even after destruction*/
@@ -3679,8 +3679,8 @@ typedef union
         f32           speedtime60;     /*0xa0*/
         f32           yrot;            /*0xa4*/
         s32           nextstep;        /*0xa8*/
-        PathRecord   *path;            /*0xac*/
-        struct ALSoundState *Sound;           /*0xb0*/
+        PTR32(PathRecord)   path;            /*0xac*/
+        PTR32(struct ALSoundState) Sound;           /*0xb0*/
     } AircraftRecord;
     #define New_AircraftRecord(pad)                 \
         {                                           \
@@ -3708,18 +3708,18 @@ typedef union
     {
         inherits PropDefHeaderRecord;
         union {
-            struct ObjectRecord *item;
+            PTR32(struct ObjectRecord) item;
             s32 Index1;
         };
         union {
-            struct SafeRecord *safe;
+            PTR32(struct SafeRecord) safe;
             s32 Index2;
         };
         union {
-            struct DoorRecord *door;
+            PTR32(struct DoorRecord) door;
             s32 Index3;
         };
-        struct SafeObjectRecord *next;
+        PTR32(struct SafeObjectRecord) next;
     } SafeObjectRecord;
 
     // PROPDEF_TANK (45)
@@ -3727,7 +3727,7 @@ typedef union
     typedef struct TankRecord
     {
         inherits ObjectRecord;
-        collision_data *collision /*0x80*/;
+        s32     collision; /*0x80 not a pointer: the edge count of the inline collision_data (with rect) that sub_GAME_7F03F540 writes here*/
         rect4f  rect;       /*0x84*/
         //s32 unk88;
         //s32 unk8C;
@@ -3913,14 +3913,14 @@ typedef struct SetupIntroCamera
     union
     {
         u16   lang_index[2];
-        char *lang_ptr;
+        PTR32(char) lang_ptr;
     } lang1c;
     union
     {
         s32   lang_index;
-        char *lang_ptr;
+        PTR32(char) lang_ptr;
     } lang20;
-    struct SetupIntroCamera *prev;
+    PTR32(struct SetupIntroCamera) prev;
 } SetupIntroCamera;
 
 /**
@@ -3990,7 +3990,7 @@ struct watchMenuObjectiveText
     enum WATCH_BRIEFING_PAGE       menu;
     u16                            reserved;
     u16                            text;
-    struct watchMenuObjectiveText *nextentry;
+    PTR32(struct watchMenuObjectiveText) nextentry;
 };
 // PROPDEF_OBJECTIVE_x (23,24 ) - maybe not a propdef
 //! FIXME all but text field cannot be trusted
@@ -4064,7 +4064,7 @@ typedef struct pname
 {
     union
     {
-        char *p;
+        PTR32(char) p;
         s32   offset;
     };
 } pname;
@@ -4082,6 +4082,24 @@ typedef struct stagesetup
     pname               *padnames;
     pname               *boundpadnames;
 } stagesetup;
+
+/* PORT: the setup file's own header, as loaded: ten 32-bit file offsets, which
+ * prop.c rebases into g_CurrentSetup's pointers. struct stagesetup keeps real
+ * pointers (g_CurrentSetup and the compiled-in setups); in the 32-bit builds a
+ * compiled-in header's pointers read back unchanged through this view. */
+typedef struct stagesetupfile
+{
+    u32 pathwaypoints;
+    u32 waypointgroups;
+    u32 intro;
+    u32 propDefs;
+    u32 patrolpaths;
+    u32 ailists;
+    u32 pads;
+    u32 boundpads;
+    u32 padnames;
+    u32 boundpadnames;
+} stagesetupfile;
 
 
 
@@ -4113,8 +4131,8 @@ typedef struct object_standard {
     u16 presetID;
     u32 flags1;
     u32 flags2;
-    void* ptrPOSData;
-    void* ptrObjInstanceController;
+    PTR32(void) ptrPOSData;
+    PTR32(void) ptrObjInstanceController;
     f32 runtime_MATRIX[4][4];
     f32 xPOS;
     f32 yPOS;
@@ -4134,7 +4152,7 @@ typedef struct object_weapon {
     u8 gun_pickup;
     u8 linked_item;
     s16 timer;
-    void* ptr_linkeditem;
+    PTR32(void) ptr_linkeditem;
 } object_weapon;
 
 
@@ -4220,7 +4238,7 @@ struct setup_objective_text {
     s32 unk00;
     s32 unk04;
     s32 unk08;
-    struct setup_objective_text *next;
+    PTR32(struct setup_objective_text) next;
 };
 
 /* matches Perfect Dark */
@@ -4228,7 +4246,7 @@ struct criteria_roomentered {
     u32 unk00;
     u32 pad;
     u32 status;
-    struct criteria_roomentered *next;
+    PTR32(struct criteria_roomentered) next;
 };
 
 
@@ -4238,14 +4256,14 @@ struct criteria_deposit {
     s32 weaponnum;
     s32 padid;
     s32 flag;
-    struct criteria_deposit *next;
+    PTR32(struct criteria_deposit) next;
 };
 
 struct criteria_picture {
     s32 unk00;
     s32 tag_id;
     s32 flag;
-    struct criteria_picture *next;
+    PTR32(struct criteria_picture) next;
 };
 
 struct PortalMetric {
