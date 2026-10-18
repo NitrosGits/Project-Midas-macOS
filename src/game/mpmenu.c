@@ -646,7 +646,7 @@ void mpCalculateAwards(bool gameoverdelay)
             if (metrics[i].awards & (1 << awardindex))
             {
                 metrics[i].awards &= ~(1 << awardindex);
-                g_playerPointers[i]->ptr_text_first_mp_award = langGet(g_AwardNames[awardindex]);
+                g_playerPointers[i]->ptr_text_first_mp_award = (char *) langGet(g_AwardNames[awardindex]);
                 numdone = 1;
             }
 
@@ -665,7 +665,7 @@ void mpCalculateAwards(bool gameoverdelay)
             if (metrics[i].awards & (1 << awardindex))
             {
                 metrics[i].awards &= ~(1 << awardindex);
-                g_playerPointers[i]->ptr_text_second_mp_award = langGet(g_AwardNames[awardindex]);
+                g_playerPointers[i]->ptr_text_second_mp_award = (char *) langGet(g_AwardNames[awardindex]);
                 numdone = 2;
             }
 
@@ -1305,7 +1305,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
     s32 textheight;
     s32 m;
     s32 h1;
-    s32 h2;
+    char *h2; /* a string (langGet) */
     /* [16], not [4]: write_playerrank_to_buffer sprintf's strings like
      * "Rank: 1st" (9 chars + null = 10) straight in - the 4-byte buffer
      * overflowed on every call (multiplayer watch-menu kills/losses/ points
@@ -1337,6 +1337,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
     s16 viewleft;
     s32 colour;
     s32 q;
+    char *ptext; /* the "P" string; q is a colour elsewhere here */
  
     curplayernum = get_cur_playernum();
     player_count = getPlayerCount();
@@ -1660,11 +1661,11 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
                 gdl = textRender(gdl, &x, &y, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0x00ff00b0, viewleft, h1, 0, 0);
             }
  
-            q = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
+            ptext = (char *) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
  
             // Must remain a comma expression for matching
-            h2 = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1D_KILLS)), /* KILLS */
-                sprintf(rankbuffer, ascii_pnum_KILLS, (char *) q, curplayernum + 1, (char *) h2); /* -> "P<n> KILLS" */
+            h2 = (char *) langGet(getStringID(LMPMENU, MPMENU_STR_1D_KILLS)), /* KILLS */
+                sprintf(rankbuffer, ascii_pnum_KILLS, ptext, curplayernum + 1, h2); /* -> "P<n> KILLS" */
 #ifndef TARGET_N64
             {   /* PORT: the profile's name is shown instead of P1 to P4 in game
                  * - port_profiles.c; NULL = none */
@@ -1673,7 +1674,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
 
                 if (pname != NULL)
                 {
-                    snprintf(rankbuffer, sizeof(rankbuffer), "%s %s", pname, (char *) h2);
+                    snprintf(rankbuffer, sizeof(rankbuffer), "%s %s", pname, h2);
                 }
             }
 #endif
@@ -1742,11 +1743,11 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
                 gdl = textRender(gdl, &x, &y, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0x00ff00b0, viewleft, h1, 0, 0);
             }
  
-            q = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
+            ptext = (char *) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
  
             // Must remain a comma expression for matching.
-            h2 = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1E_LOSSES)), /* LOSSES */
-                sprintf(rankbuffer, ascii_pnum_LOSSES, (char *) q, curplayernum + 1, (char *) h2); /* -> "P<n> LOSSES" */
+            h2 = (char *) langGet(getStringID(LMPMENU, MPMENU_STR_1E_LOSSES)), /* LOSSES */
+                sprintf(rankbuffer, ascii_pnum_LOSSES, ptext, curplayernum + 1, h2); /* -> "P<n> LOSSES" */
 #ifndef TARGET_N64
             {   /* PORT: the profile's name is shown instead of P1 to P4 in game
                  * - port_profiles.c; NULL = none */
@@ -1755,7 +1756,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
 
                 if (pname != NULL)
                 {
-                    snprintf(rankbuffer, sizeof(rankbuffer), "%s %s", pname, (char *) h2);
+                    snprintf(rankbuffer, sizeof(rankbuffer), "%s %s", pname, h2);
                 }
             }
 #endif
@@ -1900,7 +1901,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
  
             if (g_CurrentPlayer->ptr_text_first_mp_award)
             {
-                text = (char *) g_CurrentPlayer->ptr_text_first_mp_award;
+                text = g_CurrentPlayer->ptr_text_first_mp_award;
                 textMeasure(&fav_textheight, &fav_textwidth, text, ptrFontBankGothicChars, ptrFontBankGothic, 0);
                 x = ((viGetViewLeft() + fav_x_offset) - (fav_textwidth >> 1)) + 80;
                 y = (viGetViewTop() - (fav_textheight >> 1)) + (75 + MPMENU_YOFF);
@@ -1911,7 +1912,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
 
             if (g_CurrentPlayer->ptr_text_second_mp_award)
             {
-                text = (char *) g_CurrentPlayer->ptr_text_second_mp_award;
+                text = g_CurrentPlayer->ptr_text_second_mp_award;
                 textMeasure(&fav_textheight, &fav_textwidth, text, ptrFontBankGothicChars, ptrFontBankGothic, 0);
                 x = ((viGetViewLeft() + fav_x_offset) - (fav_textwidth >> 1)) + 80;
                 y = (viGetViewTop() - (fav_textheight >> 1)) + (88 + MPMENU_YOFF);

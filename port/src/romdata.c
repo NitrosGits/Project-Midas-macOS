@@ -929,14 +929,14 @@ static void romdataTextPreprocess(s32 index, u8 *data, u32 size)
                 portConLogf("ge: romdata: text %s: slot %u offset 0x%X beyond the %u-byte bank - zeroed\n",
                         file_resource_table[index].filename, i, off, size);
             } else {
-                v = (u32) (uintptr_t) (data + off);
+                v = portPtr32(data + off); /* a window word in 64-bit builds (langGet decodes) */
             }
         }
         {
             size_t p;
             for (p = 0; p < sizeof(sTextPatches) / sizeof(sTextPatches[0]); p++) {
                 if (sTextPatches[p].slot == i && strcmp(sTextPatches[p].bank, bank) == 0) {
-                    v = (u32) (uintptr_t) sTextPatches[p].text;
+                    v = portPtr32(sTextPatches[p].text);
                     patched++;
                 }
             }
@@ -945,7 +945,7 @@ static void romdataTextPreprocess(s32 index, u8 *data, u32 size)
             /* a NULL ROM slot is not compared: the generated char *LxE[]
              * arrays drop trailing NULL slots, so compiled[i] may not exist */
             const char *c = compiled[i];
-            const char *r = (const char *) (uintptr_t) v;
+            const char *r = (const char *) portPtr64(v);
             if (c == NULL || strcmp(c, r) != 0) {
                 if (differ == 0) {
                     firstdiff = i;

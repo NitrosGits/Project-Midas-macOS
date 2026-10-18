@@ -4880,7 +4880,7 @@ void trigger_solo_watch_menu(s32 arg0)
                 // Note: colors are set here but overwritten in watch.c set_page_rectangle_colors
                 ptr_copy = ptr_a;
                 ptr_a = setup_watch_rectangles(ptr_a, i, 0, 0x64, 0x14, -0x12B, 0x136);
-                ptr_b = sub_GAME_7F0A3B40(ptr_b, OS_K0_TO_PHYSICAL(ptr_copy));
+                ptr_b = sub_GAME_7F0A3B40(ptr_b, PORT_PHYS(ptr_copy));
             }
 
             gSPEndDisplayList(ptr_b);
@@ -4897,7 +4897,7 @@ void trigger_solo_watch_menu(s32 arg0)
 
             ptr_copy = &g_CurrentPlayer->buffer_for_watch_static_vertices->vtx[0];
             next = setup_watch_rectangles(ptr_a, 0, 0, 0x398, 0x14, -0x1CC, 0);
-            ptr_b = sub_GAME_7F0A3B40(ptr_b, OS_K0_TO_PHYSICAL(ptr_copy));
+            ptr_b = sub_GAME_7F0A3B40(ptr_b, PORT_PHYS(ptr_copy));
 
             gSPEndDisplayList(ptr_b);
             /**
@@ -11861,11 +11861,11 @@ Gfx *bondviewRenderGaugeBars(Gfx *gdl)
 
     //Set up armor bars.
     hudMakeDamageSegments(&g_CurrentPlayer->armor_display_values[0].items[0], 0x2e, 1, g_CurrentPlayer->apparentarmour);
-    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_body_armor_bar_gdl, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->armor_display_values[0].items[0]), 0x2e);
+    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_body_armor_bar_gdl, PORT_K0(&g_CurrentPlayer->armor_display_values[0].items[0]), 0x2e);
 
     // Set up health bars.
     hudMakeDamageSegments(&g_CurrentPlayer->health_display_values[0].items[0], 0x2e, -1, g_CurrentPlayer->apparenthealth);
-    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_health_bar_gdl, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->health_display_values[0].items[0]), 0x2e);
+    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_health_bar_gdl, PORT_K0(&g_CurrentPlayer->health_display_values[0].items[0]), 0x2e);
 
     // Create an orthographic render state for the gauge.
     lookatmtx = dynAllocateMatrix();
@@ -11952,15 +11952,15 @@ Gfx *bondviewRenderGaugeBars(Gfx *gdl)
     {   /* HUD Centering 16:9: armour under the right-edge ortho, health
          * under the left-edge one (orthomtx, loaded above) */
         gSPMatrix(gdl++, osVirtualToPhysical(orthoRight), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-        gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
+        gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
         gSPMatrix(gdl++, osVirtualToPhysical(orthomtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
-        gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_health_bar_gdl));
+        gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_health_bar_gdl));
     }
     else
 #endif
     {
-    gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
-    gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_health_bar_gdl));
+    gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
+    gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_health_bar_gdl));
     }
 
     gSPMatrix(gdl++, osVirtualToPhysical(currentPlayerGetProjectionMatrix()), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);

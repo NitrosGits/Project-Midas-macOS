@@ -1273,8 +1273,8 @@ s32 frontCheckIfCheatIsUnlocked(s32 cheat)
 }
 
 
-int frontGetPlayersFavoriteWeaponInHand(int player,int hand) {
-    return get_ptr_long_watch_text_for_item(array_favweapon[player][hand]);
+char *frontGetPlayersFavoriteWeaponInHand(int player,int hand) {
+    return (char *) get_ptr_long_watch_text_for_item(array_favweapon[player][hand]);
 }
 
 
@@ -1876,7 +1876,7 @@ Gfx *constructor_menu00_legalscreen(Gfx *DL)
 
         sprintf(line, "Project Midas %s: Build %s\n", portPlatformName(), portBuildString());
         DL = display_aligned_white_text_to_screen(DL, 220, 16, CENTER_ALIGN, CENTER_ALIGN, (u8 *) line,
-                                                  (intptr_t) ptrFontZurichBoldChars, (intptr_t) ptrFontZurichBold);
+                                                  ptrFontZurichBoldChars, ptrFontZurichBold);
     }
 #endif
 
@@ -8818,7 +8818,7 @@ Gfx *constructor_menu07_missionsel(Gfx *DL)
 
                 if (j_text_trigger == 0)
                 {
-                    temp_v0_3 = strlen(sp90) - 1;
+                    temp_v0_3 = (s32) strlen(sp90) - 1;
                     for (; temp_v0_3 >= 0; temp_v0_3--)
                     {
                         if (sp90[temp_v0_3] >= 'a')
@@ -11124,8 +11124,8 @@ Gfx *frontRenderCharacterPortrait(Gfx *DL, s32 arg1, s32 arg2, s32 arg3, s32 arg
         }
     }
 
-    gSPMatrix(DL++, OS_PHYSICAL_TO_K0(spD4), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
-    gSPMatrix(DL++, OS_PHYSICAL_TO_K0(spD0), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(DL++, PORT_K0(spD4), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gSPMatrix(DL++, PORT_K0(spD0), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     gSPVertex(DL++, spCC, 16, 0);
 
@@ -17072,7 +17072,7 @@ Gfx *constructor_menu0D_missioncomplete(Gfx *DL)
     strcpy(stagename, frontGetPlayersFavoriteWeaponInHand(0, 0));
     if ((array_favweapon[0][0] > 0) && (array_favweapon[0][1] == array_favweapon[0][0]))
     {
-        temp = strlen(stagename)-1;
+        temp = (s32) strlen(stagename)-1;
         sprintf(&stagename[temp], " x 2\n");
     }
     x = 0xBE;
@@ -17525,7 +17525,7 @@ Gfx *constructor_menu16_nocontrollers(Gfx *DL)
     s32 x2;
     s32 x;
     s32 y;
-    s32 text;
+    u8 *text;
     s32 conConnected = joyGetConnectedControllers();
     s32 numContCon = 0;
 

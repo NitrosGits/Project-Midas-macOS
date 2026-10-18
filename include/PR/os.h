@@ -868,6 +868,8 @@ extern void *		 osPhysicalToVirtual(u32);
 
 #define	OS_PHYSICAL_TO_K0(x)	(void *)(((u32)(x)+0x80000000))
 #define	OS_PHYSICAL_TO_K1(x)	(void *)(((u32)(x)+0xa0000000))
+#define	PORT_K0(x)	OS_PHYSICAL_TO_K0(x)
+#define	PORT_PHYS(x)	OS_K0_TO_PHYSICAL(x)
 #else
 /* PC port: no KSEG mapping - host pointers pass through unchanged, matching
  * the identity osVirtualToPhysical shim. The N64 arithmetic wrapped host
@@ -880,6 +882,12 @@ extern void *		 osPhysicalToVirtual(u32);
 
 #define	OS_PHYSICAL_TO_K0(x)	portPtr64((unsigned int) (x))
 #define	OS_PHYSICAL_TO_K1(x)	portPtr64((unsigned int) (x))
+/* The decompiled code also applies these to values that are host pointers
+ * already, and passes the result where a pointer is expected; PORT_K0 and
+ * PORT_PHYS mark those sites. They are the N64 arithmetic on N64 and the
+ * pointer itself on PC, where a 64-bit pointer cannot become a 32-bit word. */
+#define	PORT_K0(x)	((void *) (x))
+#define	PORT_PHYS(x)	((void *) (x))
 #endif
 
 /* I/O operations */

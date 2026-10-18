@@ -107,7 +107,7 @@ static void portFontClearPadding(struct fontchar *chars, s32 count)
     {
         const s32 stride = (chars[i].width + 7) & 0xF8;
 
-        if (chars[i].pixeldata == NULL || chars[i].width <= 0 || chars[i].height <= 0)
+        if (PGET(chars[i].pixeldata) == NULL || chars[i].width <= 0 || chars[i].height <= 0)
         {
             continue;
         }
@@ -115,7 +115,7 @@ static void portFontClearPadding(struct fontchar *chars, s32 count)
         {
             for (c = chars[i].width; c < stride; c++)
             {
-                chars[i].pixeldata[r * stride + c] = 0;
+                PGET(chars[i].pixeldata)[r * stride + c] = 0;
             }
         }
     }
@@ -150,7 +150,7 @@ void load_font_tables(void)
     text_s = 0;
     text_t = 0;
 
-    len = (romptr_t)&_fontbankgothicSegmentEnd - (romptr_t)&_fontbankgothicSegmentStart;
+    len = (u32) ((u8 *) &_fontbankgothicSegmentEnd - (u8 *) &_fontbankgothicSegmentStart);
 	ptrFontBankGothic = (struct font *)mempAllocBytesInBank(len, MEMPOOL_STAGE);
 	ptrFontBankGothicChars = ptrFontBankGothic->chars;
 
@@ -161,14 +161,13 @@ void load_font_tables(void)
 #ifdef TARGET_N64
 		ptrFontBankGothicChars[i].pixeldata += (uintptr_t)ptrFontBankGothic;
 #else
-		/* stored value is a segment offset, not a pointer - relocate in
-		 * integer domain (pointer arithmetic on the raw offset is UB) */
-		ptrFontBankGothicChars[i].pixeldata = (u8 *)
-			((uintptr_t)ptrFontBankGothicChars[i].pixeldata + (uintptr_t)ptrFontBankGothic);
+		/* stored value is a segment offset, not a pointer: rebase the file
+		 * word onto the copy (pointer arithmetic on the raw offset is UB) */
+		PSET(ptrFontBankGothicChars[i].pixeldata, (u8 *) ptrFontBankGothic + PTRW(ptrFontBankGothicChars[i].pixeldata));
 #endif
 	}
 
-    len = (romptr_t)&_fontzurichboldSegmentEnd - (romptr_t)&_fontzurichboldSegmentStart;
+    len = (u32) ((u8 *) &_fontzurichboldSegmentEnd - (u8 *) &_fontzurichboldSegmentStart);
 	ptrFontZurichBold = (struct font *)mempAllocBytesInBank(len, MEMPOOL_STAGE);
 	ptrFontZurichBoldChars = ptrFontZurichBold->chars;
 
@@ -179,8 +178,8 @@ void load_font_tables(void)
 #ifdef TARGET_N64
 		ptrFontZurichBoldChars[i].pixeldata += (uintptr_t)ptrFontZurichBold;
 #else
-		ptrFontZurichBoldChars[i].pixeldata = (u8 *)
-			((uintptr_t)ptrFontZurichBoldChars[i].pixeldata + (uintptr_t)ptrFontZurichBold);
+		/* the file word is a segment offset: rebase it onto the copy */
+		PSET(ptrFontZurichBoldChars[i].pixeldata, (u8 *) ptrFontZurichBold + PTRW(ptrFontZurichBoldChars[i].pixeldata));
 #endif
 	}
 #ifndef TARGET_N64
@@ -345,7 +344,7 @@ Gfx *textRenderGlyph(Gfx *gdl, s32 *x, s32 *y, struct fontchar *curchar, struct 
                             printf("ge: glyph   ");
                             for (c = 0; c < stride; c++)
                             {
-                                printf("%02x%s", curchar->pixeldata[r * stride + c], (c == curchar->width - 1) ? " | " : " ");
+                                printf("%02x%s", PGET(curchar->pixeldata)[r * stride + c], (c == curchar->width - 1) ? " | " : " ");
                             }
                             printf("\n");
                         }
@@ -362,7 +361,7 @@ Gfx *textRenderGlyph(Gfx *gdl, s32 *x, s32 *y, struct fontchar *curchar, struct 
                 gDPSetTile(gdl++,G_IM_FMT_I,G_IM_SIZ_8b,0,0,G_TX_RENDERTILE,0,G_TX_NOMIRROR | G_TX_WRAP,G_TX_NOMASK,G_TX_NOLOD,G_TX_NOMIRROR | G_TX_WRAP,G_TX_NOMASK,G_TX_NOLOD);
                 gDPSetTileSize(gdl++, G_TX_RENDERTILE, 0, 0, (curchar->unkc - 1) << 2, (curchar->height - 1) << 2);
                 */
-                gDPLoadTextureBlock(gdl++, curchar->pixeldata, G_IM_FMT_I, G_IM_SIZ_8b, ((curchar->width + 7) & 0xF8), curchar->height, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, 0, 0);
+                gDPLoadTextureBlock(gdl++, PGET(curchar->pixeldata), G_IM_FMT_I, G_IM_SIZ_8b, ((curchar->width + 7) & 0xF8), curchar->height, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, 0, 0);
             }
             else
             {
@@ -394,7 +393,7 @@ Gfx *textRenderGlyph(Gfx *gdl, s32 *x, s32 *y, struct fontchar *curchar, struct 
                 //
                 // is this a call to gDPLoadTextureBlock ???
                 
-                gDPSetTextureImage(gdl++, G_IM_FMT_CI, G_IM_SIZ_16b, 1,  osVirtualToPhysical((void *) curchar->pixeldata));
+                gDPSetTextureImage(gdl++, G_IM_FMT_CI, G_IM_SIZ_16b, 1,  osVirtualToPhysical((void *) PGET(curchar->pixeldata)));
                 gDPSetTile(gdl++, G_IM_FMT_CI, G_IM_SIZ_16b, 0, 0x0000, G_TX_LOADTILE, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD);
                 gDPLoadSync(gdl++);
                 gDPLoadBlock(gdl++, G_TX_LOADTILE, 0, 0, (curchar->height << 2) - 1, 0x800);
@@ -613,7 +612,7 @@ Gfx *textRender(Gfx *gdl, s32 *x, s32 *y, char *text,
 			}
 
 			sp74.index = codepoint + 0x80;
-			sp74.pixeldata = (void *)langGetJpnCharPixels(codepoint);
+			PSET(sp74.pixeldata, (void *)langGetJpnCharPixels(codepoint));
 
 			gdl = textRenderGlyph(gdl, x, y, &sp74, &sp74, font, savedx, savedy, width, height, yOffset);
 
@@ -657,7 +656,7 @@ Gfx *textRenderGlyphOutlined(Gfx *gdl, s32 *x, s32 *y, struct fontchar *curchar,
             && drawY + curchar->baseline + curchar->height >= clipY) {
         if (curchar->index < 0x80) {
             gDPSetTextureLUT(gdl++, G_TT_NONE);
-            gDPLoadTextureBlock(gdl++, curchar->pixeldata, G_IM_FMT_I, G_IM_SIZ_8b, ((curchar->width + 7) & 0xF8), curchar->height, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, 0, 0);
+            gDPLoadTextureBlock(gdl++, PGET(curchar->pixeldata), G_IM_FMT_I, G_IM_SIZ_8b, ((curchar->width + 7) & 0xF8), curchar->height, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, 0, 0);
         } else {
             gDPPipeSync(gdl++);
             gDPSetTextureLUT(gdl++, G_TT_IA16);
@@ -669,7 +668,7 @@ Gfx *textRenderGlyphOutlined(Gfx *gdl, s32 *x, s32 *y, struct fontchar *curchar,
                 gDPLoadTLUT_pal16(gdl++, 1, osVirtualToPhysical(&g_JpnTextPalette1));
             }
 
-            gDPSetTextureImage(gdl++, G_IM_FMT_CI, G_IM_SIZ_16b, 1,  osVirtualToPhysical((void *) curchar->pixeldata));
+            gDPSetTextureImage(gdl++, G_IM_FMT_CI, G_IM_SIZ_16b, 1,  osVirtualToPhysical((void *) PGET(curchar->pixeldata)));
             gDPSetTile(gdl++, G_IM_FMT_CI, G_IM_SIZ_16b, 0, 0x0000, G_TX_LOADTILE, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD);
             gDPLoadSync(gdl++);
             gDPLoadBlock(gdl++, G_TX_LOADTILE, 0, 0, (curchar->height << 2) - 1, 0x800);
@@ -869,7 +868,7 @@ Gfx *textRenderOutlined(Gfx *gdl, s32 *x, s32 *y,
 			}
 
 			sp74.index = codepoint + 0x80;
-			sp74.pixeldata = (void *)langGetJpnCharPixels(codepoint);
+			PSET(sp74.pixeldata, (void *)langGetJpnCharPixels(codepoint));
 
             // Render Japanese characters with outline.
             gdl = textRenderGlyphOutlined(gdl, x, y, &sp74, &sp74, font, savedx, savedy, colour, colour2, width, height, yOffset);

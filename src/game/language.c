@@ -10,7 +10,7 @@
 
 // bss
 //CODE.bss:8008C640
-s32 g_LangBanks[45];
+u32 *g_LangBanks[45]; /* each bank starts with its 32-bit slot table */
 
 
 //CODE.bss:8008C6F4
@@ -444,8 +444,12 @@ u8 * langGet(s32 slotID)
 #endif
     /* PORT: compiled-in text banks (char *LxE[] = {...}) store absolute
      * pointers, not bank-relative offsets, so don't add the base. */
-    #if defined(DEBUG) || !defined(TARGET_N64)
+    #if !defined(TARGET_N64)
+    /* PORT: the slot words are window words in 64-bit builds (romdata.c) */
+    return (textslot_offset != 0) ? (u8 *) portPtr64(output_slot) : (u8 *) "Sorry, string not loaded.";
+    #elif defined(DEBUG)
     return (textslot_offset != 0) ? (u8 *)output_slot : "Sorry, string not loaded.";
-    #endif
+    #else
     return (textslot_offset != 0) ? (u8*)output_slot : NULL;
+    #endif
 }

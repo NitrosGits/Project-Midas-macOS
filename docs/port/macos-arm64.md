@@ -423,6 +423,45 @@ Still truncating with `(u32)(uintptr_t)`, outside these families: romdata.c's
 text-bank slots, port_textures.c (`entry.index`), gunfire.c's crosshair GBI
 word, and the 32-bit-only fallback probes in romfile_model.c.
 
+### 2026-10-18: fonts and text
+
+Error count: **516 → 305**. options.c went from 158 to 0, and language.c,
+mpmenu.c and textrelated.c are clean too. front.c went from 20 to 6; what is
+left there is the logo DL, video and animation sites.
+
+Done:
+
+- **`scripts/port/retype_locals.py`.** It reads a build log and collects, for
+  each `s32`/`u32` variable, the pointer type the code needs there (assigned
+  from, initialized from, passed to, assigned to, returned as). It then
+  rewrites the variable's declaration, splitting multi-name declarations. It
+  uses the source snippet under each error to find the real line after
+  `#line`, reports variables with conflicting evidence, and touches globals
+  only with `--globals`. Two rounds on options.c and front.c retyped 27
+  locals (font, fontchar and string pointers). i386 code is identical for
+  every retyped function, so none of them does integer arithmetic on the
+  variable.
+- **Font segments.** `struct font` is the ROM segment's layout, so
+  `fontchar.pixeldata` is `PTR32(u8)`. `load_font_tables` rebases with
+  `PSET(.., base + PTRW(..))`, and its segment sizes no longer cast symbol
+  addresses to `romptr_t`.
+- **Text banks.** Each bank's slot table is 32-bit words. romdata.c stores
+  `portPtr32` there (it truncated with `(u32)(uintptr_t)` before), and `langGet`
+  decodes with `portPtr64`. `g_LangBanks` is `u32 *[45]`.
+- **Strings in ints.** The MP award text fields in `player` are `char *`, and so
+  is `frontGetPlayersFavoriteWeaponInHand`'s return. mpmenu.c's rank text gets
+  its own `char *ptext`, because the decompiled `q` doubles as a colour.
+- **`PORT_K0`/`PORT_PHYS`** (os.h, plan item 4): the N64 macros on N64, and
+  the pointer itself on PC. They are used at the 27 sites (options.c,
+  bondview2.c, front.c) where `OS_PHYSICAL_TO_K0`/`OS_K0_TO_PHYSICAL` were
+  applied to host pointers that are then used as pointers.
+- ptr32_rewrite.py: a manual assignment whose LHS end can't be resolved now also
+  leaves its LHS read unwrapped (the tool had wrapped it in `PGET`).
+
+Checked: `aliases` and `variants` are clean. i386 against de10b68: 207 objects
+identical, and textrelated.c differs only in `load_font_tables`. The audit no
+longer lists `font` or `fontchar` (231 records move).
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -436,18 +475,16 @@ word, and the 32-bit-only fallback probes in romfile_model.c.
 
 ### Next, in order
 
-1. **Fonts and text locals** (options.c's 158 errors are mostly `s32` locals
-   holding `struct font *`, `struct fontchar *` and `char *`).
-2. **Audio banks** (audio_stubs.c `alBnkfNew`). Choose between `PTR32` in place
+1. **Audio banks** (audio_stubs.c `alBnkfNew`). Choose between `PTR32` in place
    and a native copy at load. Watch the `ALBankAlt`/`ALInstrumentAlt` views,
    whose 1-based `soundArray` trick only lines up with 4-byte pointers.
-3. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
+2. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
    `PORT_STATIC_PTR32`, and `debugmenu.c:55`. The macro names its record with
    `__LINE__`, so two `.inc.c` files included into one TU collide if they use
    it on the same line number. `__COUNTER__` avoids that.
-4. **`OS_PHYSICAL_TO_K0(&ptr)` misuse** (bondview2.c, options.c, front.c). Those
-   sites pass a pointer where a physical word belongs. Use the pointer
-   directly.
-5. **Remaining `(u32)(uintptr_t)` truncations** (romdata.c text banks,
-   port_textures.c, gunfire.c crosshair) and the punning sites left in
-   bondview2.c, gunfire.c, front.c and the rest (phase 3).
+3. **Phase 3: the remaining punning sites.** 305 errors, led by
+   rarewarelogo.c (static DLs, item 2), bondview2.c, gunfire.c, image_bank.c,
+   image.c, memp.c, title.c, ramromreplay.c and init.c. Start with
+   `retype_locals.py` (add `--globals` for title.c's `s32` buffer globals). Still
+   truncating with `(u32)(uintptr_t)`: port_textures.c (`entry.index`) and
+   gunfire.c's crosshair GBI word.

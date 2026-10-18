@@ -344,6 +344,7 @@ def main():
     assigns = collections.defaultdict(set)
     lhs_sites = collections.defaultdict(set)
     unary = []
+    lhs_begins = []
 
     def where(src, off):
         line = next(i for i in range(len(src.starts), 0, -1) if src.starts[i - 1] <= off)
@@ -430,6 +431,8 @@ def main():
                 manual.append(('assignment in a macro', where(src, lb) if lb is not None else s['head']))
                 if lb is not None and le is not None:
                     unary.append((src.path, lb, le))
+                elif lb is not None:
+                    lhs_begins.append((src.path, lb))
                 continue
             if skipped(src, lb):
                 continue
@@ -453,6 +456,13 @@ def main():
                 # &x->arr[i] keeps its meaning (a pointer to the 32-bit word),
                 # and the others are left for manual work
                 unary.append((src.path, b, token_end(src, e)))
+
+    for path, b in lhs_begins:
+        # a manual assignment whose LHS end is unknown: leave the widest read
+        # starting at its LHS unwrapped too
+        starting = [r for r in reads[path] if r[0] == b]
+        if starting:
+            reads[path].discard(max(starting, key=lambda r: r[1] - r[0]))
 
     for path, b, e in unary:
         inside = [r for r in reads[path] if b <= r[0] and r[1] <= e]

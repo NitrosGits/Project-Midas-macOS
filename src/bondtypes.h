@@ -4309,7 +4309,7 @@ struct fontchar {
     s32 height;
     s32 width;
     s32 kerningindex;
-    u8 *pixeldata;
+    PTR32(u8) pixeldata;
 };
 
 struct font {

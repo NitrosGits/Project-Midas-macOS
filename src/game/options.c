@@ -3627,9 +3627,9 @@ Gfx *draw_background_health_and_armor(Gfx *gdl, Mtx *arg1, s32 zoom_squish)
     {
         gSPClearGeometryMode(gdl++, G_CULL_BOTH);
         // draw body armor bars
-        gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
+        gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
         // draw health bars
-        gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_health_bar_gdl));
+        gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_health_bar_gdl));
     }
 
     /**
@@ -3643,22 +3643,22 @@ Gfx *draw_background_health_and_armor(Gfx *gdl, Mtx *arg1, s32 zoom_squish)
     {
         gSPClearGeometryMode(gdl++, G_CULL_BOTH);
         // draw body armor bars
-        gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
+        gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_body_armor_bar_gdl));
         // draw health bars
-        gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(&g_CurrentPlayer->watch_health_bar_gdl));
+        gSPDisplayList(gdl++, PORT_K0(&g_CurrentPlayer->watch_health_bar_gdl));
     }
     /**
      * End health bar zoom section
     */
 
     sub_GAME_7F0A33F8(sp44, WATCH_BACKGROUND_VERTEX_COUNT, 0.92f, 0);
-    draw_watch_background(sp3C, OS_PHYSICAL_TO_K0(sp44), WATCH_BACKGROUND_VERTEX_COUNT, 0);
+    draw_watch_background(sp3C, PORT_K0(sp44), WATCH_BACKGROUND_VERTEX_COUNT, 0);
 
     gDPPipeSync(gdl++);
     gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
     gDPSetCombineMode(gdl++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
     gDPSetPrimColor(gdl++, 0, 0, 0x00, 0xFF, 0x00, 0x00);
-    gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(sp3C));
+    gSPDisplayList(gdl++, PORT_K0(sp3C));
     gDPPipeSync(gdl++);
 
     /**
@@ -3667,20 +3667,20 @@ Gfx *draw_background_health_and_armor(Gfx *gdl, Mtx *arg1, s32 zoom_squish)
     if (g_WatchBackgroundGreen < 0xE0)
     {
         sub_GAME_7F0A33F8(sp48, WATCH_BACKGROUND_VERTEX_COUNT, 0.899999976158f, 0);
-        draw_watch_background(sp40, OS_PHYSICAL_TO_K0(sp48), WATCH_BACKGROUND_VERTEX_COUNT, 0);
+        draw_watch_background(sp40, PORT_K0(sp48), WATCH_BACKGROUND_VERTEX_COUNT, 0);
 
         gDPSetRenderMode(gdl++, G_RM_AA_PCL_SURF, G_RM_AA_PCL_SURF2);
     }
     else
     {
         sub_GAME_7F0A33F8(sp48, WATCH_BACKGROUND_VERTEX_COUNT, 0.899999976158f, 1);
-        draw_watch_background(sp40, OS_PHYSICAL_TO_K0(sp48), WATCH_BACKGROUND_VERTEX_COUNT, 1);
+        draw_watch_background(sp40, PORT_K0(sp48), WATCH_BACKGROUND_VERTEX_COUNT, 1);
 
         gDPSetRenderMode(gdl++, G_RM_AA_XLU_SURF, G_RM_AA_XLU_SURF2);
     }
 
     gDPSetCombineMode(gdl++, G_CC_SHADE, G_CC_SHADE);
-    gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(sp40));
+    gSPDisplayList(gdl++, PORT_K0(sp40));
     /**
      * // end green background area.
     */
@@ -3691,7 +3691,7 @@ Gfx *draw_background_health_and_armor(Gfx *gdl, Mtx *arg1, s32 zoom_squish)
     */
     gDPSetRenderMode(gdl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
     gDPSetCombineMode(gdl++, G_CC_SHADE, G_CC_SHADE);
-    gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(g_CurrentPlayer->buffer_for_watch_greenbackdrop_DL));
+    gSPDisplayList(gdl++, PORT_K0(g_CurrentPlayer->buffer_for_watch_greenbackdrop_DL));
     /**
      * // end green rectangles/page select section
     */
@@ -3708,7 +3708,7 @@ Gfx *draw_background_health_and_armor(Gfx *gdl, Mtx *arg1, s32 zoom_squish)
         build_watch_static_scanline_vertices(g_CurrentPlayer->buffer_for_watch_static_vertices);
 
         gDPSetRenderMode(gdl++, G_RM_AA_XLU_SURF, G_RM_AA_XLU_SURF2);
-        gSPDisplayList(gdl++, OS_PHYSICAL_TO_K0(g_CurrentPlayer->buffer_for_watch_static_DL));
+        gSPDisplayList(gdl++, PORT_K0(g_CurrentPlayer->buffer_for_watch_static_DL));
     }
 
     return gdl;
@@ -3732,11 +3732,11 @@ Gfx *draw_abort_cancel_confirm(Gfx *gdl)
     s32 sp64;
     s32 sp60;
 
-    s32 pFontFile;
-    s32 pFontChars;
-    s32 sp54;
-    s32 sp50;
-    s32 sp4C;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
+    u8 *sp54;
+    u8 *sp50;
+    u8 *sp4C;
 
     pFontFile = ptrFontBankGothic;
     pFontChars = ptrFontBankGothicChars;
@@ -3806,14 +3806,14 @@ Gfx *draw_abort_cancel_confirm(Gfx *gdl)
 
 Gfx *draw_text_mission_status(Gfx *gdl)
 {
-    s32 txtptr_1;
-    s32 txtptr_2;
+    u8 *txtptr_1;
+    u8 *txtptr_2;
     s32 sp64;
     s32 sp60;
     s32 sp5C;
     s32 sp58;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
     s32 sp4C;
     s32 joffset;
 
@@ -3864,13 +3864,13 @@ Gfx *empty_draw_function(Gfx *gdl) {
 
 Gfx *draw_text_q_watch_v201_beta(Gfx *gdl)
 {
-    s32 txtptr;
+    u8 *txtptr;
     s32 sp50;
     s32 sp4C;
     s32 sp48;
     s32 sp44;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
     s32 joffset;
 
     txtptr = langGet(getStringID(LOPTIONS, OPTION_STR_2B_QWATCHVERSION_LF)); //q watch v2.01 beta
@@ -3930,8 +3930,8 @@ Gfx* draw_current_hand_item_and_ammo(Gfx* gdl) {
     s32 sp88;
     s32 sp84;
     s32 sp80;
-    s32 sp7C;
-    s32 sp78;
+    struct font *sp7C;
+    struct fontchar *sp78;
     s32 temp_v0;
     s32 sp70;
     f32 sp6C;
@@ -4212,12 +4212,12 @@ Gfx *draw_watch_inventory_page(Gfx *gdl, Mtx *param_2)
             s32 i;
             s32 textheight;
             s32 textwidth;
-            s32 pFontFile2;
-            s32 pFontChars2;
+            struct font *pFontFile2;
+            struct fontchar *pFontChars2;
             char string_builder_allocation[2000];
 
 #if defined(VERSION_JP) || defined(VERSION_EU)
-            s32 pFontFile;
+            struct font *pFontFile;
             s32 base_y;
             char formattedString[32];
 #endif
@@ -4285,9 +4285,9 @@ Gfx *draw_watch_inventory_page(Gfx *gdl, Mtx *param_2)
             {
 #if !defined(VERSION_JP) && !defined(VERSION_EU)
                 char formattedString[32];
-                s32 pFontFile;
+                struct font *pFontFile;
 #endif
-                s32 pFontChars;
+                struct fontchar *pFontChars;
                 s32 x2;
                 s32 y2;
                 char *invItemName;
@@ -4341,8 +4341,8 @@ Gfx *unused_draw_watch_inventory_page(Gfx *gdl, Mtx *param_2) {
     s32 sp5C;
     s32 sp58;
     s32 sp54;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
 
     u16 *long_name;
     s32 temp_2;
@@ -4556,13 +4556,13 @@ Gfx *draw_fx_volume_slider(Gfx *gdl)
     cmd = gdl++;
     gDPSetRenderMode(cmd, G_RM_XLU_SURF, G_RM_XLU_SURF2);
 
-    gdl = sub_GAME_7F0A3B40(gdl, OS_K0_TO_PHYSICAL(vtx1));
+    gdl = sub_GAME_7F0A3B40(gdl, PORT_PHYS(vtx1));
     vtx = setup_watch_rectangles(vtx1, 0, 0, (s32) PORTWATCH_BAR_W, (s32) PORTWATCH_BAR_H, (s32) PORTWATCH_BAR_X, (s32) PORTWATCH_BAR_FX_Z);
 
-    gdl = sub_GAME_7F0A3B40(gdl, OS_K0_TO_PHYSICAL(vtx));
+    gdl = sub_GAME_7F0A3B40(gdl, PORT_PHYS(vtx));
     vtx = setup_watch_rectangles(vtx, 0, 0, (s32) PORTWATCH_BAR_W, (s32) PORTWATCH_BAR_H, (s32) PORTWATCH_BAR_X, (s32) PORTWATCH_BAR_FX_Z);
 
-    gdl = sub_GAME_7F0A3B40(gdl, OS_K0_TO_PHYSICAL(vtx));
+    gdl = sub_GAME_7F0A3B40(gdl, PORT_PHYS(vtx));
     setup_watch_rectangles(vtx, 0, 0, (s32) PORTWATCH_BAR_W, (s32) PORTWATCH_BAR_H, (s32) PORTWATCH_BAR_X, (s32) PORTWATCH_BAR_FX_Z);
 
     update_volume_slider_verts(vtx1, fvolume, 30);
@@ -4607,14 +4607,14 @@ Gfx *draw_music_volume_slider(Gfx *gdl)
     cmd = gdl++;
     gDPSetRenderMode(cmd, G_RM_XLU_SURF, G_RM_XLU_SURF2);
 
-    gdl = sub_GAME_7F0A3B40(gdl, OS_K0_TO_PHYSICAL(vtx1));
+    gdl = sub_GAME_7F0A3B40(gdl, PORT_PHYS(vtx1));
     vtx = setup_watch_rectangles(vtx1, 0, 0, (s32) PORTWATCH_BAR_W, (s32) PORTWATCH_BAR_H, (s32) PORTWATCH_BAR_X, (s32) PORTWATCH_BAR_MUSIC_Z);
 
 
-    gdl = sub_GAME_7F0A3B40(gdl, OS_K0_TO_PHYSICAL(vtx));
+    gdl = sub_GAME_7F0A3B40(gdl, PORT_PHYS(vtx));
     vtx = setup_watch_rectangles(vtx, 0, 0, (s32) PORTWATCH_BAR_W, (s32) PORTWATCH_BAR_H, (s32) PORTWATCH_BAR_X, (s32) PORTWATCH_BAR_MUSIC_Z);
 
-    gdl = sub_GAME_7F0A3B40(gdl, OS_K0_TO_PHYSICAL(vtx));
+    gdl = sub_GAME_7F0A3B40(gdl, PORT_PHYS(vtx));
     setup_watch_rectangles(vtx, 0, 0, (s32) PORTWATCH_BAR_W, (s32) PORTWATCH_BAR_H, (s32) PORTWATCH_BAR_X, (s32) PORTWATCH_BAR_MUSIC_Z);
 
     update_volume_slider_verts(vtx1, fvolume, 30);
@@ -5256,7 +5256,7 @@ Gfx *sub_GAME_7F0A9AB8(Gfx *gdl)
 
 Gfx *display_text_buttons_dual_control(Gfx *gdl)
 {
-    s32 textptr_aux;
+    u8 *textptr_aux;
 
     gdl = microcode_constructor(gdl);
 
@@ -5449,7 +5449,7 @@ Gfx *draw_watch_controller(Gfx *gdl)
     }
     else
     {
-        gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, (intptr_t) watchTable, &contpadnum0);
+        gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, watchTable, &contpadnum0);
     }
 
     if (controllerCheckDualControllerTypesAllowed())
@@ -5500,7 +5500,7 @@ Gfx *draw_watch_controller(Gfx *gdl)
         }
         else
         {
-            gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, (intptr_t) (&table2), &contpadnum1);
+            gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, &table2, &contpadnum1);
         }
     }
 
@@ -5552,8 +5552,8 @@ Gfx *draw_watch_control_options_page(Gfx *gdl, Mtx *param_2) {
     s32 sp58;
     s32 sp54;
     s32 sp50;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
 
 #ifndef TARGET_N64
     /* This tab is the device picker plus the action list, except for a raphnet
@@ -7869,8 +7869,8 @@ Gfx *draw_watch_game_options_page(Gfx *gdl, Mtx *param_2) {
     s32 sp4C;
     s32 sp48;
 
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
 
     gdl = draw_background_health_and_armor(gdl, param_2, 0);
 
