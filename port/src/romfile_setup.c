@@ -402,7 +402,7 @@ static void romfileSetupProbe(struct conv *c, const u8 *compiled)
                 break;
             }
             m += probeMismatch((const u8 *) &cp[i], (const u8 *) &dp[i], 36);
-            m += strcmp(PGET(cp[i].plink), (const char *) d + (u32) (uintptr_t) PGET(dp[i].plink)) != 0;
+            m += strcmp(PGET(cp[i].plink), (const char *) d + PTRW(dp[i].plink)) != 0;
         }
         REP("pads", m);
         m = 0;
@@ -416,7 +416,7 @@ static void romfileSetupProbe(struct conv *c, const u8 *compiled)
                 }
                 m += probeMismatch((const u8 *) &cb[i], (const u8 *) &db[i], 36);
                 m += probeMismatch((const u8 *) &cb[i].bbox, (const u8 *) &db[i].bbox, 24);
-                m += strcmp(PGET(cb[i].plink), (const char *) d + (u32) (uintptr_t) PGET(db[i].plink)) != 0;
+                m += strcmp(PGET(cb[i].plink), (const char *) d + PTRW(db[i].plink)) != 0;
             }
         }
         REP("boundpads", m);
@@ -432,7 +432,7 @@ static void romfileSetupProbe(struct conv *c, const u8 *compiled)
                 break;
             }
             m += (cw[i].padID != dw[i].padID) + (cw[i].groupNum != dw[i].groupNum) + (cw[i].dist != dw[i].dist);
-            m += probeList(PGET(cw[i].neighbours), (const s32 *) (d + (u32) (uintptr_t) PGET(dw[i].neighbours)));
+            m += probeList(PGET(cw[i].neighbours), (const s32 *) (d + PTRW(dw[i].neighbours)));
         }
         REP("waypoints", m);
         {
@@ -445,8 +445,8 @@ static void romfileSetupProbe(struct conv *c, const u8 *compiled)
                     break;
                 }
                 m += (cg[i].dist != dg[i].dist);
-                m += probeList(PGET(cg[i].neighbours), (const s32 *) (d + (u32) (uintptr_t) PGET(dg[i].neighbours)));
-                m += probeList(PGET(cg[i].waypoints), (const s32 *) (d + (u32) (uintptr_t) PGET(dg[i].waypoints)));
+                m += probeList(PGET(cg[i].neighbours), (const s32 *) (d + PTRW(dg[i].neighbours)));
+                m += probeList(PGET(cg[i].waypoints), (const s32 *) (d + PTRW(dg[i].waypoints)));
             }
             REP("waygroups", m);
         }
@@ -460,7 +460,7 @@ static void romfileSetupProbe(struct conv *c, const u8 *compiled)
                     break;
                 }
                 m += (cp[i].ID != dp[i].ID) + (cp[i].isLoop != dp[i].isLoop);
-                m += probeList(PGET(cp[i].waypoints), (const s32 *) (d + (u32) (uintptr_t) PGET(dp[i].waypoints)));
+                m += probeList(PGET(cp[i].waypoints), (const s32 *) (d + PTRW(dp[i].waypoints)));
             }
             REP("paths", m);
         }

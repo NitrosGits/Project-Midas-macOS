@@ -28,9 +28,12 @@ struct levelentry
  * as offsets (a `>= 0x10000000` test breaks on Windows). */
 #define BG_SEG_IS_OFFSET(off) \
     ((u32) (off) < 0x00400000u || (((u32) (off)) >> 24) == 0x0Fu)
+/* off is a 32-bit word (a file word, or a PTR32 field's PTRW); a pass-through
+ * value is a pointer word, decoded with portPtr64 (an identity in the 32-bit
+ * builds). base is the bg file's address. */
 #define BG_SEG_TO_PTR(base, off) \
-    (BG_SEG_IS_OFFSET(off) ? ((void *) (((u32) (base)) + (((u32) (off)) & 0x00FFFFFFu))) \
-                           : ((void *) (u32) (off)))
+    (BG_SEG_IS_OFFSET(off) ? ((void *) ((u8 *) (base) + (((u32) (off)) & 0x00FFFFFFu))) \
+                           : portPtr64((u32) (off)))
 #endif
 
 typedef struct RoomVtxBatchBounds {
@@ -124,7 +127,7 @@ typedef struct s_bound_info
     // could be draw order?
     s32 unk1;
     struct bbox2d bbox;
-    void* next;
+    u32 next; /* a bitmask of portal flags, not a pointer */
     #endif
 
 
@@ -137,9 +140,13 @@ typedef struct bg_portal_entry
     coord3d point;
 } bg_portal_entry;
 
+/* PORT: bg_portal_data_entry and bg_room_data are laid over the bg file, so
+ * their words stay 32 bits: offset_portal is promoted in place (PTR32), and the
+ * room table's three fields are segment-0x0F offsets that are never
+ * dereferenced. */
 typedef struct bg_portal_data_entry
 {
-    bg_portal_entry *offset_portal;
+    PTR32(bg_portal_entry) offset_portal;
     u8 connectedRoom1;
     u8 connectedRoom2;
     u8 controlbytes1;
@@ -148,9 +155,9 @@ typedef struct bg_portal_data_entry
 
 typedef struct bg_room_data
 {
-    void* pPointTableBin;
-    void* pPriMappingBin;
-    void* pSecMappingBin;
+    u32 pPointTableBin;
+    u32 pPriMappingBin;
+    u32 pSecMappingBin;
     coord3d pos;
 } bg_room_data;
 
@@ -257,7 +264,7 @@ void bgGetRoomCenter(s32 roomnum, coord3d *dst);
 bool bgProjectRoomCoordToScreen(coord3d* src, coord3d* dst);
 bool bgTestRayIntersectsBbox(coord3d *origin, coord3d *dir, s32 *bbox_min, s32 *bbox_max);
 void cleanup_rooms(void);
-s32 getIndexOfPORTALID(s32 portalID);
+s32 getIndexOfPORTALID(intptr_t portalID);
 s32 getMaxNumRooms(void);
 u8 getROOMID_isNeighborToRendered(s32 roomID);
 #if defined(VERSION_EU)

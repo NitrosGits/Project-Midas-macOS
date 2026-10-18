@@ -1109,8 +1109,8 @@ struct player
   Mtxf* viewtoworldmtxf;
   Mtx* projmatrix;
   Mtxf* projmatrixf;
-  s32 field_10E0; // ptr
-  s32 field_10E4; // ptr
+  Mtx *field_10E0;    /* world projection matrix (set_BONDdata_field_10E0) */
+  LookAt *field_10E4; /* the frame's LookAt (sub_GAME_7F078464) */
   Mtxf* field_10E8;
   Mtxf* field_10EC;
   f32 c_scalelod60; // canonical name
@@ -2770,8 +2770,8 @@ f32 bondviewGetPlayerYawRadians(void);
 Mtxf *camGetWorldToScreenMtxf(void);
 void transformAndNormalizeByLength2Dto3D(struct coord2d *in, coord3d *out, f32 value);
 void bondviewTransformManyPosToViewMatrix(RenderPosView *arg0, s32 arg1);
-s32 sub_GAME_7F078474(void);
-s32 get_BONDdata_field_10E0(void);
+LookAt *sub_GAME_7F078474(void);
+Mtx *get_BONDdata_field_10E0(void);
 Mtx *currentPlayerGetProjectionMatrix(void);
 Gfx *bondviewRenderProp(PropRecord *arg0, Gfx *arg1, s32 arg2);
 f32 getPlayer_c_lodscalez(void);
@@ -2815,8 +2815,8 @@ void currentPlayerSetProjectionMatrix(Mtx *matrix);
 void currentPlayerSetProjectionMatrixF(Mtxf *matrix);
 void currentPlayerSetViewToWorldMtxf(Mtxf *matrix);
 s32 playerGetCrouchPos(s32 playernum);
-void set_BONDdata_field_10E0(s32 arg0);
-void sub_GAME_7F078464(s32 arg0);
+void set_BONDdata_field_10E0(Mtx *arg0);
+void sub_GAME_7F078464(LookAt *arg0);
 void transform3Dto2DWithZScaling(coord3d *in, coord3d *out);
 
 #endif

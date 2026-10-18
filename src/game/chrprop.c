@@ -1093,7 +1093,7 @@ void chraiDefaultWeaponFireHandler(s32 hand)
             }
             else if (bestroom <= 0)
             {
-                if (g_BgPortals[0].offset_portal != 0)
+                if (PGET(g_BgPortals[0].offset_portal) != 0)
                 {
                     bestroom = chrpropFindFirstBgHitInConnectedRooms(getTileRoom(getCurrentPlayerProp()->stan), playerpos, &stanhit, &hitdir, &scaleddir, visited, &bghit);
                 }

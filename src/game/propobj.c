@@ -7425,8 +7425,12 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
 
         if (destroyed)
         {
+#ifdef TARGET_N64
             destroyed = get_BONDdata_field_10E0();
             destroyed = destroyed != 0;
+#else
+            destroyed = get_BONDdata_field_10E0() != NULL;
+#endif
         }
 
         gdl = mrData->gdl;

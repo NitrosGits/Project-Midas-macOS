@@ -379,6 +379,50 @@ Checked: `ptr32_check.py` `aliases` and `variants` are clean (19 EU-only sites
 fixed). i386 against 0e5b150: 207 objects identical, and prop.c differs only in
 `proplvreset2`.
 
+### 2026-10-18: BG and stan
+
+Error count: **611 → 516**. bg.c went from 72 to 0, stan.c from 10 to 0 and
+mema.c from 4 to 0, and explosion.c, glass.c and glass2.c are clean too.
+
+Done:
+
+- **BG file records** (bg.h). `bg_portal_data_entry.offset_portal` is promoted
+  in place, so it is `PTR32`. `bg_room_data`'s three fields are segment-0x0F
+  offset words that are never dereferenced, so they are `u32`.
+  `s_bound_info.next` is a bitmask, so it is `u32` too. `BG_SEG_TO_PTR` takes a
+  32-bit word and returns `(u8 *) base + off`, or `portPtr64` for a
+  pass-through word. `ptr_bg_data`, `ptr_bgdata_offsets` and `gptr_stan` are
+  `intptr_t`, and `getIndexOfPORTALID` takes an `intptr_t`.
+- **Stan header.** `StanPrefixRecord.ptr_firstroom` and the room table after it
+  are 32-bit words: `portStanPack` and romfile_stan.c write them with
+  `portPtr32` (romfile_stan.c truncated with `(u32)(uintptr_t)` before).
+  stanLoadFile's `prefix->stanfile = file`, which writes `stan_prefix` through
+  a struct view of the variable, is a plain assignment on PC.
+  `stanDetermineEOF`'s `delta` and `ptr_firstroom_0` are `intptr_t`.
+- **mema** (the room-data heap) keeps its `s32` address table, now holding
+  window words. Those add, subtract and compare like the addresses, so only
+  `memaReset`, `memaAlloc`, `memaFree` and `memaRealloc` convert.
+- **Player matrix fields.** `player.field_10E0` (the world projection `Mtx *`)
+  and `field_10E4` (the frame's `LookAt *`) were `s32`. Their accessors are now
+  typed, which fixed bg.c, explosion.c, glass*.c and part of sky.c.
+- Smaller fixes: the portal depth slot (`D_800442FC`) is written directly
+  instead of through an `s32` holding its address; texLoadFromGdl's size
+  argument; `linkedTile` pointer arithmetic; the locus flag stored in
+  `StandTileLocusCallbackRecord.rooms`; and romfile_setup.c's probe now
+  reads raw words with `PTRW`.
+
+Checked: `aliases` and `variants` are clean (2 EU-only sites fixed). i386
+against 641a1b7: 206 objects identical; bg.c differs only in `load_bg_file`
+(`BG_SEG_TO_PTR`), and stan.c in `stanGetLocusField0` (returns 0/1; its one
+caller tests `!= 0`) and in `sub_GAME_7F0B1DDC` (operand order of one compare).
+The audit lists no BG or stan record laid over a file:
+`StandFileHeader`/`StandFileFooter`/`BetaStandTile` only describe compiled-in
+stans, and the rest are runtime structs.
+
+Still truncating with `(u32)(uintptr_t)`, outside these families: romdata.c's
+text-bank slots, port_textures.c (`entry.index`), gunfire.c's crosshair GBI
+word, and the 32-bit-only fallback probes in romfile_model.c.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -392,16 +436,18 @@ fixed). i386 against 0e5b150: 207 objects identical, and prop.c differs only in
 
 ### Next, in order
 
-1. **BG and stan** (`bg.c` `BG_SEG_TO_PTR`, 72 errors; stan.c).
-2. **Fonts and text locals** (options.c's 158 errors are mostly `s32` locals
+1. **Fonts and text locals** (options.c's 158 errors are mostly `s32` locals
    holding `struct font *`, `struct fontchar *` and `char *`).
-3. **Audio banks** (audio_stubs.c `alBnkfNew`). Choose between `PTR32` in place
+2. **Audio banks** (audio_stubs.c `alBnkfNew`). Choose between `PTR32` in place
    and a native copy at load. Watch the `ALBankAlt`/`ALInstrumentAlt` views,
    whose 1-based `soundArray` trick only lines up with 4-byte pointers.
-4. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
+3. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
    `PORT_STATIC_PTR32`, and `debugmenu.c:55`. The macro names its record with
    `__LINE__`, so two `.inc.c` files included into one TU collide if they use
    it on the same line number. `__COUNTER__` avoids that.
-5. **`OS_PHYSICAL_TO_K0(&ptr)` misuse** (bondview2.c, options.c, front.c). Those
+4. **`OS_PHYSICAL_TO_K0(&ptr)` misuse** (bondview2.c, options.c, front.c). Those
    sites pass a pointer where a physical word belongs. Use the pointer
    directly.
+5. **Remaining `(u32)(uintptr_t)` truncations** (romdata.c text banks,
+   port_textures.c, gunfire.c crosshair) and the punning sites left in
+   bondview2.c, gunfire.c, front.c and the rest (phase 3).

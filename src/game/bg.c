@@ -78,7 +78,7 @@ enum GlobalVisOpcode {
 };
 
 extern struct unk_portalstruct table_for_portals[PORTMAX];
-extern s32 ptr_bgdata_offsets;
+extern intptr_t ptr_bgdata_offsets;
 extern s32 dword_CODE_bss_8007FF88;
 extern s32 *dword_CODE_bss_8007FF90;
 extern f32 *dword_CODE_bss_8007FF94;
@@ -103,10 +103,10 @@ extern s32 dword_CODE_bss_800815f8;
 
 // bss
 //CODE.bss:8007BF90
-s32 ptr_bg_data;
+intptr_t ptr_bg_data; /* the bg file's address */
 
 //CODE.bss:8007BF94
-s32 gptr_stan;
+intptr_t gptr_stan; /* the stan file's address */
 
 /**
  * address 8007BF98
@@ -994,7 +994,7 @@ static void portSwapPortalControlBytes(bg_portal_data_entry *list)
 
     swappedlists[swappedcount++] = list;
 
-    for (i = 0; list[i].offset_portal != NULL; i++)
+    for (i = 0; PGET(list[i].offset_portal) != NULL; i++)
     {
         u8 t = list[i].controlbytes1;
         list[i].controlbytes1 = list[i].controlbytes2;
@@ -1165,9 +1165,9 @@ void load_bg_file(LEVEL_INDEX levelid)
             }
         }
  
-        for (i = 0; g_BgPortals[i].offset_portal != (NULL); i++)
+        for (i = 0; PGET(g_BgPortals[i].offset_portal) != (NULL); i++)
         {
-            g_BgPortals[i].offset_portal = (bg_portal_entry *) BG_SEG_TO_PTR(ptr_bg_data, g_BgPortals[i].offset_portal);
+            PSET(g_BgPortals[i].offset_portal, (bg_portal_entry *) BG_SEG_TO_PTR(ptr_bg_data, PTRW(g_BgPortals[i].offset_portal)));
         }
 
 #ifndef TARGET_N64
@@ -1216,11 +1216,11 @@ void load_bg_file(LEVEL_INDEX levelid)
  
                 if (primaryindex <= secondaryindex)
                 {
-                    g_BgRoomInfo[i].csize_primary_DL_binary = ((intptr_t) ptr_bgdata_room_fileposition_list[primaryindex].pPriMappingBin) - ((intptr_t) ptr_bgdata_room_fileposition_list[i].pPriMappingBin);
+                    g_BgRoomInfo[i].csize_primary_DL_binary = ((s32) ptr_bgdata_room_fileposition_list[primaryindex].pPriMappingBin) - ((s32) ptr_bgdata_room_fileposition_list[i].pPriMappingBin);
                 }
                 else
                 {
-                    g_BgRoomInfo[i].csize_primary_DL_binary = ((intptr_t) ptr_bgdata_room_fileposition_list[secondaryindex].pSecMappingBin) - ((intptr_t) ptr_bgdata_room_fileposition_list[i].pPriMappingBin);
+                    g_BgRoomInfo[i].csize_primary_DL_binary = ((s32) ptr_bgdata_room_fileposition_list[secondaryindex].pSecMappingBin) - ((s32) ptr_bgdata_room_fileposition_list[i].pPriMappingBin);
                 }
             }
             else
@@ -1237,11 +1237,11 @@ void load_bg_file(LEVEL_INDEX levelid)
  
                 if (primaryindex <= secondaryindex)
                 {
-                    g_BgRoomInfo[i].csize_secondary_DL_binary = ((intptr_t) ptr_bgdata_room_fileposition_list[primaryindex].pPriMappingBin) - ((intptr_t) ptr_bgdata_room_fileposition_list[i].pSecMappingBin);
+                    g_BgRoomInfo[i].csize_secondary_DL_binary = ((s32) ptr_bgdata_room_fileposition_list[primaryindex].pPriMappingBin) - ((s32) ptr_bgdata_room_fileposition_list[i].pSecMappingBin);
                 }
                 else
                 {
-                    g_BgRoomInfo[i].csize_secondary_DL_binary = ((intptr_t) ptr_bgdata_room_fileposition_list[secondaryindex].pSecMappingBin) - ((intptr_t) ptr_bgdata_room_fileposition_list[i].pSecMappingBin);
+                    g_BgRoomInfo[i].csize_secondary_DL_binary = ((s32) ptr_bgdata_room_fileposition_list[secondaryindex].pSecMappingBin) - ((s32) ptr_bgdata_room_fileposition_list[i].pSecMappingBin);
                 }
             }
             else
@@ -1253,7 +1253,7 @@ void load_bg_file(LEVEL_INDEX levelid)
             {
                 s32 pointindex;
                 pointindex = getPointTableBinCount(i + 1);
-                g_BgRoomInfo[i].csize_point_index_binary = ((intptr_t) ptr_bgdata_room_fileposition_list[pointindex].pPointTableBin) - ((intptr_t) ptr_bgdata_room_fileposition_list[i].pPointTableBin);
+                g_BgRoomInfo[i].csize_point_index_binary = ((s32) ptr_bgdata_room_fileposition_list[pointindex].pPointTableBin) - ((s32) ptr_bgdata_room_fileposition_list[i].pPointTableBin);
             }
             else
             {
@@ -1277,12 +1277,12 @@ void load_bg_file(LEVEL_INDEX levelid)
         }
 #endif
 
-        for (i = 0; g_BgPortals[i].offset_portal != (NULL); i++)
+        for (i = 0; PGET(g_BgPortals[i].offset_portal) != (NULL); i++)
         {
             D_800443C4[i] = sub_GAME_7F0B993C(i);
         }
  
-        for (i = 0; g_BgPortals[i].offset_portal != (NULL); i++)
+        for (i = 0; PGET(g_BgPortals[i].offset_portal) != (NULL); i++)
         {
             bgOrderPortal(i);
         }
@@ -1292,7 +1292,7 @@ void load_bg_file(LEVEL_INDEX levelid)
             sub_GAME_7F0B95D8(i);
         }
  
-        for (i = 0; g_BgPortals[i].offset_portal != (NULL); i++)
+        for (i = 0; PGET(g_BgPortals[i].offset_portal) != (NULL); i++)
         {
             g_BgPortals[i].controlbytes1 &= 0xfe;
         }
@@ -1401,7 +1401,7 @@ void bgRoomVisibilityRelated(void)
     if (1) {}
 
     for (depth = 0, maxdepth = 11; depth != maxdepth; depth++) {
-        for (portalnum = 0; g_BgPortals[portalnum].offset_portal != NULL; portalnum++) {
+        for (portalnum = 0; PGET(g_BgPortals[portalnum].offset_portal) != NULL; portalnum++) {
 
             if (D_800443C4[portalnum] != 0) {
                 continue;
@@ -1419,7 +1419,7 @@ void bgRoomVisibilityRelated(void)
             }
         }
 
-        if (g_BgPortals[portalnum].offset_portal == NULL) {
+        if (PGET(g_BgPortals[portalnum].offset_portal) == NULL) {
             break;
         }
     }
@@ -1683,7 +1683,7 @@ void bgFindRoomsAlongSegment(coord3d *fromPos, coord3d *toPos, u8 *fromRooms, u8
      * anything - scan the room bounding boxes instead (see above). The
      * NULL check also covers the bgLoadFile path that leaves g_BgPortals
      * unset, which the loops below would dereference. */
-    if (g_BgPortals == NULL || g_BgPortals[0].offset_portal == NULL)
+    if (g_BgPortals == NULL || PGET(g_BgPortals[0].offset_portal) == NULL)
     {
         portFindRoomsByBounds(fromPos, toPos, fromRooms, finalRooms,
                               traversedRooms, traversedRoomCount, maxTraversedRooms);
@@ -1691,7 +1691,7 @@ void bgFindRoomsAlongSegment(coord3d *fromPos, coord3d *toPos, u8 *fromRooms, u8
     }
 #endif
 
-    for (portalnum = 0; g_BgPortals[portalnum].offset_portal != 0; portalnum++)
+    for (portalnum = 0; PGET(g_BgPortals[portalnum].offset_portal) != 0; portalnum++)
     {
         portalStatuses[portalnum] = sub_GAME_7F0B9F14(portalnum, fromPos, toPos);
     }
@@ -1719,7 +1719,7 @@ void bgFindRoomsAlongSegment(coord3d *fromPos, coord3d *toPos, u8 *fromRooms, u8
     {
         foundRooms[0] = 0xff;
 
-        for (portalnum = 0; g_BgPortals[portalnum].offset_portal != 0; portalnum++)
+        for (portalnum = 0; PGET(g_BgPortals[portalnum].offset_portal) != 0; portalnum++)
         {
             for (i = 0; (sourceRooms[i] != 0xff) && (i < 16); i++)
             {
@@ -2138,12 +2138,12 @@ s32 sub_GAME_7F0B5528(s32 portalnum, f32 arg1, coord3d *arg2)
     viGetZRange(zrange);
     zrange[1] /= mCurrentLevelVisibilityScale;
 
-    for (i = 0; i < g_BgPortals[portalnum].offset_portal->numPoints; i++) {
+    for (i = 0; i < PGET(g_BgPortals[portalnum].offset_portal)->numPoints; i++) {
         point = &arg2[i];
 
-        point->x = (&g_BgPortals[portalnum].offset_portal->point)[i].x;
-        point->y = (&g_BgPortals[portalnum].offset_portal->point)[i].y;
-        point->z = (&g_BgPortals[portalnum].offset_portal->point)[i].z;
+        point->x = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].x;
+        point->y = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].y;
+        point->z = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].z;
 
         if (arg1 != 0.0f) {
             sub_GAME_7F0B96CC(portalnum, (f32 *) &metric);
@@ -2186,11 +2186,11 @@ s32 sub_GAME_7F0B5528(s32 portalnum, f32 arg1, coord3d *arg2)
         {
             extern coord3d *bondviewGetCurrentPlayersPosition(void);
             coord3d *eye = bondviewGetCurrentPlayersPosition();
-            f32 wx = (&g_BgPortals[portalnum].offset_portal->point)[0].x * room_data_float2 - eye->x;
-            f32 wy = (&g_BgPortals[portalnum].offset_portal->point)[0].y * room_data_float2 - eye->y;
-            f32 wz = (&g_BgPortals[portalnum].offset_portal->point)[0].z * room_data_float2 - eye->z;
+            f32 wx = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[0].x * room_data_float2 - eye->x;
+            f32 wy = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[0].y * room_data_float2 - eye->y;
+            f32 wz = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[0].z * room_data_float2 - eye->z;
             fprintf(stderr, "portalcull: portal=%d zthresh=%.1f p0z=%.1f worlddist0=%.1f npts=%d\n",
-                    portalnum, -zrange[1] * 0.9f, arg2[0].z, sqrtf(wx * wx + wy * wy + wz * wz), g_BgPortals[portalnum].offset_portal->numPoints);
+                    portalnum, -zrange[1] * 0.9f, arg2[0].z, sqrtf(wx * wx + wy * wy + wz * wz), PGET(g_BgPortals[portalnum].offset_portal)->numPoints);
         }
     }
 #endif
@@ -2198,11 +2198,11 @@ s32 sub_GAME_7F0B5528(s32 portalnum, f32 arg1, coord3d *arg2)
         return 0;
     }
 
-    len = g_BgPortals[portalnum].offset_portal->numPoints;
+    len = PGET(g_BgPortals[portalnum].offset_portal)->numPoints;
 
-    for (i = 0; i < g_BgPortals[portalnum].offset_portal->numPoints; i++) {
+    for (i = 0; i < PGET(g_BgPortals[portalnum].offset_portal)->numPoints; i++) {
         point = &arg2[i];
-        next = (i + 1) % g_BgPortals[portalnum].offset_portal->numPoints;
+        next = (i + 1) % PGET(g_BgPortals[portalnum].offset_portal)->numPoints;
 
         if ((point->z > 0.0f && arg2[next].z <= 0.0f) || (point->z <= 0.0f && arg2[next].z > 0.0f)) {
             f32 scale = -point->z / (arg2[next].z - point->z);
@@ -2284,12 +2284,12 @@ s32 sub_GAME_7F0B5864(s32 portalnum, bbox2d *bbox)
         {
             s32 k;
             printf("portalpts: p=%d scale=%f npts=%d\n", portalnum, scale, pointcount);
-            for (k = 0; k < g_BgPortals[portalnum].offset_portal->numPoints; k++)
+            for (k = 0; k < PGET(g_BgPortals[portalnum].offset_portal)->numPoints; k++)
             {
                 printf("portalpts:   world[%d]=(%.1f, %.1f, %.1f)\n", k,
-                       (&g_BgPortals[portalnum].offset_portal->point)[k].x * room_data_float2,
-                       (&g_BgPortals[portalnum].offset_portal->point)[k].y * room_data_float2,
-                       (&g_BgPortals[portalnum].offset_portal->point)[k].z * room_data_float2);
+                       (&PGET(g_BgPortals[portalnum].offset_portal)->point)[k].x * room_data_float2,
+                       (&PGET(g_BgPortals[portalnum].offset_portal)->point)[k].y * room_data_float2,
+                       (&PGET(g_BgPortals[portalnum].offset_portal)->point)[k].z * room_data_float2);
             }
             for (k = 0; k < pointcount; k++)
             {
@@ -2559,7 +2559,7 @@ char *bgDebPrintROOMID(s32 roomId)
 bg_queued_portal_entry g_BgPortalQueue[BG_PORTAL_QUEUE_LEN];
 
 bg_portal_data_entry *g_BgPortals;
-s32 ptr_bgdata_offsets;
+intptr_t ptr_bgdata_offsets;
 s32 dword_CODE_bss_8007FF88;
 bg_room_data *ptr_bgdata_room_fileposition_list;
 s32 *dword_CODE_bss_8007FF90;
@@ -2918,13 +2918,13 @@ u8 getROOMID_isNeighborToRendered(s32 roomID)
 }
 
 
-s32 getIndexOfPORTALID(s32 portalID)
+s32 getIndexOfPORTALID(intptr_t portalID)
 {
     s32 i;
 
-    for(i = 0; g_BgPortals[i].offset_portal != NULL; i++)
+    for(i = 0; PGET(g_BgPortals[i].offset_portal) != NULL; i++)
     {
-        if (portalID == (intptr_t)g_BgPortals[i].offset_portal)
+        if (portalID == (intptr_t)PGET(g_BgPortals[i].offset_portal))
         {
             return i;
         }
@@ -2996,7 +2996,7 @@ s32 bgLoadRoomVtxData(s32 roomnum, u8 *dst, s32 len)
 #else
     /* same value, integer domain - the pointer+int form is UB on a host
      * pointer (the +ptr-ptr pair cancels; only the wrap matters) */
-    offset = (s32)((u32)(uintptr_t)ptr_bgdata_room_fileposition_list[roomnum].pPointTableBin + 0xf1000000u);
+    offset = (s32)(ptr_bgdata_room_fileposition_list[roomnum].pPointTableBin + 0xf1000000u);
 #endif
     obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, dst + (len - alignedsize), offset, alignedsize);
     result = bgDecompress(dst + (len - alignedsize), dst);
@@ -3091,7 +3091,7 @@ s32 bgLoadRoomPrimaryGdl(s32 roomnum, u8 *dst, s32 allocsize)
     fileoffset += 0xf1000000;
 #else
     /* integer domain (see bgLoadRoomVtxData) */
-    fileoffset = (s32)((u32)(uintptr_t)ptr_bgdata_room_fileposition_list[roomnum].pPriMappingBin + 0xf1000000u);
+    fileoffset = (s32)(ptr_bgdata_room_fileposition_list[roomnum].pPriMappingBin + 0xf1000000u);
 #endif
 
     obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, scratch, fileoffset, size);
@@ -3181,7 +3181,7 @@ s32 bgLoadRoomSecondaryGdl(s32 roomnum, u8 *dst, s32 allocsize)
     fileoffset += 0xf1000000;
 #else
     /* integer domain (see bgLoadRoomVtxData) */
-    fileoffset = (s32)((u32)(uintptr_t)ptr_bgdata_room_fileposition_list[roomnum].pSecMappingBin + 0xf1000000u);
+    fileoffset = (s32)(ptr_bgdata_room_fileposition_list[roomnum].pSecMappingBin + 0xf1000000u);
 #endif
 
     obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, scratch, fileoffset, size);
@@ -3201,7 +3201,11 @@ s32 bgLoadRoomSecondaryGdl(s32 roomnum, u8 *dst, s32 allocsize)
 #ifndef TARGET_N64
     { extern s32 g_LightDbgRoomLoad; g_LightDbgRoomLoad = 1; }
 #endif
+#ifdef TARGET_N64
     size = texLoadFromGdl((Gfx *)scratch, (Gfx *)expanded_size, (Gfx *)dst, NULL);
+#else
+    size = texLoadFromGdl((Gfx *)scratch, expanded_size, (Gfx *)dst, NULL); /* the second argument is the source size */
+#endif
 #ifndef TARGET_N64
     { extern s32 g_LightDbgRoomLoad; g_LightDbgRoomLoad = 0; }
 #endif
@@ -3665,7 +3669,7 @@ void bgLoadRoomModelData(s32 roomID)
     // If wasted space is detected, shrink allocated memory block.
     if (allocsize != ((used + 0x20) & ~0xf))
     {
-        memaRealloc((intptr_t)data, allocsize, ((used + 0x20) & ~0xf));
+        memaRealloc(portPtr32(data), allocsize, ((used + 0x20) & ~0xf)); /* a mema word (mema.c) */
     }
 
     // Same branches, only the LUT parameter changes
@@ -5199,7 +5203,7 @@ void sub_GAME_7F0B7F84(s32 roomnum, s32 portalnum /*canonically p*/, s32 depth, 
         return;
     }
  
-    for (i = 0; g_BgPortals[i].offset_portal != NULL; i++)
+    for (i = 0; PGET(g_BgPortals[i].offset_portal) != NULL; i++)
     {
         if (i != portalnum)
         {
@@ -5275,9 +5279,11 @@ s32 sub_GAME_7F0B7F84(s32 value, s32 roomnum, s32 portalnum /*canonically p*/, s
         return value;
     }
 
-    i = (intptr_t) &D_800442FC[portalnum];
+#ifdef TARGET_N64
+    i = (s32) &D_800442FC[portalnum];
 
     if (i);
+#endif
 
     playerpos = bondviewGetCurrentPlayersPosition();
     sub_GAME_7F0B96CC(portalnum, &metric);
@@ -5400,7 +5406,11 @@ s32 sub_GAME_7F0B7F84(s32 value, s32 roomnum, s32 portalnum /*canonically p*/, s
         }
     }
 
+#ifdef TARGET_N64
     *((u8 *) i) = depth;
+#else
+    D_800442FC[portalnum] = depth; /* PORT: i held this slot's address as an s32 */
+#endif
 
     if ((screenbox.min.x < screenbox.max.x) && (screenbox.min.y < screenbox.max.y))
     {
@@ -5415,7 +5425,7 @@ s32 sub_GAME_7F0B7F84(s32 value, s32 roomnum, s32 portalnum /*canonically p*/, s
         return value;
     }
  
-    for (i = 0; g_BgPortals[i].offset_portal != NULL; i++)
+    for (i = 0; PGET(g_BgPortals[i].offset_portal) != NULL; i++)
     {
         if (i != portalnum)
         {
@@ -5879,7 +5889,7 @@ void bgDetermineVisibleRooms(void)
      * If the level is Cradle, or has no portals, skip the portal occlusion culling algorithm. Just add every room in the player's
      * screen bounds to the list of rooms to draw.
      */
-    if ((levelentry_index == LEVEL_INDEX_CRAD) || (g_BgPortals->offset_portal == NULL)) 
+    if ((levelentry_index == LEVEL_INDEX_CRAD) || (PGET(g_BgPortals->offset_portal) == NULL)) 
     {
         if (levelentry_index == LEVEL_INDEX_CRAD) 
         {
@@ -5904,7 +5914,7 @@ void bgDetermineVisibleRooms(void)
 
         sub_GAME_7F0B39BC(g_BgCurrentRoom, 0, &g_CurrentPlayer->screensize, 1);
 
-        for (var_s0 = 0; g_BgPortals[var_s0].offset_portal != NULL; var_s0++) 
+        for (var_s0 = 0; PGET(g_BgPortals[var_s0].offset_portal) != NULL; var_s0++) 
         {
             if ((g_BgCurrentRoom == g_BgPortals[var_s0].connectedRoom1) || (g_BgCurrentRoom == g_BgPortals[var_s0].connectedRoom2)) 
             {
@@ -5988,7 +5998,7 @@ void bgDetermineVisibleRooms(void)
     }
 #endif
 
-    for (var_s0 = 0; g_BgPortals[var_s0].offset_portal != NULL; var_s0++)
+    for (var_s0 = 0; PGET(g_BgPortals[var_s0].offset_portal) != NULL; var_s0++)
     {
         temp_v1 = g_BgPortals[var_s0].connectedRoom1;
         temp_a0 = g_BgPortals[var_s0].connectedRoom2;
@@ -6047,7 +6057,7 @@ s32 sub_GAME_7F0B8DF4(s32 room, s32 *portalnums, s32 max)
 
     if (room);
 
-    if (base->offset_portal != NULL)
+    if (PGET(base->offset_portal) != NULL)
     {
         offset = 0;
         portal = base;
@@ -6069,7 +6079,7 @@ s32 sub_GAME_7F0B8DF4(s32 room, s32 *portalnums, s32 max)
             i++;
             portal = (bg_portal_data_entry *) (((u8 *) g_BgPortals) + offset);
         }
-        while (portal->offset_portal != NULL);
+        while (PGET(portal->offset_portal) != NULL);
     }
 
     return count;
@@ -6132,7 +6142,7 @@ s32 bgGetConnectedRooms(s32 roomIndex, s32* list, s32 max)
     s32 connectedRoom1;
     s32 connectedRoom2;
 
-    for (p = 0; g_BgPortals[p].offset_portal != NULL; p++) {
+    for (p = 0; PGET(g_BgPortals[p].offset_portal) != NULL; p++) {
         connectedRoom1 = g_BgPortals[p].connectedRoom1;
         connectedRoom2 = g_BgPortals[p].connectedRoom2;
 
@@ -6173,7 +6183,7 @@ bool bgRoomsSharePortal(s32 room1, s32 room2)
 {
     s32 i;
 
-    for (i = 0; g_BgPortals[i].offset_portal != NULL; i++)
+    for (i = 0; PGET(g_BgPortals[i].offset_portal) != NULL; i++)
     {
         s32 v0 = g_BgPortals[i].connectedRoom1;
         s32 v1 = g_BgPortals[i].connectedRoom2;
@@ -6406,15 +6416,15 @@ void sub_GAME_7F0B95D8(s32 roomID)
     s32 k;
     f32 value;
 
-    for (i = 0; g_BgPortals[i].offset_portal != NULL; i++)
+    for (i = 0; PGET(g_BgPortals[i].offset_portal) != NULL; i++)
     {
         if ((roomID == g_BgPortals[i].connectedRoom1) || (roomID == g_BgPortals[i].connectedRoom2))
         {
-            for (j = 0; j < g_BgPortals[i].offset_portal->numPoints; j++)
+            for (j = 0; j < PGET(g_BgPortals[i].offset_portal)->numPoints; j++)
             {
                 for (k = 0; k < 3; k++)
                 {
-                    value = (&g_BgPortals[i].offset_portal->point)[j].f[k];
+                    value = (&PGET(g_BgPortals[i].offset_portal)->point)[j].f[k];
 
                     if (value < g_BgRoomInfo[roomID].minbounds.f[k])
                     {
@@ -6452,12 +6462,12 @@ void sub_GAME_7F0B96CC(s32 portalnum, f32 *out)
 
     for (i = 0; i < 3; i++)
     {
-        sp6c[i] = (&g_BgPortals[portalnum].offset_portal->point)[0].f[i] - (&g_BgPortals[portalnum].offset_portal->point)[1].f[i];
+        sp6c[i] = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[0].f[i] - (&PGET(g_BgPortals[portalnum].offset_portal)->point)[1].f[i];
     }
 
     for (i = 0; i < 3; i++)
     {
-        sp60[i] = (&g_BgPortals[portalnum].offset_portal->point)[2].f[i] - (&g_BgPortals[portalnum].offset_portal->point)[1].f[i];
+        sp60[i] = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[2].f[i] - (&PGET(g_BgPortals[portalnum].offset_portal)->point)[1].f[i];
     }
 
     out[0] = (sp6c[1] * sp60[2]) - (sp6c[2] * sp60[1]);
@@ -6475,7 +6485,7 @@ void sub_GAME_7F0B96CC(s32 portalnum, f32 *out)
     out[1] *= dot;
     out[2] *= dot;
 
-    portal = g_BgPortals[portalnum].offset_portal;
+    portal = PGET(g_BgPortals[portalnum].offset_portal);
 
     min = 3.4028235e38f;
     max = -3.4028235e38f;
@@ -6742,7 +6752,7 @@ s32 bgGetPortalBetweenRooms(s32 room1, s32 room2, coord3d *arg2, coord3d *arg3)
         #endif
     #endif
 
-    for (i = 0; g_BgPortals[i].offset_portal != NULL; i++)
+    for (i = 0; PGET(g_BgPortals[i].offset_portal) != NULL; i++)
     {
         if (((g_BgPortals[i].connectedRoom1 == room1) && (g_BgPortals[i].connectedRoom2 == room2)) ||
             ((g_BgPortals[i].connectedRoom1 == room2) && (g_BgPortals[i].connectedRoom2 == room1)))
@@ -6861,7 +6871,7 @@ s32 sub_GAME_7F0B9E04(coord3d *arg0, coord3d *arg1)
     f32 thisthing;
     s32 i;
 
-    for (i = 0; g_BgPortals[i].offset_portal; i++)
+    for (i = 0; PGET(g_BgPortals[i].offset_portal); i++)
     {
         if (sub_GAME_7F0B9F14(i, arg0, arg1) != 0)
         {
@@ -6931,13 +6941,13 @@ s32 sub_GAME_7F0B9F14(s32 portalnum, coord3d *pos1, coord3d *pos2)
 
     D_80044900 = (value1 + value2) * 0.5f - metric.min;
 
-    for (i = 0; i < g_BgPortals[portalnum].offset_portal->numPoints; i++)
+    for (i = 0; i < PGET(g_BgPortals[portalnum].offset_portal)->numPoints; i++)
     {
-        next = (i + 1) % g_BgPortals[portalnum].offset_portal->numPoints;
+        next = (i + 1) % PGET(g_BgPortals[portalnum].offset_portal)->numPoints;
 
-        edge.f[0] = (&g_BgPortals[portalnum].offset_portal->point)[next].f[0] - (&g_BgPortals[portalnum].offset_portal->point)[i].f[0];
-        edge.f[1] = (&g_BgPortals[portalnum].offset_portal->point)[next].f[1] - (&g_BgPortals[portalnum].offset_portal->point)[i].f[1];
-        edge.f[2] = (&g_BgPortals[portalnum].offset_portal->point)[next].f[2] - (&g_BgPortals[portalnum].offset_portal->point)[i].f[2];
+        edge.f[0] = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[next].f[0] - (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].f[0];
+        edge.f[1] = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[next].f[1] - (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].f[1];
+        edge.f[2] = (&PGET(g_BgPortals[portalnum].offset_portal)->point)[next].f[2] - (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].f[2];
 
         cross.f[0] = edge.f[1] * diff.f[2] - edge.f[2] * diff.f[1];
         cross.f[1] = edge.f[2] * diff.f[0] - edge.f[0] * diff.f[2];
@@ -6950,9 +6960,9 @@ s32 sub_GAME_7F0B9F14(s32 portalnum, coord3d *pos1, coord3d *pos2)
             return 0;
         }
 
-        plane_d[0] = cross.f[0] * (&g_BgPortals[portalnum].offset_portal->point)[i].f[0]
-            + cross.f[1] * (&g_BgPortals[portalnum].offset_portal->point)[i].f[1]
-            + cross.f[2] * (&g_BgPortals[portalnum].offset_portal->point)[i].f[2];
+        plane_d[0] = cross.f[0] * (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].f[0]
+            + cross.f[1] * (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].f[1]
+            + cross.f[2] * (&PGET(g_BgPortals[portalnum].offset_portal)->point)[i].f[2];
 
         tmp = (cross.f[0] * pos1->f[0] + cross.f[1] * pos1->f[1] + cross.f[2] * pos1->f[2]) * room_data_float1;
 
@@ -7033,7 +7043,7 @@ void sub_GAME_7F0BA2D4(coord3d *bbmin, coord3d *bbmax, s32 *room_list, s32 *coun
             cur_room = *p;
             portal_idx = 0;
  
-            if (g_BgPortals[0].offset_portal != ((void *) 0))
+            if (PGET(g_BgPortals[0].offset_portal) != ((void *) 0))
             {
                 do
                 {
@@ -7057,7 +7067,7 @@ void sub_GAME_7F0BA2D4(coord3d *bbmin, coord3d *bbmax, s32 *room_list, s32 *coun
                     portal_max.f[1] = *(f32 *) &D_80044914;
                     portal_max.f[2] = *(f32 *) &D_80044918;
 #endif
-                    portal_pts = g_BgPortals[portal_idx].offset_portal;
+                    portal_pts = PGET(g_BgPortals[portal_idx].offset_portal);
                     
                     for (j = 0; j < portal_pts->numPoints; j++)
                     {
@@ -7075,7 +7085,7 @@ void sub_GAME_7F0BA2D4(coord3d *bbmin, coord3d *bbmax, s32 *room_list, s32 *coun
                                 portal_max.f[k] = v;
                             }
                             
-                            portal_pts = g_BgPortals[portal_idx].offset_portal;
+                            portal_pts = PGET(g_BgPortals[portal_idx].offset_portal);
                         }
  
                         if (portal_pts->numPoints);
@@ -7119,7 +7129,7 @@ void sub_GAME_7F0BA2D4(coord3d *bbmin, coord3d *bbmax, s32 *room_list, s32 *coun
 next_portal:
                 portal_idx++;
                 }         
-                while (g_BgPortals[portal_idx].offset_portal != NULL);
+                while (PGET(g_BgPortals[portal_idx].offset_portal) != NULL);
             }
 
             i++;

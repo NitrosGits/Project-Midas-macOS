@@ -40,11 +40,14 @@ extern s32 g_GlobalTimer;
 void getTileMidPoint(StandTile *tile, coord3d *out);
 
 // bss
+/* PORT: also the stan file's header, where word 1 (and the room table after
+ * it) are tile pointers that portStanPack / romfile_stan.c write as 32-bit
+ * words, so ptr_firstroom is PTR32. */
 struct StanPrefixRecord {
     //CODE.bss:8007B120
     s32 stanfile;
     //CODE.bss:8007B124
-    StandTile *ptr_firstroom;    // read as offset 4, hence the struct
+    PTR32(StandTile) ptr_firstroom;    // read as offset 4, hence the struct
 };
 
 struct StanPrefixRecord *stan_prefix;
@@ -112,7 +115,7 @@ u8 list_of_tilesizes[] = {
 //D:80040F58
 struct StandTile * standTileStart = NULL;
 //D:80040F5C
-s32 ptr_firstroom_0 = 0;
+intptr_t ptr_firstroom_0 = 0;
 //D:80040F60
 struct StandTile* stanTileEnd = NULL;
 //D:80040F64
@@ -285,7 +288,7 @@ void stanBuildRoomData(void)
     // Must remain on one line for matching.
     for (k = 0; k < 139; k++) firststaninroom[k] = NULL;
 
-    tile = stan_prefix->ptr_firstroom;
+    tile = PGET(stan_prefix->ptr_firstroom);
 
     while (*(u32 *)tile)
     {
@@ -603,7 +606,7 @@ static struct StanPrefixRecord *portStanPack(struct StanPrefixRecord *file)
 
     for (i = 0; i < STAN_PACK_CACHE_MAX; i++)
     {
-        if (s_PackedStanCache[i].firsttile == file->ptr_firstroom)
+        if (s_PackedStanCache[i].firsttile == PGET(file->ptr_firstroom))
         {
             return s_PackedStanCache[i].packed;
         }
@@ -614,7 +617,7 @@ static struct StanPrefixRecord *portStanPack(struct StanPrefixRecord *file)
 
     total = 0;
     ntiles = 0;
-    p = (u8 *) file->ptr_firstroom;
+    p = (u8 *) PGET(file->ptr_firstroom);
     while (p != NULL)
     {
         u32 size = portStanTileSize(p);
@@ -686,7 +689,7 @@ static struct StanPrefixRecord *portStanPack(struct StanPrefixRecord *file)
         return file;   /* unpacked - caller keeps the source stan */
     }
     dstw = (u32 *) packed;
-    dstw[1] = (uintptr_t) ((u8 *) packed + o_first);
+    dstw[1] = portPtr32((u8 *) packed + o_first);
 
     badrooms = 0;
     for (i = 0; i < nrooms; i++)
@@ -699,11 +702,11 @@ static struct StanPrefixRecord *portStanPack(struct StanPrefixRecord *file)
         {
             badrooms++;
         }
-        dstw[2 + i] = (uintptr_t) ((u8 *) packed + be);
+        dstw[2 + i] = portPtr32((u8 *) packed + be);
     }
 
     dst = (u8 *) packed + o_first;
-    p = (u8 *) file->ptr_firstroom;
+    p = (u8 *) PGET(file->ptr_firstroom);
     while (p != NULL)
     {
         u32 size = portStanTileSize(p);
@@ -721,7 +724,7 @@ static struct StanPrefixRecord *portStanPack(struct StanPrefixRecord *file)
     {
         if (s_PackedStanCache[i].firsttile == NULL)
         {
-            s_PackedStanCache[i].firsttile = file->ptr_firstroom;
+            s_PackedStanCache[i].firsttile = PGET(file->ptr_firstroom);
             s_PackedStanCache[i].packed = packed;
             break;
         }
@@ -738,7 +741,7 @@ static struct StanPrefixRecord *portStanPack(struct StanPrefixRecord *file)
         v[3] = (f32) nrooms;
         v[4] = (f32) badrooms;
         v[5] = (f32) (uintptr_t) packed;
-        v[6] = (f32) (uintptr_t) file->ptr_firstroom;
+        v[6] = (f32) (uintptr_t) PGET(file->ptr_firstroom);
         ge_dbg_vec("stanpack ntiles/bytes/ofirst/rooms/bad/dst/src", v, 7);
     }
 
@@ -769,15 +772,22 @@ void stanLoadFile(struct StanPrefixRecord *file)
      * image; stanDetermineEOF already built it, this is a cache lookup */
     /* same predicate change as stanDetermineEOF: NULL check, not an
      * address-range sniff (which broke on the Windows image base) */
-    if (file->ptr_firstroom != NULL && !g_portStanFromRom)
+    if (PGET(file->ptr_firstroom) != NULL && !g_portStanFromRom)
     {
         file = portStanPack(file);
     }
 #endif
 
     m_stanRegion = 1;
-    tokenIndexMask = !file->ptr_firstroom;
+    tokenIndexMask = !PGET(file->ptr_firstroom);
+#ifdef TARGET_N64
     prefix->stanfile = file;
+#else
+    /* PORT: that stores file into stan_prefix itself through a struct view of
+     * the variable, which only lines up with 4-byte pointers */
+    stan_prefix = file;
+    (void) prefix;
+#endif
     tokenIndexMask = 1;
 
     /*
@@ -787,7 +797,7 @@ void stanLoadFile(struct StanPrefixRecord *file)
     if (prefix);
     if (prefix);
 
-    standTileStart = (StandTile *)(((u8 *)file->ptr_firstroom) - 0x80);
+    standTileStart = (StandTile *)(((u8 *)PGET(file->ptr_firstroom)) - 0x80);
 
     if (tokenFind(tokenIndexMask, aStanlinelog))
     {
@@ -955,7 +965,7 @@ StandTile *stanFindFloorTileBelowY(f32 x, f32 maxY, f32 z, f32 radius)
     StandTile *tile;
     s32 temp;
 
-    tile = stan_prefix->ptr_firstroom;
+    tile = PGET(stan_prefix->ptr_firstroom);
 
     while (*(u32 *)tile != 0)
     {
@@ -1088,7 +1098,7 @@ StandTile *sub_GAME_7F0AFB78(f32 *x, f32 *y, f32 *z, f32 arg3)
     g_PortHwWork[PORTHW_NEAR_CALLS]++;
 #endif
 
-    tile = stan_prefix->ptr_firstroom;
+    tile = PGET(stan_prefix->ptr_firstroom);
 
     if (*((u32 *) tile))
     {
@@ -2540,7 +2550,7 @@ StanCollisionResult sub_GAME_7F0B1DDC(StandTile **startTile, f32 x, f32 z, f32 r
                     {
                         if ((callbackB == NULL || !callbackB(tile, pointI, edgeDist, pointDistA, pointDistB, record)) && (tile->points[pointI].link >> 4))
                         {
-                            linkedTile = ((uintptr_t) standTileStart) + (tile->points[pointI].link << 3);
+                            linkedTile = (StandTile *) ((u8 *) standTileStart + (tile->points[pointI].link << 3));
                             for (i = cat - 1; i >= 0; i--)
                             {
                                 if (linkedTile == tileStack[i])
@@ -2709,7 +2719,11 @@ s32 stanIsSpecialBit1Set(StandTile *arg0, struct StandTileLocusCallbackRecord *a
     s32 val = STAN_MID_NIB(arg0->mid.half, 12);
     if (g_StanTileSpecialFlags[val] & STANTILEFLAG_FORCECROUCH)
     {
+#ifdef TARGET_N64
         arg1->rooms = 1;
+#else
+        arg1->rooms = (s32 *) (intptr_t) 1; /* used as a flag here, not a room buffer */
+#endif
     }
 
     return 0;
@@ -2797,7 +2811,11 @@ s32 stanTileDistanceRelated(StandTile **arg0, f32 arg1, f32 arg2, f32 arg3, stru
 
 s32 stanGetLocusField0(struct StandTileLocusCallbackRecord *arg0)
 {
+#ifdef TARGET_N64
     return arg0->rooms;
+#else
+    return arg0->rooms != NULL; /* the flag stanIsSpecialBit1Set sets; callers test != 0 */
+#endif
 }
 
 
@@ -3353,7 +3371,7 @@ void stanPackId(char *id, u16 *stanIdHi, u8 *stanIdLo)
     else
     {
         bitsletter = id[0] - 'p'; // yes this is right, Im duplicated.
-        bitsnumber = strtol(id + 1, &str_end, 10);
+        bitsnumber = (u32) strtol(id + 1, &str_end, 10);
 
         if (id == str_end - 1)
         {
@@ -3439,7 +3457,7 @@ struct StandTilePoint *stanMatchTileName(char *id)
 
     stanPackId(id, &stanIdHi, &stanIdLo);
 
-    tile = stan_prefix->ptr_firstroom;
+    tile = PGET(stan_prefix->ptr_firstroom);
 
 #ifndef TARGET_N64
     { /* bring-up (GE_DUMP_BOND, once): what does the matcher's walk
@@ -3530,7 +3548,7 @@ void sub_GAME_7F0B2F00(StandTilePoint** arg0) {
 
 void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 origBase, u8 *newBase)
 {
-    s32 delta;
+    intptr_t delta;
     void **roomPtr;
     StandTile *tile;
     u8 *tileSizes;
@@ -3542,7 +3560,7 @@ void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 ori
      * zero delta also makes stage reloads safe to repeat. */
     /* NULL here means the asset never linked. Do not use an address-range
      * check instead: Windows can place globals below 0x10000000. */
-    if (file->ptr_firstroom != NULL) {
+    if (PGET(file->ptr_firstroom) != NULL) {
         delta = 0;
         /* Swap to the packed byte-image, since the per-global tiles can't be
          * walked in place (see portStanPack). Its room slots already hold real
@@ -3561,8 +3579,8 @@ void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 ori
     assert(*r==0);
     #endif
   
-    standTileStart = (StandTile *)(((intptr_t)file->ptr_firstroom + delta) - 0x80);
-    ptr_firstroom_0 = (intptr_t)file->ptr_firstroom + delta;
+    standTileStart = (StandTile *)(((intptr_t)PGET(file->ptr_firstroom) + delta) - 0x80);
+    ptr_firstroom_0 = (intptr_t)PGET(file->ptr_firstroom) + delta;
     
     newBase = list_of_tilesizes;
     roomPtr = (void **)&file->ptr_firstroom;

@@ -11400,7 +11400,7 @@ void bondviewUpdateCameraMatrices(coord3d* cam_pos, coord3d* cam_look_dir, coord
 	}
 
     guMtxF2L((f32 (*)[4]) &sp60, temp_s0);
-    set_BONDdata_field_10E0((intptr_t) temp_s0);
+    set_BONDdata_field_10E0(temp_s0);
 
     scale = bgGetLevelVisibilityScale();
 
@@ -11413,7 +11413,7 @@ void bondviewUpdateCameraMatrices(coord3d* cam_pos, coord3d* cam_look_dir, coord
     currentPlayerSetMatrix10CC((Mtxf* ) g_CurrentPlayer->field_64);
     currentPlayerSetViewToWorldMtxf((Mtxf* ) g_CurrentPlayer->field_68);
 
-    sub_GAME_7F078464((intptr_t) lookat);
+    sub_GAME_7F078464(lookat);
     bondviewUpdateFrustumPlanes();
     store_BONDdata_curpos_to_previous();
 }

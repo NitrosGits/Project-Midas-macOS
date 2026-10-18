@@ -40,6 +40,11 @@
 #define ALLOCATIONS_LENGTH 509
 #endif
 
+/* PORT: addr is a 32-bit word. 64-bit builds keep the heap's addresses as
+ * window words (portPtr32), which add, subtract and compare like the
+ * addresses themselves (the window is contiguous), so only the entry points
+ * convert: memaReset/memaFree/memaRealloc take pointers in, memaAlloc decodes.
+ * Both conversions are identities in the 32-bit builds. */
 typedef struct memaspace {
     s32 addr;
     u32 size;
@@ -280,7 +285,7 @@ void memaReset(void *heapaddr, u32 heapsize)
 		space->size = 0;
 	}
 
-	g_MemoryAllocations.spaces[0].addr = g_MemaHeapStart = (uintptr_t) heapaddr;
+	g_MemoryAllocations.spaces[0].addr = g_MemaHeapStart = portPtr32(heapaddr);
 	g_MemoryAllocations.spaces[0].size = g_MemaHeapSize = heapsize;
 
 #ifndef TARGET_N64
@@ -385,7 +390,7 @@ void *memaAlloc(u32 amount) {
     }
 #endif
 
-    return (void*)addr;
+    return portPtr64(addr);
 }
 
 // Find the memaspace of the given address and reduce its size by the given
@@ -448,7 +453,7 @@ found:
 
 void memaFree(void *addr, s32 size)
 {
-	_memaFree((uintptr_t) addr, size);
+	_memaFree(portPtr32(addr), size);
 }
 
 
@@ -640,7 +645,7 @@ s32 memaRealloc(s32 addr, u32 oldsize, u32 newsize)
 
     if ((oldsize > newsize))
     {
-        memaFree(addr + newsize, oldsize - newsize);
+        memaFree(portPtr64(addr + newsize), oldsize - newsize);
     }
     
 	return 1;
