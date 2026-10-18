@@ -146,6 +146,7 @@ extern Weapon1PTransformKeyframe taserFireKeyFrames[];
 extern Weapon1PTransformKeyframe taserRaiseKeyframes[];
 extern struct ModelSkeleton skeleton_gun_kf7;
 
+#ifdef TARGET_N64
 typedef struct ModelHeader {
     s16 unk00;
     s16 Type;
@@ -157,6 +158,14 @@ typedef struct ModelHeader {
     struct Model *attachedto;
     ModelNode *attachedto_objinst;
 } ModelHeader;
+#else
+/* PORT: this truncated Model (and ModelHead below) is stack-allocated and
+ * handed to the model code as a full Model, which reads past it into stack
+ * garbage (gun.c had the same bug). On PC the name is simply the full Model (a
+ * macro, so `struct ModelHeader` resolves too), and every stack site zeroes it
+ * before use. */
+#define ModelHeader Model
+#endif
 
 void gunCreateBeamForHand(enum GUNHAND hand);
 void bullet_path_from_screen_center(coord3d *arg0, coord3d *arg1, enum GUNHAND arg2);
@@ -6219,6 +6228,7 @@ void update_bullet_casings(void)
     }
 }
 
+#ifdef TARGET_N64
 typedef struct ModelHead {
     s16 unk00;
     s16 rwdatalen;
@@ -6230,6 +6240,9 @@ typedef struct ModelHead {
     Model *attachedto;
     ModelNode *attachedto_objinst;
 } ModelHead;
+#else
+#define ModelHead Model /* the full Model on PC: see ModelHeader */
+#endif
 
 void sub_GAME_7F068EC4(CasingRecord *casing, Gfx **gdl)
 {
@@ -6251,6 +6264,7 @@ void sub_GAME_7F068EC4(CasingRecord *casing, Gfx **gdl)
 
 #ifndef TARGET_N64
     portRenderDataFromWords(&render_data, g_DefaultCasingModelRenderData);
+    memset(&model, 0, sizeof(model)); /* full Model on PC: see ModelHeader */
 #endif
     modelCalculateRwDataLen(model_header);
     modelInit((Model *)&model, model_header, NULL);
