@@ -44,6 +44,7 @@ branchdiff_report.txt
 !/assets/animationtable_entries.c
 !/assets/animationtable_entries.h
 !/assets/rarewarelogo.c
+!/assets/rarewarelogo.relocs.inc
 !/assets/font_dl.c
 !/assets/font_dl.h
 !/assets/font_chardatae.c

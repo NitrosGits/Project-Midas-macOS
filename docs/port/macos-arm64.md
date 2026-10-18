@@ -499,6 +499,33 @@ and audi.c only in `amHandleFrameMessage` (no `osVirtualToPhysical` call, an
 identity shim on 32-bit builds). libultra's own `ALSeqData`/`ALSeqFile` still
 move, but GE never uses them (220 records move).
 
+### 2026-10-18: static display lists
+
+Error count: **266 → 228**. rarewarelogo.c and debugmenu.c are at 0.
+
+Done:
+
+- **`GBI_SADDR`** (gbi.h) is the address operand of the static `gs*` macros
+  (`gsDma0p/1p/2p`, `gsSPVertex`, `gsImmp1`, `gsSPBranchLessZ*`,
+  `gsSPLoadUcodeEx`, `gsSPDma_io`, `gsSetImage`). It is the old cast unless a
+  GE_64BIT file defines `PORT_STATIC_DL_RELOCS`. Then a constant operand (a
+  segment word) passes through and a host address becomes 0
+  (`__builtin_constant_p` folds in static initializers). Every other file
+  still fails to compile on a host address, so nothing is zeroed silently.
+- **`scripts/port/gen_static_dl_relocs.py`** writes `<file>.relocs.inc`, one
+  `PORT_STATIC_PTR32(DL[i].words.w1, target)` per zeroed operand. It takes
+  each command's index from clang's AST of the file as an i386 build, so
+  multi-command macros such as `gsDPLoadTextureBlock` are counted by the
+  compiler. `--check` fails when the file is stale. The output is not `*.c`,
+  because CMake globs `src/*.c`. rarewarelogo.c has 32 records and
+  debugmenu.c has 1; font_dl.c and oddtextures.c have none (segment
+  addresses only).
+- `PORT_STATIC_PTR32` names its records with `__COUNTER__`, so includes can't
+  collide any more.
+
+Checked: `aliases` and `variants` are clean, and both relocation files are up
+to date. i386 against efb7f65: all 208 objects identical.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -512,13 +539,9 @@ move, but GE never uses them (220 records move).
 
 ### Next, in order
 
-1. **Static display lists** (rarewarelogo.c, font_dl.c, oddtextures.c) via
-   `PORT_STATIC_PTR32`, and `debugmenu.c:55`. The macro names its record with
-   `__LINE__`, so two `.inc.c` files included into one TU collide if they use
-   it on the same line number. `__COUNTER__` avoids that.
-2. **Phase 3: the remaining punning sites.** 266 errors, led by
-   rarewarelogo.c (static DLs, item 1), bondview2.c, gunfire.c, image_bank.c,
-   image.c, memp.c, title.c, ramromreplay.c and init.c. Start with
+1. **Phase 3: the remaining punning sites.** 228 errors, led by bondview2.c,
+   gunfire.c, image_bank.c, image.c, memp.c, title.c, ramromreplay.c and
+   init.c. Start with
    `retype_locals.py` (add `--globals` for title.c's `s32` buffer globals). Still
    truncating with `(u32)(uintptr_t)`: port_textures.c (`entry.index`) and
    gunfire.c's crosshair GBI word.

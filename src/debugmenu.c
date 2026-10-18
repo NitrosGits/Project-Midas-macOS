@@ -1,3 +1,7 @@
+/* PORT: the static display lists below hold host addresses; GE_64BIT builds
+ * fill them in at boot from the generated relocation file included at the end
+ * (scripts/port/gen_static_dl_relocs.py, gbi.h GBI_SADDR). */
+#define PORT_STATIC_DL_RELOCS 1
 #include <ultra64.h>
 #include "debugmenu.h"
 #include "vi.h"
@@ -358,7 +362,7 @@ Gfx *debmenuDraw(Gfx *gdl)
 
 	// Make sure there'll be a least 256 GBI commands free (2KB)
 	available = dynGetFreeGfx(gdl) - 256 * sizeof(Gfx);
-	needed = (uintptr_t)gdl2 - (uintptr_t)gdl;
+	needed = (s32) ((u8 *)gdl2 - (u8 *)gdl);
 
 	if (needed <= 0) { // shouldn't be possible
 		return gdl;
@@ -452,3 +456,7 @@ Gfx *debmenuDraw(Gfx *gdl)
 
     return gdl;
 }
+
+#ifdef GE_64BIT
+#include "debugmenu.relocs.inc"
+#endif

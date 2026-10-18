@@ -32,6 +32,18 @@
 #define GBI_ADDR(a) (uintptr_t)(a)
 #endif
 
+/* Address operand of a static gs* macro. A GE_64BIT build can't encode a host
+ * address at compile time, so a file that defines PORT_STATIC_DL_RELOCS gets 0
+ * for every non-constant operand (constants such as segment words pass), and
+ * its generated relocation file (scripts/port/gen_static_dl_relocs.py) fills
+ * each one in at boot. Any other file still fails to compile on such an
+ * operand. */
+#if defined(GE_64BIT) && defined(PORT_STATIC_DL_RELOCS)
+#define GBI_SADDR(a) (__builtin_constant_p((uintptr_t) (a)) ? (unsigned int) (uintptr_t) (a) : 0u)
+#else
+#define GBI_SADDR(a) (uintptr_t)(a)
+#endif
+
 /*
  * To use the F3DEX ucodes, define F3DEX_GBI before include this file.
  *
@@ -1798,7 +1810,7 @@ typedef union {
 
 #define	gsDma0p(c, s, l)						\
 {{									\
-	_SHIFTL((c), 24, 8) | _SHIFTL((l), 0, 24), (uintptr_t)(s)	\
+	_SHIFTL((c), 24, 8) | _SHIFTL((l), 0, 24), GBI_SADDR(s)	\
 }}
 
 #define	gDma1p(pkt, c, s, l, p)						\
@@ -1814,7 +1826,7 @@ typedef union {
 {{									\
 	(_SHIFTL((c), 24, 8) | _SHIFTL((p), 16, 8) | 			\
 	 _SHIFTL((l), 0, 16)), 						\
-        (uintptr_t)(s)						\
+        GBI_SADDR(s)						\
 }}
 
 #define	gDma2p(pkt, c, adrs, len, idx, ofs)				\
@@ -1828,7 +1840,7 @@ typedef union {
 {{									\
 	(_SHIFTL((c),24,8)|_SHIFTL(((len)-1)/8,19,5)|			\
 	 _SHIFTL((ofs)/8,8,8)|_SHIFTL((idx),0,8)),			\
-        (uintptr_t)(adrs)						\
+        GBI_SADDR(adrs)						\
 }}
 
 #define	gSPNoOp(pkt)		gDma0p(pkt, G_SPNOOP, 0, 0)
@@ -1864,7 +1876,7 @@ typedef union {
 # define	gsSPVertex(v, n, v0)					\
 {{									\
 	(_SHIFTL(G_VTX,24,8)|_SHIFTL((n),12,8)|_SHIFTL((v0)+(n),1,7)),	\
-        (uintptr_t)(v)						\
+        GBI_SADDR(v)						\
 }}
 #elif	(defined(F3DEX_GBI)||defined(F3DLP_GBI))
 /*
@@ -1934,7 +1946,7 @@ typedef union {
 
 #define	gsImmp1(c, p0)							\
 {{									\
-	_SHIFTL((c), 24, 8), (uintptr_t)(p0)				\
+	_SHIFTL((c), 24, 8), GBI_SADDR(p0)				\
 }}
 
 #define	gImmp2(pkt, c, p0, p1)						\
@@ -2433,7 +2445,7 @@ typedef union {
 
 #define	gsSPBranchLessZrg(dl, vtx, zval, near, far, flag, zmin, zmax)	      \
 {{	_SHIFTL(G_RDPHALF_1,24,8),					      \
-	(uintptr_t)(dl),						}},    \
+	GBI_SADDR(dl),						}},    \
 {{	_SHIFTL(G_BRANCH_Z,24,8)|_SHIFTL((vtx)*5,12,12)|_SHIFTL((vtx)*2,0,12),\
 	G_DEPTOZSrg(zval, near, far, flag, zmin, zmax),			}}
 
@@ -2462,7 +2474,7 @@ typedef union {
 
 #define	gsSPBranchLessZraw(dl, vtx, zval)				\
 {{	_SHIFTL(G_RDPHALF_1,24,8),					      \
-	(uintptr_t)(dl),						}},    \
+	GBI_SADDR(dl),						}},    \
 {{	_SHIFTL(G_BRANCH_Z,24,8)|_SHIFTL((vtx)*5,12,12)|_SHIFTL((vtx)*2,0,12),\
 	(unsigned int)(zval),						}}
 
@@ -2485,10 +2497,10 @@ typedef union {
 
 #define	gsSPLoadUcodeEx(uc_start, uc_dstart, uc_dsize)			\
 {{	_SHIFTL(G_RDPHALF_1,24,8),					\
-	(uintptr_t)(uc_dstart),				}},	\
+	GBI_SADDR(uc_dstart),				}},	\
 {{	_SHIFTL(G_LOAD_UCODE,24,8)|					\
 	  _SHIFTL((int)(uc_dsize)-1,0,16),				\
-	(uintptr_t)(uc_start),				}}
+	GBI_SADDR(uc_start),				}}
 
 #define	gSPLoadUcode(pkt, uc_start, uc_dstart)				\
         gSPLoadUcodeEx((pkt), (uc_start), (uc_dstart), SP_UCODE_DATA_SIZE)
@@ -2519,7 +2531,7 @@ typedef union {
 {{									\
 	_SHIFTL(G_DMA_IO,24,8)|_SHIFTL((flag),23,1)|			\
 	_SHIFTL((dmem)/8,13,10)|_SHIFTL((size)-1,0,12),			\
-	(uintptr_t)(dram)						\
+	GBI_SADDR(dram)						\
 }}
 
 #define	gSPDmaRead(pkt,dmem,dram,size)	gSPDma_io((pkt),0,(dmem),(dram),(size))
@@ -3126,7 +3138,7 @@ typedef union {
 {{									\
 	_SHIFTL(cmd, 24, 8) | _SHIFTL(fmt, 21, 3) |			\
 	_SHIFTL(siz, 19, 2) | _SHIFTL((width)-1, 0, 12),		\
-	(uintptr_t)(i)						\
+	GBI_SADDR(i)						\
 }}
 
 #define	gDPSetColorImage(pkt, f, s, w, i)	gSetImage(pkt, G_SETCIMG, f, s, w, i)

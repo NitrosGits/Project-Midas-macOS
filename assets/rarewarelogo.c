@@ -1,3 +1,7 @@
+/* PORT: the static display lists below hold host addresses; GE_64BIT builds
+ * fill them in at boot from the generated relocation file included at the end
+ * (scripts/port/gen_static_dl_relocs.py, gbi.h GBI_SADDR). */
+#define PORT_STATIC_DL_RELOCS 1
 #include <ultra64.h>
 
 u8 rgba0000[4] = { 0xDC, 0xDC, 0xDC, 0x00 };
@@ -1964,6 +1968,6 @@ u32 D_02005FF0[] = {
 
 };
 
-
-
-
+#ifdef GE_64BIT
+#include "rarewarelogo.relocs.inc"
+#endif

@@ -105,7 +105,7 @@ struct PortStaticPtr32
 #define PORT_SP32_CAT2(a, b) a##b
 #define PORT_SP32_CAT(a, b) PORT_SP32_CAT2(a, b)
 #define PORT_STATIC_PTR32(slot, target)                                              \
-    static struct PortStaticPtr32 PORT_SP32_CAT(s_PortStaticPtr32_, __LINE__)        \
+    static struct PortStaticPtr32 PORT_SP32_CAT(s_PortStaticPtr32_, __COUNTER__)     \
         __attribute__((used, section("__DATA,__ge_ptr32"))) = { (unsigned int *) &(slot), \
                                                                (const void *) (target) }
 #define PORT_SPTR(x) 0
