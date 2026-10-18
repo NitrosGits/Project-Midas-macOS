@@ -692,59 +692,14 @@ struct player
    */
   f32 pause_watch_related_scaled;
 
-  s32 something_with_watch_object_instance;
-
-  s32 field_234;
-  s32 field_238;
-  s32 field_23C;
-  s32 field_240;
-  f32 watch_scale_destination;
-  s32 field_248;
-  s32 field_24C;
-  s32 field_250;
-  s32 field_254;
-
   /**
-   * Some kind of adjustment applied before scaling to set pause_watch_related_scaled.
-   * Offset 0x0258.
+   * The pause watch's model instance (sub_GAME_7F07E7CC), offset 0x0230; its
+   * RwData is the 50 words from field_2EC.
+   * PORT: decompiled as 47 placeholder words (watch_scale_destination was
+   * .scale, pause_watch_related_adjust .animframe1 and field_23C .render_pos).
+   * A real Model keeps the 32-bit layout and grows with Model in 64-bit builds.
    */
-  f32 pause_watch_related_adjust;
-  s32 field_25C;
-  s32 field_260;
-  s32 field_264;
-  s32 field_268;
-  s32 field_26C;
-  s32 field_270;
-  s32 field_274;
-  s32 field_278;
-  s32 field_27C;
-  s32 field_280;
-  s32 field_284;
-  s32 field_288;
-  s32 field_28C;
-  s32 field_290;
-  s32 field_294;
-  s32 field_298;
-  s32 field_29C;
-  s32 field_2A0;
-  s32 field_2A4;
-  s32 field_2A8;
-  s32 field_2AC;
-  s32 field_2B0;
-  s32 field_2B4;
-  s32 field_2B8;
-  s32 field_2BC;
-  s32 field_2C0;
-  s32 field_2C4;
-  s32 field_2C8;
-  s32 field_2CC;
-  s32 field_2D0;
-  s32 field_2D4;
-  s32 field_2D8;
-  s32 field_2DC;
-  s32 field_2E0;
-  s32 field_2E4;
-  s32 field_2E8;
+  Model watchmodel;
   s32 field_2EC;
   s32 field_2F0;
   s32 field_2F4;

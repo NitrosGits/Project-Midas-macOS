@@ -2177,7 +2177,7 @@ Gfx *portWatchMouseDraw(Gfx *gdl)
             portWatchProjectFace(-299.0f, 310.0f, &px0, &py0);
             fprintf(stderr, "ge: watchmouse: hand [%g %g %g %g | %g %g %g %g | %g %g %g %g | %g %g %g %g] fovy %g asp %g scale %g pos %g cot %g pi %g proj(-299,310)=%g,%g\n",
                     m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15],
-                    g_portWatchFovy, g_portWatchAspect, g_CurrentPlayer->watch_scale_destination, g_CurrentPlayer->pause_watch_position, cosf(g_portWatchFovy * (M_PI_F / 360.0f)) / sinf(g_portWatchFovy * (M_PI_F / 360.0f)), (f64) M_PI_F, (f64) px0, (f64) py0);
+                    g_portWatchFovy, g_portWatchAspect, g_CurrentPlayer->watchmodel.scale, g_CurrentPlayer->pause_watch_position, cosf(g_portWatchFovy * (M_PI_F / 360.0f)) / sinf(g_portWatchFovy * (M_PI_F / 360.0f)), (f64) M_PI_F, (f64) px0, (f64) py0);
             fprintf(stderr, "ge: watchmouse: mouse %.1f,%.1f shown %d hover %d\n", sPortWatchMouseX, sPortWatchMouseY, sPortWatchCursorShown, g_portWatchHoverTab);
             fflush(stderr);
         }

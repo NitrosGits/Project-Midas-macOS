@@ -70,7 +70,8 @@ Model *modelmgrInstantiateModel(ModelFileHeader *header)
 
         if (model == NULL)
         {
-            model = mempAllocBytesInBank(0x20, MEMPOOL_STAGE);
+            /* PORT: 0x20 on N64; the slot grows with Model in 64-bit builds */
+            model = mempAllocBytesInBank((sizeof(struct ModelSlot) + 0xf) & ~0xf, MEMPOOL_STAGE);
         }
 
         if (header->numRecords > 0)
@@ -140,7 +141,8 @@ Model *modelmgrInstantiateModelWithAnim(ModelFileHeader *modelFileHeader)
 
         if (newModel == NULL)
         {
-            newModel = mempAllocBytesInBank(0xc0, MEMPOOL_STAGE);
+            /* PORT: 0xc0 on N64 (an 0xbc Model, rounded up) */
+            newModel = mempAllocBytesInBank((sizeof(struct AnimModelSlot) + 0xf) & ~0xf, MEMPOOL_STAGE);
         }
 
         requiredRwdatalen = modelFileHeader->numRecords;

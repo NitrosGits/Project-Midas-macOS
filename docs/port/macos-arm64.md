@@ -300,6 +300,33 @@ Checked:
   arguments it is declared with.
 - Nothing has run yet.
 
+### 2026-10-18: Model runtime sizes
+
+Error count: **713 → 712**. These fixes are for crashes nothing flags at
+compile time: `Model` grew to 0x108 bytes, and three places still assumed
+0xbc.
+
+- **Model manager slots** (objecthandler.h). `ModelSlot` declares `Model`'s
+  leading fields with their real types (`unk08` is `obj`, `unk10` is `datas`),
+  and `AnimModelSlot` is a union with a whole `Model`. The two fallback
+  allocations in model.c (0x20 and 0xc0 bytes) are now `sizeof` rounded to 16,
+  which is the same 0x20/0xc0 in the 32-bit builds.
+- **Render-data templates** (gunfire.c). gun.c's `D_80035D00`/`D_80035D04`,
+  `watchControllerButtonBases` and `g_DefaultCasingModelRenderData` are `u32`
+  words in the 32-bit `ModelRenderData` layout. On PC,
+  `portRenderDataFromWords` copies them field by field at all three sites.
+  `watchRenderController`'s copy no longer depends on two globals being
+  adjacent at link time.
+- **Player watch model** (bondview.h; old item 8). The 47 placeholder words at
+  `player` + 0x230 are `Model watchmodel`, with its RwData still at
+  `field_2EC`. `watch_scale_destination` was `.scale`,
+  `pause_watch_related_adjust` was `.animframe1` and `field_23C` was
+  `.render_pos`. `sub_GAME_7F07E7CC` uses the fields instead of literal offsets.
+
+Checked: `ptr32_check.py` `aliases` and `variants` are clean. i386 against
+67fddf2: 207 objects identical, and gunfire.c differs only in the three
+functions that copy the templates.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -313,17 +340,10 @@ Checked:
 
 ### Next, in order
 
-1. **Model runtime sizes** (new, found in this step; nothing flags them).
-   `Model` is 0xbc bytes in 32-bit builds and 0x108 here, but
-   `modelmgrInstantiateModel` allocates 0x20 or 0xc0 bytes. `ModelSlot` and
-   `AnimModelSlot` mirror its 32-bit layout (`(Model *)&g_ModelSlots[i]`, with
-   `.unk08`/`.unk10` standing for `obj`/`datas`). gun.c's `D_80035D04` and
-   `g_DefaultCasingModelRenderData` are `u32` arrays that are copied as
-   `ModelRenderData`, one at `+0x3c`. Give the slots `Model`'s real size and
-   type under GE_64BIT, and build the templates as `ModelRenderData`. Separately:
-   gunfire.c's stack `ModelHeader`/`ModelHead` are cast to a full `Model`, the
-   bug gun.c already fixed on PC. Fixing it changes 32-bit behaviour, so it needs
-   its own decision.
+1. **gunfire.c's stack `ModelHeader`/`ModelHead`** are cast to a full `Model`
+   but only hold its first 0x20 (0x40 here) bytes. gun.c fixed the same bug on PC
+   by using a whole, zeroed `Model`. That changes 32-bit behaviour, so it needs a
+   decision first.
 2. **Setup family** (`prop.c` `SETUP_PROMOTE`, 99 errors). `stagesetup`, pads,
    paths, waypoints, AI lists and the object records (`ObjectRecord` and its
    subtypes; `MonitorRecord.cmdlist` becomes `PTR32(monword)`).
@@ -340,5 +360,3 @@ Checked:
 7. **`OS_PHYSICAL_TO_K0(&ptr)` misuse** (bondview2.c, options.c, front.c). Those
    sites pass a pointer where a physical word belongs. Use the pointer
    directly.
-8. **Known literal-offset hazard:** `(Model *)((u8 *)g_CurrentPlayer + 0x230)`
-   in bondview2.c. `player` grows under GE_64BIT, so use the field.

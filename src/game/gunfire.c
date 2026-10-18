@@ -92,6 +92,31 @@ extern u32 D_80035D00;
 extern u32 D_80035D04[];
 extern coord3d D_80035EA4;
 extern u32 watchControllerButtonBases[];
+
+#ifndef TARGET_N64
+/* PORT: gun.c keeps the render-data templates as 16 u32 words laid out like
+ * the 32-bit ModelRenderData. Copy them field by field: in a 64-bit build the
+ * pointer fields are 8 bytes, so a struct-cast copy misplaces every word. */
+static void portRenderDataFromWords(ModelRenderData *rd, const u32 *w)
+{
+    rd->basemtx        = portPtr64(w[0]);
+    rd->zbufferenabled = w[1];
+    rd->flags          = w[2];
+    rd->gdl            = portPtr64(w[3]);
+    rd->mtxlist        = portPtr64(w[4]);
+    rd->unk14          = w[5];
+    rd->unk18          = w[6];
+    rd->unk1c          = w[7];
+    rd->unk20          = w[8];
+    rd->unk24          = w[9];
+    rd->unk28          = w[10];
+    rd->unk2c          = w[11];
+    rd->PropType       = w[12];
+    rd->envcolour.word = w[13];
+    rd->fogcolour.word = w[14];
+    rd->cullmode       = w[15];
+}
+#endif
 extern GunModelFileRecord gitem_structs[];
 extern struct gun_trigger_state g_ZeroTriggerState;
 extern Lights1 g_WeaponEnvmapLight;
@@ -1764,7 +1789,7 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
     memset(&model, 0, sizeof(model)); /* full Model on PC - clear the anim state the truncated N64 local never had */
 
     {
-        u32 *w = (u32 *) &renderdata;
+        u32 w[16];
         s32 wi;
 
         w[0] = D_80035D00;
@@ -1772,6 +1797,7 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
         {
             w[1 + wi] = D_80035D04[wi];
         }
+        portRenderDataFromWords(&renderdata, w);
     }
 #endif
 
@@ -2058,7 +2084,24 @@ Gfx* watchRenderController(Gfx* gdl, Mtxf* basemtx, s32 envcolour, bool animateb
     struct coord3d coord_node12_pos;
     struct coord3d coord_node12_base;
 
+#ifdef TARGET_N64
     renderdata = *(ModelRenderData *)((u8 *)D_80035D04 + 0x3c);
+#else
+    /* PORT: that template is D_80035D04's last word followed by the first 15
+     * of watchControllerButtonBases, its neighbour on N64; assemble it rather
+     * than depend on the PC link order. */
+    {
+        u32 w[16];
+        s32 wi;
+
+        w[0] = D_80035D04[15];
+        for (wi = 0; wi < 15; wi++)
+        {
+            w[1 + wi] = watchControllerButtonBases[wi];
+        }
+        portRenderDataFromWords(&renderdata, w);
+    }
+#endif
 
     sub_GAME_7F05DA8C(GUNRIGHT, 0x55);
 
@@ -6194,7 +6237,11 @@ void sub_GAME_7F068EC4(CasingRecord *casing, Gfx **gdl)
     ModelFileHeader *model_header = casing->header;
     RenderPosView   *model_matrices = dynAllocate(model_header->numMatrices * sizeof(RenderPosView));
     ModelHead        model;
+#ifdef TARGET_N64
     ModelRenderData  render_data = *(ModelRenderData *)g_DefaultCasingModelRenderData;
+#else
+    ModelRenderData  render_data;
+#endif
     Mtxf             casing_model_mtx;
     s32              axis_offset;
     s32              matrix_translation_in_range = TRUE;
@@ -6202,6 +6249,9 @@ void sub_GAME_7F068EC4(CasingRecord *casing, Gfx **gdl)
     f32              model_scale_or_min_translation;
     u8              *matrix_axis_ptr;
 
+#ifndef TARGET_N64
+    portRenderDataFromWords(&render_data, g_DefaultCasingModelRenderData);
+#endif
     modelCalculateRwDataLen(model_header);
     modelInit((Model *)&model, model_header, NULL);
 
