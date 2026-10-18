@@ -6,6 +6,7 @@
 #include "gun.h"
 #include "math.h"
 #include "fr.h"
+#include "bondview2.h"
 
 #ifndef DEBUG
     #ifdef TARGET_N64

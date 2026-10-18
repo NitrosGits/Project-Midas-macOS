@@ -6,6 +6,7 @@
 #include "player.h"
 #include "othermodemicrocode.h"
 #include "image_bank.h"
+#include "cheat.h"
 
 
 /**

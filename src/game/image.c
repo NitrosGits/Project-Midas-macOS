@@ -6,6 +6,7 @@
 #include <PR/R4300.h>
 #include "ramrom.h"
 #include "decompress.h"
+#include <stdio.h>
 #ifndef TARGET_N64
 #include "frametiming.h" /* tickhz=hw texture decode price */
 #endif
@@ -430,7 +431,7 @@ s32 texAlignIndices(u8 *src, s32 width, s32 height, s32 format, u8 *dst)
             src++;
         }
 
-        outptr = (u8 *)(((u32)outptr + 7) & ~7);
+        outptr = (u8 *)(((uintptr_t)outptr + 7) & ~7);
     }
 
     return outptr - dst;
@@ -2551,7 +2552,7 @@ void texLoad(s32 *updateword, struct texpool *pool)
         extern void portHitchNote(int cat, unsigned long long us);
         const unsigned long long hitchT0 = portProfNow(); /* hitchlog.c */
 #endif
-        alignedcompbuffer = (u8 *) (((u32)compbuffer + 0xF) >> 4 << 4);
+        alignedcompbuffer = (u8 *) (((uintptr_t)compbuffer + 0xF) >> 4 << 4);
 
         if (alignedcompbuffer);
         if (tex);
@@ -2589,7 +2590,7 @@ void texLoad(s32 *updateword, struct texpool *pool)
         {
             // Copy the compressed texture to RAM
             romCopy(alignedcompbuffer,
-                    (u32) &_imagesSegmentRomStart + (thisoffset & 0xfffffff8),
+                    (uintptr_t) &_imagesSegmentRomStart + (thisoffset & 0xfffffff8),
                     ((u32) (nextoffset - thisoffset) + 0x1f) >> 4 << 4);
 #ifndef TARGET_N64
             { /* tickhz=hw load hitch: the texture's cart read; its decode is priced

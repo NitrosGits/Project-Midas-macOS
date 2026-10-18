@@ -61,4 +61,9 @@ void matrix_4x4_multiply_homogeneous_eu(f32 lhs[3][3], f32 rhs[3][3], f32 result
 void vec3Lerp(vec3d *x, vec3d *y, f32 scaler, vec3d *result);
 void coord3dCubicSplineInterp(coord3d *prev, coord3d *start, coord3d *end, coord3d *next, f32 fraction, f32 tangentScale, coord3d *result);
 void coord3dCatmullRomInterp(coord3d *p0, coord3d *p1, coord3d *p2, coord3d *p3, f32 fraction, coord3d *result);
+void matrix_4x4_7F058C64(void);
+void matrix_4x4_7F058C88(void);
+void matrix_4x4_invert_affine(Mtxf *matrix, Mtxf *result);
+void sub_GAME_7F059334(Mtx *src, Mtx *dst);
+
 #endif

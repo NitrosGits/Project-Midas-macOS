@@ -4,5 +4,8 @@
 #include <ultra64.h>
 
 void initCasingPool(void);
+void casingsInit(void);
+void initWeaponAnimGroups(void);
+void reset_counter_rand_body_head(void);
 
 #endif

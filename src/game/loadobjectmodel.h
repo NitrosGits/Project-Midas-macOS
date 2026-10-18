@@ -10,5 +10,6 @@ struct ObjectRecord    *setupGetPtrToCommandByIndex(s32 index);
 struct ObjectRecord    *setupCommandGetObject(s32 stageID, s32 index);
 s32                    setupGetCommandIndexByProp(struct PropRecord *prop);
 s32                    tagGetCommandIndex(struct ObjectRecord *arg0);
+ObjectRecord * setupFindObjForReuse(s32 wanttype, ObjectRecord **offscreenobjptr, ObjectRecord **anyobjptr, bool musthaveprop, bool musthavemodel, ModelFileHeader *modeldef);
 
 #endif

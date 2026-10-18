@@ -18,7 +18,7 @@ void modelAttachHead(Model *, ModelNode*,  ModelFileHeader *);
 void clear_aircraft_model_obj(Model *objinstance);
 void modelSetDistanceDisabled(s32 param_1);
 void modelSetDistanceScale(f32 param_1);
-void set_vtxallocator(s32 param_1);
+void set_vtxallocator(struct Vertex *(*param_1)(s32 numvertices));
 void modelCalculateScaledRootToOriginDir(Model* model, coord3d* coord);
 void modelGetScaledRootToOriginDir(Model* model, coord3d* coord);
 s32 modelFindNodeMtxIndex(ModelNode *node, s32 arg1);
@@ -76,7 +76,7 @@ void modelSetAnimFlipFunction(Model *model, void *callback);
 void modelSetAnimSpeed(Model *model, f32 anim_speed, f32 startframe);
 void sub_GAME_7F06FE90(Model *model, f32 arg1, f32 arg2);
 void modelSetAnimPlaySpeed(Model *model, f32 animation_rate, f32 startframe);
-void sub_GAME_7F06FF5C(Model *model, s32 arg1);
+void sub_GAME_7F06FF5C(Model *model, intptr_t arg1);
 void modelSetAnimFrame(Model* model, f32 frame);
 void modelSetAnimFrame2(Model* model, f32 frame1, f32 frame2);
 void modelSetAnimMergingEnabled(s32 arg0);
@@ -94,21 +94,21 @@ void modelRenderNodeGundl(ModelRenderData* renderdata, ModelNode* arg1);
 void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *node);
 void dorottex(ModelRenderData *renderdata, ModelNode *node);
 void sub_GAME_7F073038(ModelRenderData *renderdata, struct sImageTableEntry *tconfig, s32 arg2);
-void sub_GAME_7F07306C(s32 param_1,struct Model *param_2,struct ModelNode *param_3);
+void sub_GAME_7F07306C(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3);
 void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node);
-void sub_GAME_7F0737EC(s32 param_1,struct Model *param_2, struct ModelNode *param_3);
-void sub_GAME_7F0737FC(s32 param_1,struct Model *param_2,struct ModelNode *param_3);
+void sub_GAME_7F0737EC(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3);
+void sub_GAME_7F0737FC(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3);
 void dogfnegx(ModelRenderData *renderdata, Model *model, ModelNode *node);
 void sub_GAME_7F073FC8(s32 arg0);
 void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node);
-void sub_GAME_7F074514(s32 param_1,struct Model *param_2,struct ModelNode *param_3);
+void sub_GAME_7F074514(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3);
 void sub_GAME_7F074524(Gfx *param_1,struct Model *param_2, struct ModelNode *param_3);
 void sub_GAME_7F074534(ModelRenderData* data, Model* model, ModelNode* node);
 void subdraw(ModelRenderData *arg0, struct Model *);
-s32 loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused);
+u8 *loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused);
 void modelResetAnimationsScratchBuffer(void);
-void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr);
-void sub_GAME_7F075A90(ModelFileHeader *header, s32 vma, u32 addr);
+void modelPromoteNodeOffsetsToPointers(ModelNode *node, intptr_t vma, uintptr_t fileramaddr);
+void sub_GAME_7F075A90(ModelFileHeader *header, intptr_t vma, uintptr_t addr);
 #ifndef TARGET_N64
 void portModelCollisionAudit(ModelNode *node, const char *name);
 #endif
@@ -119,12 +119,15 @@ void modelInit(struct Model *objinst, struct ModelFileHeader *header, u32 *data)
 void animInit(struct Model *objinst, struct ModelFileHeader *header, u32 *data);
 void modelAttachPart(Model *pmodel, ModelFileHeader *pmodeldef, ModelNode *pnode, ModelFileHeader *cmodeldef);
 void modelIterateDisplayLists(ModelFileHeader *fileheader, ModelNode **nodeptr, Gfx **gdlptr);
-void modelNodeReplaceGdl(u32 arg0, ModelNode *node, Gfx *find, Gfx *replacement);
+void modelNodeReplaceGdl(ModelFileHeader *arg0, ModelNode *node, Gfx *find, Gfx *replacement);
 bool modelTestRayIntersectsTransformedBBox(ModelRoData_BoundingBoxRecord *bbox, Mtxf *mtx, coord3d *pos, coord3d *dir);
 
 #ifndef VERSION_EU
 void return_null(void);
 #endif
+u32 modelFindNextProjectileHitCandidate(Model *model, coord3d *arg1, coord3d *arg2, ModelNode **nodeptr);
+bool modelTestRayIntersectsNodeBBox(Model *model, ModelNode *node, coord3d *pos, coord3d *dir);
+s32 sub_GAME_7F074CAC(Model *model, ModelNode *node, coord3d *raypos, coord3d *raydir);
 
 #endif
 

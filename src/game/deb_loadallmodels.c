@@ -9,6 +9,7 @@
 #include "dyn.h"
 #include "memp.h"
 #include <macro.h>
+#include "bondview_r.h"
 
 #ifndef DEBUG
     #ifdef TARGET_N64

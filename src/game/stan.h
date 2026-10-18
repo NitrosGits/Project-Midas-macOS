@@ -118,4 +118,9 @@ struct StandTilePoint *stanMatchTileName(char *id);
 s32 isPointInsideTriStandTileUnscaled_Maybe(struct StandTile *tile, f32 p_x, f32 p_z);
 s32 sub_GAME_7F0B21B0(StandTile **tileStack, f32 target_x, f32 target_z, f32 radius, s32 *rooms, s32 *count_rtn, s32 bufMax);
 StandTile *stanFindTileBelowPos(coord3d *pos, u8 *rooms, f32 *yRtn);
+struct StanPrefixRecord; /* file scope, or each prototype names its own type */
+void stanDetermineEOF(struct StanPrefixRecord *file , s32 origBase, u8 *newBase);
+void stanLoadFile(struct StanPrefixRecord *file);
+bool stanTileHasZeroArea(StandTile *tile);
+
 #endif

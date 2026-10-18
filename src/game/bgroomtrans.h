@@ -7,5 +7,6 @@ void updateRoomStatusFlags(void);
 void getRoomPositionScaledByIndex(s32 index, struct coord3d *param_2);
 Gfx * applyRoomMatrixToDisplayList(Gfx *DL, s32 index);
 struct coord3d* getRoomPositionByIndex(s32 roomID);
+void initializeRoomData(void);
 
 #endif

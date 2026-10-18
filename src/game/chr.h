@@ -27,6 +27,10 @@ struct ChrHitReaction
     s32 flinchAnimCount;
 };
 
+// An animation segment offset parked in struck_anim until
+// initResolveAnimTable rebases it to a pointer.
+#define ANIMOFS(off) ((ModelAnimation *) (uintptr_t) (off))
+
 // Animations for when characters are wounded or killed.
 struct StruckAnim
 {
@@ -295,12 +299,15 @@ void        propExecuteTickOperation(PropRecord *prop, TICKOP op);
 //tentative signature
 s32         sub_GAME_7F01FC10(Model *, coord3d *, coord3d *, f32 *);
 void        chrCreateBloodStain(Model *arg0, s32 arg1, ModelNode *arg2, struct coord3d *arg3);
-void        chrpropAddBulletHit(struct ShotData *shotdata, PropRecord *prop, f32 dist, s32 hitpart, ModelNode *node, struct HitThing *hitthing, s32 room, s32 unk44, Model *model, bool countsAsPenetration, s32 blocksFurtherHits);
+void        chrpropAddBulletHit(struct ShotData *shotdata, PropRecord *prop, f32 dist, s32 hitpart, ModelNode *node, struct HitThing *hitthing, s32 room, ModelNode *unk44, Model *model, bool countsAsPenetration, s32 blocksFurtherHits);
 void        chrTestHit(PropRecord *prop, ShotData *shotdata);
 void        sub_GAME_7F03E134(PropRecord* p);
 
 #ifdef BUGFIX_R1
 bool chrCanUseDKModeScaling(s32 bodynum, s32 headnum);
 #endif
+s32 chrGetNumFree(void);
+s32 get_show_patrols_flag(void);
+void set_show_patrols_flag(s32 flag);
 
 #endif

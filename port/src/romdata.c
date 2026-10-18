@@ -74,6 +74,8 @@ extern void portConLogf(const char *fmt, ...);
  * this is libc's own expansion, brought back under a port name */
 #ifdef _WIN32
 #define port_errno (*_errno())
+#elif defined(__APPLE__)
+#define port_errno (*__error())
 #else
 #define port_errno (*__errno_location())
 #endif

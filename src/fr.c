@@ -11,6 +11,8 @@
 #include "game/bondview.h"
 #include "game/viewport.h"
 #include "game/dyn.h"
+#include "bondview.h"
+#include <stdlib.h>
 #ifdef ENABLE_USB
 #include "usb.h"
 #endif

@@ -2,6 +2,8 @@
 #include <memp.h>
 #include "image.h"
 #include "initmttex.h"
+#include <stdlib.h>
+#include <token.h>
 
 void set_mt_tex_alloc(void)
 {  

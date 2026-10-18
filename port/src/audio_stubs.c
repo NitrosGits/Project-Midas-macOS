@@ -103,7 +103,7 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
     }
     s->flags = 1;
 
-    s->envelope = (ALEnvelope *)(base + portBSwap32((u32)s->envelope));
+    s->envelope = (ALEnvelope *)(base + portBSwap32((uintptr_t)s->envelope));
     if (portBnkfVisit(s->envelope)) {
         s->envelope->attackTime = (s32)portBSwap32((u32)s->envelope->attackTime);
         s->envelope->decayTime = (s32)portBSwap32((u32)s->envelope->decayTime);
@@ -111,18 +111,18 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
     }
 
     /* keymap fields are all bytes - promote the pointer, nothing to swap */
-    s->keyMap = (ALKeyMap *)(base + portBSwap32((u32)s->keyMap));
+    s->keyMap = (ALKeyMap *)(base + portBSwap32((uintptr_t)s->keyMap));
 
-    s->wavetable = (ALWaveTable *)(base + portBSwap32((u32)s->wavetable));
+    s->wavetable = (ALWaveTable *)(base + portBSwap32((uintptr_t)s->wavetable));
     w = s->wavetable;
     if (!w->flags) {
         w->flags = 1;
-        w->base = (u8 *)(table + portBSwap32((u32)w->base));
+        w->base = (u8 *)(table + portBSwap32((uintptr_t)w->base));
         w->len = (s32)portBSwap32((u32)w->len);
 
         if (w->type == AL_ADPCM_WAVE) {
             if (w->waveInfo.adpcmWave.book != NULL) {
-                ALADPCMBook *book = (ALADPCMBook *)(base + portBSwap32((u32)w->waveInfo.adpcmWave.book));
+                ALADPCMBook *book = (ALADPCMBook *)(base + portBSwap32((uintptr_t)w->waveInfo.adpcmWave.book));
 
                 w->waveInfo.adpcmWave.book = book;
                 if (portBnkfVisit(book)) {
@@ -136,7 +136,7 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
                 }
             }
             if (w->waveInfo.adpcmWave.loop != NULL) {
-                ALADPCMloop *loop = (ALADPCMloop *)(base + portBSwap32((u32)w->waveInfo.adpcmWave.loop));
+                ALADPCMloop *loop = (ALADPCMloop *)(base + portBSwap32((uintptr_t)w->waveInfo.adpcmWave.loop));
 
                 w->waveInfo.adpcmWave.loop = loop;
                 if (portBnkfVisit(loop)) {
@@ -152,7 +152,7 @@ static void portBnkfPatchSound(ALSound *s, uintptr_t base, uintptr_t table)
             }
         } else if (w->type == AL_RAW16_WAVE) {
             if (w->waveInfo.rawWave.loop != NULL) {
-                ALRawLoop *loop = (ALRawLoop *)(base + portBSwap32((u32)w->waveInfo.rawWave.loop));
+                ALRawLoop *loop = (ALRawLoop *)(base + portBSwap32((uintptr_t)w->waveInfo.rawWave.loop));
 
                 w->waveInfo.rawWave.loop = loop;
                 if (portBnkfVisit(loop)) {
@@ -191,7 +191,7 @@ static void portBnkfPatchInst(ALInstrument *inst, uintptr_t base, uintptr_t tabl
     inst->soundCount = (s16)portBSwap16((u16)inst->soundCount);
 
     for (i = 0; i < inst->soundCount; i++) {
-        inst->soundArray[i] = (ALSound *)(base + portBSwap32((u32)inst->soundArray[i]));
+        inst->soundArray[i] = (ALSound *)(base + portBSwap32((uintptr_t)inst->soundArray[i]));
         portBnkfPatchSound(inst->soundArray[i], base, table);
     }
 }
@@ -209,12 +209,12 @@ static void portBnkfPatchBank(ALBank *bank, uintptr_t base, uintptr_t table)
     bank->sampleRate = (s32)portBSwap32((u32)bank->sampleRate);
 
     if (bank->percussion != NULL) {
-        bank->percussion = (ALInstrument *)(base + portBSwap32((u32)bank->percussion));
+        bank->percussion = (ALInstrument *)(base + portBSwap32((uintptr_t)bank->percussion));
         portBnkfPatchInst(bank->percussion, base, table);
     }
 
     for (i = 0; i < bank->instCount; i++) {
-        bank->instArray[i] = (ALInstrument *)(base + portBSwap32((u32)bank->instArray[i]));
+        bank->instArray[i] = (ALInstrument *)(base + portBSwap32((uintptr_t)bank->instArray[i]));
         if (bank->instArray[i] != (ALInstrument *)base) {
             portBnkfPatchInst(bank->instArray[i], base, table);
         }
@@ -236,7 +236,7 @@ void alBnkfNew(ALBankFile *f, u8 *table)
     f->bankCount = (s16)portBSwap16((u16)f->bankCount);
 
     for (i = 0; i < f->bankCount; i++) {
-        f->bankArray[i] = (ALBank *)(base + portBSwap32((u32)f->bankArray[i]));
+        f->bankArray[i] = (ALBank *)(base + portBSwap32((uintptr_t)f->bankArray[i]));
         if (f->bankArray[i] != (ALBank *)base) {
             portBnkfPatchBank(f->bankArray[i], base, (uintptr_t)table);
         }

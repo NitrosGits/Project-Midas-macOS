@@ -22,6 +22,35 @@
 #include <sys/mman.h>
 #endif
 #include "sched.h"
+
+#ifdef __APPLE__
+/* macOS has no clock_nanosleep: sleep for the time left until the absolute
+ * target, returning EINTR like the real one when a signal cuts it short. */
+#ifndef TIMER_ABSTIME
+#define TIMER_ABSTIME 1
+#endif
+static int clock_nanosleep(clockid_t clk, int flags, const struct timespec *target, struct timespec *rem)
+{
+    struct timespec now;
+    struct timespec d;
+
+    (void) flags;
+    (void) rem;
+    clock_gettime(clk, &now);
+    d.tv_sec = target->tv_sec - now.tv_sec;
+    d.tv_nsec = target->tv_nsec - now.tv_nsec;
+    if (d.tv_nsec < 0)
+    {
+        d.tv_sec--;
+        d.tv_nsec += 1000000000L;
+    }
+    if (d.tv_sec < 0)
+    {
+        return 0;
+    }
+    return (nanosleep(&d, NULL) == 0) ? 0 : (*__error());
+}
+#endif
 #include "game/frametiming.h"   /* portTickHz: GE_TICKHZ pump rate */
 
 /* port_console.c: same output as the fprintf(stderr, ...) this replaced,
@@ -39,11 +68,124 @@ extern void portConLogf(const char *fmt, ...);
  * which cost a Dam render crash when a converted-GDL pointer collided
  * with the installed BG-vertex segment 0x0E). Never free()able.
  */
+#ifdef GE_64BIT
+/*
+ * The 64-bit address window (port_hostptr.h, docs/port/macos-arm64.md): the
+ * executable image plus one reservation mapped right after it. Every 32-bit
+ * pointer word is an offset from the image's Mach-O header, so everything a
+ * display list or a layout-bound struct can point at must come from here.
+ */
+#include <mach-o/getsect.h>
+#include <mach-o/ldsyms.h>
+
+/* 1 GB covers the memp arena, the high arena and the ROM image with room to
+ * spare; anonymous memory is only committed when touched. */
+#define PORT_WINDOW_RESERVE (1024ull * 1024ull * 1024ull)
+
+uintptr_t g_PortWindowBase;
+static u8 *s_WindowHeap;
+static size_t s_WindowHeapUsed;
+
+/* end of the image's last segment, slid */
+static uintptr_t portWindowImageEnd(void)
+{
+    const struct mach_header_64 *mh = &_mh_execute_header;
+    const struct load_command *lc = (const struct load_command *) (mh + 1);
+    uintptr_t slide = 0;
+    uintptr_t end = 0;
+    u32 i;
+
+    for (i = 0; i < mh->ncmds; i++, lc = (const struct load_command *) ((const u8 *) lc + lc->cmdsize))
+    {
+        const struct segment_command_64 *seg = (const struct segment_command_64 *) lc;
+
+        if (lc->cmd != LC_SEGMENT_64 || seg->vmsize == 0 || seg->initprot == 0)
+        {
+            continue; /* __PAGEZERO has no access rights and is not part of the image */
+        }
+        if (seg->fileoff == 0)
+        {
+            slide = (uintptr_t) mh - seg->vmaddr; /* __TEXT maps the header */
+        }
+        if (seg->vmaddr + seg->vmsize > end)
+        {
+            end = seg->vmaddr + seg->vmsize;
+        }
+    }
+    return end + slide;
+}
+
+/* Patch every PORT_STATIC_PTR32 slot now that the base is known. */
+static void portWindowApplyStaticPtrs(void)
+{
+    unsigned long size = 0;
+    struct PortStaticPtr32 *r = (struct PortStaticPtr32 *) getsectiondata(&_mh_execute_header, "__DATA", "__ge_ptr32", &size);
+    unsigned long i;
+
+    for (i = 0; r != NULL && i < size / sizeof(*r); i++)
+    {
+        *r[i].slot = portPtr32(r[i].target);
+    }
+}
+
+void portWindowInit(void)
+{
+    uintptr_t hint;
+    void *p;
+
+    if (g_PortWindowBase != 0)
+    {
+        return;
+    }
+    g_PortWindowBase = (uintptr_t) &_mh_execute_header;
+    hint = (portWindowImageEnd() + 0xFFFFFu) & ~(uintptr_t) 0xFFFFFu;
+    p = mmap((void *) hint, PORT_WINDOW_RESERVE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED || (uintptr_t) p + PORT_WINDOW_RESERVE - g_PortWindowBase > PORT_WINDOW_SIZE)
+    {
+        portConLogf("ge: window: no %u MB reservation within 3.5 GB of the image at %p (got %p)\n",
+                (u32) (PORT_WINDOW_RESERVE >> 20), (void *) g_PortWindowBase, p);
+        exit(1);
+    }
+    s_WindowHeap = (u8 *) p;
+    portConLogf("ge: window: image at %p, %u MB reservation at %p\n",
+            (void *) g_PortWindowBase, (u32) (PORT_WINDOW_RESERVE >> 20), p);
+    portWindowApplyStaticPtrs();
+}
+
+/* Zeroed, 64 KB aligned, never freed - like every other portAllocHigh path. */
+void *portWindowAlloc(size_t size)
+{
+    void *p;
+
+    portWindowInit();
+    size = (size + 0xFFFFu) & ~(size_t) 0xFFFFu;
+    if (s_WindowHeapUsed + size > PORT_WINDOW_RESERVE)
+    {
+        portConLogf("ge: window: reservation exhausted (%u MB used, %u MB asked)\n",
+                (u32) (s_WindowHeapUsed >> 20), (u32) (size >> 20));
+        return NULL;
+    }
+    p = s_WindowHeap + s_WindowHeapUsed;
+    s_WindowHeapUsed += size;
+    return p;
+}
+
+void portWindowBadPtr(const void *p)
+{
+    portConLogf("ge: window: %p is outside the address window (base %p) and can't be stored in a 32-bit word\n",
+            p, (void *) g_PortWindowBase);
+    abort();
+}
+#endif
+
 /* One reservation attempt at a hinted high address. Returns NULL on miss. */
 static void *portAllocHighRaw(void *hint, u32 size)
 {
     void *p;
-#ifdef _WIN32
+#if defined(GE_64BIT)
+    (void) hint; /* the window decides where; no hint ladder */
+    p = portWindowAlloc(size);
+#elif defined(_WIN32)
     p = VirtualAlloc(hint, size, 0x3000 /* MEM_COMMIT|MEM_RESERVE */, 0x04 /* PAGE_READWRITE */);
 #else
     p = mmap(hint, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -159,7 +301,7 @@ void portAllocHighReserve(void)
 
     for (attempt = 0; attempt < 8 && s_HighArena == NULL && !portAllocHighSkipHints(); attempt++)
     {
-        s_HighArena = portAllocHighRaw((void *) (0x30000000u + 0x10000000u * (u32) attempt), PORT_HIGH_ARENA_SIZE);
+        s_HighArena = portAllocHighRaw((void *) (uintptr_t) (0x30000000u + 0x10000000u * (u32) attempt), PORT_HIGH_ARENA_SIZE);
     }
 #ifdef _WIN32
     if (s_HighArena == NULL)
@@ -220,7 +362,7 @@ void *portAllocHigh(u32 size)
 
     for (attempt = 0; attempt < 8 && !portAllocHighSkipHints(); attempt++)
     {
-        void *p = portAllocHighRaw((void *) (0x50000000u + 0x08000000u * (u32) attempt), size);
+        void *p = portAllocHighRaw((void *) (uintptr_t) (0x50000000u + 0x08000000u * (u32) attempt), size);
         if (p != NULL)
         {
             return p;
@@ -255,7 +397,7 @@ void *portAllocHighDedicated(u32 size)
     size = (size + 0xFFFFu) & ~0xFFFFu;
     for (attempt = 0; attempt < 8 && !portAllocHighSkipHints(); attempt++)
     {
-        void *p = portAllocHighRaw((void *) (0x50000000u + 0x08000000u * (u32) attempt), size);
+        void *p = portAllocHighRaw((void *) (uintptr_t) (0x50000000u + 0x08000000u * (u32) attempt), size);
         if (p != NULL)
         {
             return p;

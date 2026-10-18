@@ -26,4 +26,15 @@
 #define ASM_SYM(name) name
 #endif
 
+/* ASM_DATA / ASM_BSS: section switches for the same asm strings. Mach-O
+ * sections are __DATA,__data / __DATA,__bss, so the ELF/COFF spelling
+ * ".section .data" doesn't parse there; Darwin's .data/.bss directives do. */
+#ifdef __APPLE__
+#define ASM_DATA "    .data\n"
+#define ASM_BSS  "    .bss\n"
+#else
+#define ASM_DATA "    .section .data\n"
+#define ASM_BSS  "    .section .bss\n"
+#endif
+
 #endif /* PORT_ASMSYM_H */

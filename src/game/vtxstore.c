@@ -4,11 +4,14 @@
 #include "vtxstore.h"
 #include "propobj.h"
 #include "model.h"
+#include "chrai.h"
+#include "lv.h"
+#include "player.h"
 
 // unsure if these structs are defined as something else, elsewhere
 struct unk_09B7A0_struct_parent {
     Vertex* unk00;
-    s32 unk04;
+    void *unk04; /* owner (a ModelFileHeader *) */
     s32 unk08;
     s16 unk0C;
     s16 unk0E;
@@ -107,7 +110,7 @@ void sub_GAME_7F09B820(void)
     dword_CODE_bss_8007A0D8 *= 2;
     dword_CODE_bss_8007A0DC *= 2;
 
-    tmp = 0x14;
+    tmp = sizeof(struct unk_09B7A0_struct_parent); /* 0x14 with 4-byte pointers */
     dword_CODE_bss_8007A0E8 = mempAllocBytesInBank(dword_CODE_bss_8007A0D4 * tmp, MEMPOOL_STAGE);
     dword_CODE_bss_8007A0E0 = mempAllocBytesInBank(dword_CODE_bss_8007A0D0 * 0x10, MEMPOOL_STAGE);
     dword_CODE_bss_8007A0EC = mempAllocBytesInBank(dword_CODE_bss_8007A0DC * tmp, MEMPOOL_STAGE);
@@ -174,32 +177,32 @@ void vtxstoreFixRefs(Vertex* find, Vertex* replacement)
                 {
                     rwdata = modelGetNodeRwData(obj->model, node);
 
-                    if (find == rwdata->DisplayListCollisions.Vertices)
+                    if (find == PGET(rwdata->DisplayListCollisions.Vertices))
                     {
 #ifndef TARGET_N64
                         { extern void portPartCacheVerticesFreed(const void *vtx); portPartCacheVerticesFreed(find); }
 #endif
-                        rwdata->DisplayListCollisions.Vertices = replacement;
+                        PSET(rwdata->DisplayListCollisions.Vertices, replacement);
                     }
                     break;
                 }
                 else 
                 {
-                    if (node->Child != NULL)
+                    if (PGET(node->Child) != NULL)
                     {
-                        node = node->Child;
+                        node = PGET(node->Child);
                     }
                     else 
                     {
                         while (node != NULL)
                         {
-                            if (node->Next != NULL)
+                            if (PGET(node->Next) != NULL)
                             {
-                                node = node->Next;
+                                node = PGET(node->Next);
                                 break;
                             }
 
-                            node = node->Parent;
+                            node = PGET(node->Parent);
                         }
                     }
                 }
@@ -290,7 +293,7 @@ void sub_GAME_7F09BBBC(void)
 * PD name: vtxstore_allocate
 * Description: Allocation for batches within the storage space
 */
-s32 vtxstore_allocate(s32 arg0, s32 type, s32 arg2, s32 arg3) 
+Vertex *vtxstore_allocate(s32 arg0, s32 type, void *arg2, s32 arg3) 
 {
     s16* var_t3;
     s16 temp_t2;
@@ -384,7 +387,7 @@ s32 vtxstore_allocate(s32 arg0, s32 type, s32 arg2, s32 arg3)
         } else {
             *var_t3 -= temp_t2;
         }
-        return (s32)var_t0[var_a1].unk00;
+        return var_t0[var_a1].unk00;
     }
     return 0;
 }

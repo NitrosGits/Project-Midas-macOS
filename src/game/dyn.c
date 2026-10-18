@@ -4,6 +4,9 @@
 #include <str.h>
 #include <memp.h>
 #include <macro.h>
+#include "player.h"
+#include <deb.h>
+#include <string.h>
 
 #ifndef TARGET_N64
 #include <stdio.h> /* GE_ROOM_AUDIT dyn-pool watch (see bg.c) */

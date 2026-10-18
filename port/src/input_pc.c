@@ -179,6 +179,7 @@ static const char *const sPadRawFallback[PM_UNBOUND_FIRST] =
     "a2+", "a3-",
 };
 extern const char *portJoyPortBindName(s32 i); /* joy_port.c action names, for the order check */
+s32 portInputDeviceIniKey(s32 dev, const char *name, char *buf, s32 len);
 extern void portJoyPortPadDown(s32 pad, s32 act);
 #define PM_PORT_NEXT_INV 8 /* joy_port.c PORTACT_NEXT_INV - "next gadget", also DEF_PORT(8) below */
 #define PM_PORT_CLASSIC_TOGGLE 20 /* joy_port.c PORTACT_CLASSIC_TOGGLE (order checked at init) */

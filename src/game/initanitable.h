@@ -28,7 +28,7 @@ extern struct animation_table_data* ptr_animation_table;
  * The index of each value corresponds to `enum ANIMATION`.
  * The value corresponds to (e.g. index=0) PTR_ANIM_idle (same as ANIM_DATA_idle)
 */
-extern s32 animation_table_ptrs1[];
+extern intptr_t animation_table_ptrs1[]; /* offsets, then ModelAnimation pointers */
 
 /**
  * Contains offsets into ptr_animation_table for object/vehicle animations.
@@ -36,5 +36,6 @@ extern s32 animation_table_ptrs1[];
  * The value corresponds to (e.g. index=0) PTR_ANIM_helicopter_cradle (same as ANIM_DATA_helicopter_cradle)
 */
 extern struct ModelAnimation * animation_table_ptrs2[];
+void alloc_load_expand_ani_table(void);
 
 #endif

@@ -276,4 +276,10 @@ build_deck/
 docs/devnotes/
 
 # the docs live in the private repo
-/docs/
+/docs/*
+# except the macOS arm64 port plan, which travels with the port branch
+!/docs/port/
+/docs/port/*
+!/docs/port/macos-arm64.md
+build_mac/
+.DS_Store

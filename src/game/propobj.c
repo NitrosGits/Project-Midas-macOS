@@ -54,6 +54,17 @@
 #include "tex.h"
 #include "textrelated.h"
 #include "vtxstore.h"
+#include "chrObjRandom.h"
+#include "chrprop.h"
+#include "debugmenu_handler.h"
+#include "dyn.h"
+#include "front.h"
+#include "gunfire.h"
+#include "line_tri_intersect.h"
+#include "loadobjectmodel.h"
+#include "objective_status2.h"
+#include "othermodemicrocode.h"
+#include <string.h>
 #ifndef TARGET_N64
 #include "frametiming.h"   /* portAnimTicks / portLagStep: sub-field smoothing */
 #include "cheat.h"         /* cheatIsActive(CHEAT_PORT_UNLOCK_DOORS) - propdoorInteract */
@@ -201,9 +212,15 @@ f32 g_SoloAmmoMultiplier = 1.0;
 extern struct ModelAnimation *animation_table_ptrs2[];
 
 struct tvcmd {
+#ifdef GE_64BIT
+    monword type;
+    monword time; /* an s32, or a script address for the jumps */
+    monword arg2;
+#else
     u32 type;
     s32 time;
     u32 arg2;
+#endif
 };
 
 // Forward declarations.
@@ -466,26 +483,26 @@ ModelRoData_BoundingBoxRecord *chrobjGetBboxFromObjFile(ModelFileHeader *obj)
 {
     ModelNode *mdlnext;
 
-    if (obj->RootNode->Child)
+    if (PGET(obj->RootNode->Child))
     {
         //for each next node, check for BBox
-        for (mdlnext = obj->RootNode->Child; mdlnext; mdlnext = mdlnext->Next)
+        for (mdlnext = PGET(obj->RootNode->Child); mdlnext; mdlnext = PGET(mdlnext->Next))
         {
             if (mdlnext->Opcode == MODELNODE_OPCODE_BBOX)
             {
-                return mdlnext->Data;
+                return PGET(mdlnext->Data);
             }
         }
 
         //none found, check FIRST child
-        if (obj->RootNode->Child->Child)
+        if (PGET(PGET(obj->RootNode->Child)->Child))
         {
             //for each next node, check for BBox
-            for (mdlnext = obj->RootNode->Child->Child; mdlnext; mdlnext = mdlnext->Next)
+            for (mdlnext = PGET(PGET(obj->RootNode->Child)->Child); mdlnext; mdlnext = PGET(mdlnext->Next))
             {
                 if (mdlnext->Opcode == MODELNODE_OPCODE_BBOX)
                 {
-                    return mdlnext->Data;
+                    return PGET(mdlnext->Data);
                 }
             }
         }
@@ -2488,7 +2505,7 @@ ModelRenderData D_80030B34 = {NULL,
 
 
 //[80030B74	00	Bond]
-u32 monAnim00Bond[] = {
+monword monAnim00Bond[] = {
     MONUSEIMAGE(IMGBOND),
     MONHORZSCROLL(0x400, 20),
     MONHOLDTIME(20),
@@ -2504,7 +2521,7 @@ u32 monAnim00Bond[] = {
 };
 
 //[80030C00	01	Desktops, Satellite]
-u32 monAnim01DesktopsSatellite[] = {
+monword monAnim01DesktopsSatellite[] = {
      MONUSEIMAGE(IMG2DMATH),
      MONHORZSCROLL(0x400, 20),
      MONHOLDTIME(20),
@@ -2553,7 +2570,7 @@ u32 monAnim01DesktopsSatellite[] = {
 };
 
 //[80030E24	02	10 screens: astrological]
-u32 monAnim02Astrological[] = {
+monword monAnim02Astrological[] = {
      MONUSEIMAGE(IMGSHUTTLE1), MONHOLDTIME(80),
      MONUSEIMAGE(IMGSHUTTLE2), MONHOLDTIME(80),
      MONUSEIMAGE(IMGEARTHFULL1), MONHOLDTIME(80),
@@ -2568,7 +2585,7 @@ u32 monAnim02Astrological[] = {
 };
 
 //[80030EC8	0F	7 screens: satellite, targetting, ]
-u32 monAnim0FSatelliteTargeting[] = {
+monword monAnim0FSatelliteTargeting[] = {
      MONUSEIMAGE(IMGEARTH), MONHOLDTIME(80),
      MONUSEIMAGE(IMGDESKTOPBANG), MONHOLDTIME(80),
      MONUSEIMAGE(IMGHEATMAP), MONHOLDTIME(80),
@@ -2581,7 +2598,7 @@ u32 monAnim0FSatelliteTargeting[] = {
 };
 
 //[80030F44	03	3 wave patterns]
-u32 monAnim03ThreeWavePattern[] = {
+monword monAnim03ThreeWavePattern[] = {
      MONRGBA(COLOR_MINESHAFT3, 1),
      MONUSEIMAGE(IMGSINE),
      MONHORZSCROLL(0x800, 120),
@@ -2605,7 +2622,7 @@ u32 monAnim03ThreeWavePattern[] = {
 };
 
 //[80031018	04	wave pattern]
-u32 monAnim04WavePattern[] = {
+monword monAnim04WavePattern[] = {
      MONRGBA(COLOR_MINESHAFT3, 1),
      MONUSEIMAGE(IMGSINE),
      MONZOOMWIDTH(0x80, 1),
@@ -2618,7 +2635,7 @@ u32 monAnim04WavePattern[] = {
 };
 
 //[80031074	05	green text up]
-u32 monAnim05GreenTextUp[] = {
+monword monAnim05GreenTextUp[] = {
      MONUSEIMAGE(IMGTEXT),
      MONRGBA(COLOR_BARELYGREENOPAQUE, 1),
      MONVERTSCROLL(0xFFFFFE00, 80),
@@ -2635,7 +2652,7 @@ u32 monAnim05GreenTextUp[] = {
 };
 
 //[800310F0	06	red text down]
-u32 monAnim06RedTextDown[] = {
+monword monAnim06RedTextDown[] = {
      MONUSEIMAGE(IMGTEXT),
      MONRGBA(COLOR_DIESEL, 1),
      MONVERTSCROLL(0x200, 80),
@@ -2655,7 +2672,7 @@ u32 monAnim06RedTextDown[] = {
 };
 
 //[8003118C	07	d. green text down]
-u32 monAnim07GreenTextDown[] = {
+monword monAnim07GreenTextDown[] = {
      MONUSEIMAGE(IMGTEXT),
      MONRGBA(COLOR_DEEPFIR, 1),
      MONVERTSCROLL(0x200, 80),
@@ -2674,7 +2691,7 @@ u32 monAnim07GreenTextDown[] = {
 };
 
 //[8003121C	08	red bar graph +]
-u32 monAnim08RedBarGraph[] = {
+monword monAnim08RedBarGraph[] = {
      MONUSEIMAGE(IMGBARS),
      MONRGBA(COLOR_VERDUNGREEN, 1),
      MONHORZSCROLL(0x280, 1),
@@ -2683,7 +2700,7 @@ u32 monAnim08RedBarGraph[] = {
 };
 
 //[80031248	09	blue bar graph +]
-u32 monAnim09BlueBarGraph[] = {
+monword monAnim09BlueBarGraph[] = {
      MONUSEIMAGE(IMGBARS),
      MONRGBA(COLOR_CYPRUS, 1),
      MONHORZSCROLL(0x280, 1),
@@ -2692,7 +2709,7 @@ u32 monAnim09BlueBarGraph[] = {
 };
 
 //[80031274	0A	green bar graph -]
-u32 monAnim0AGreenBarGraph[] = {
+monword monAnim0AGreenBarGraph[] = {
      MONUSEIMAGE(IMGBARS),
      MONRGBA(COLOR_TOMTHUMB, 1),
      MONHORZSCROLL(0xFFFFFD80, 1),
@@ -2701,19 +2718,19 @@ u32 monAnim0AGreenBarGraph[] = {
 };
 
 //[800312A0	subroutine	used by radar]
-u32 monAnimRadarSub1[] = {
+monword monAnimRadarSub1[] = {
      MONRGBA(COLOR_GREEN, 20),
      MONJUMPTO(monAnimRadarSub3)
 };
 
 //[800312B4	subroutine	used by radar]
-u32 monAnimRadarSub2[] = {
+monword monAnimRadarSub2[] = {
      MONRGBA(COLOR_SANFELIX, 20),
      MONJUMPTO(monAnimRadarSub3)
 };
 
 //[800312C8	subroutine	used by radar]
-u32 monAnimRadarSub3[] = {
+monword monAnimRadarSub3[] = {
      MONROTATEIMAGE(0xB6),
      MONHOLDTIME(1),
      MONJUMPCHANCE(monAnimRadarSub1, TWO_PERCENT_CHANCE),
@@ -2722,14 +2739,14 @@ u32 monAnimRadarSub3[] = {
 };
 
 //[800312F4	0B	radar]
-u32 monAnim0BRadar[] = {
+monword monAnim0BRadar[] = {
      MONUSEIMAGE(IMGTRIANGLE),
      MONRGBA(COLOR_ALMOSTDARKGREEN, 1),
      MONJUMPTO(monAnimRadarSub2)
 };
 
 //[80031310	0C	spinning cube]
-u32 monAnim0CSpinningCube[] = {
+monword monAnim0CSpinningCube[] = {
      MONUSEIMAGE(IMGCUBE1),
      MONRGBA(COLOR_MINSK, 30),
      MONHOLDTIME(5),
@@ -2743,7 +2760,7 @@ u32 monAnim0CSpinningCube[] = {
 };
 
 //[80031360	10	global map]
-u32 monAnim10GlobalMap[] = {
+monword monAnim10GlobalMap[] = {
      MONUSEIMAGE(IMGWORLDMAP),
      MONRGBA(COLOR_SEAGREEN, 30),
      MONHORZSCROLL(0xFFFFFC00, 1024),
@@ -2775,7 +2792,7 @@ u32 monAnim10GlobalMap[] = {
 };
 
 //[80031490	0D	3 screens: location, weapon armed, ]
-u32 monAnim0DLocWeapArmed[] = {
+monword monAnim0DLocWeapArmed[] = {
      MONRGBA(COLOR_BLACK, 1),
      MONRGBA(COLOR_SILVER, 400),
      MONUSEIMAGE(1),
@@ -2791,7 +2808,7 @@ u32 monAnim0DLocWeapArmed[] = {
 };
 
 //[800314F8	0E	red target]
-u32 monAnim0ERedTarget[] = {
+monword monAnim0ERedTarget[] = {
      MONZOOMSQUARE(0x400, 1),
      MONRGBA(COLOR_THUNDERBIRD, 1),
      MONUSEIMAGE(6),
@@ -2806,7 +2823,7 @@ u32 monAnim0ERedTarget[] = {
 };
 
 //[8003156C	11	Karl yelling]
-u32 monAnim11KarlYelling[] = {
+monword monAnim11KarlYelling[] = {
      MONRGBA(COLOR_DARKGREEN, 0),
      MONUSEIMAGE(IMGTALK1),
      MONHOLDTIME(5),
@@ -2822,7 +2839,7 @@ u32 monAnim11KarlYelling[] = {
 };
 
 //[800315CC	12	skateboard]
-u32 monAnim12Skateboard[] = {
+monword monAnim12Skateboard[] = {
      MONUSEIMAGE(IMGSKATEBOARD4),
      MONRGBA(COLOR_DARKGREEN, 0),
      MONHOLDTIME(3),
@@ -2891,7 +2908,7 @@ u32 monAnim12Skateboard[] = {
 };
 
 //[80031848	13	police guy]
-u32 monAnim13PoliceGuy[] = {
+monword monAnim13PoliceGuy[] = {
     MONRGBA(COLOR_DARKGREEN2, 0),
     MONUSEIMAGE(IMGFIST1),
     MONHOLDTIME(5),
@@ -2905,7 +2922,7 @@ u32 monAnim13PoliceGuy[] = {
 };
 
 //[80031898	14	'off']
-u32 monAnim14Off[] = {
+monword monAnim14Off[] = {
     MONUSEIMAGE(IMGSINE),
     MONRGBA(COLOR_BARELYGREEN, 1),
     MONHOLDTIME(5),
@@ -2913,7 +2930,7 @@ u32 monAnim14Off[] = {
 };
 
 //[800318B8	15	randomly select one of seven animations]
-u32 monAnim15RandomSeven[] = {
+monword monAnim15RandomSeven[] = {
     MONJUMPCHANCE(monAnim04WavePattern, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monAnim11KarlYelling, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monAnim08RedBarGraph, TEN_PERCENT_CHANCE),
@@ -2926,7 +2943,7 @@ u32 monAnim15RandomSeven[] = {
 };
 
 //[8003191C	16	randomly select random screens + random effects or boring]
-u32 monAnim16RandomFour[] = {
+monword monAnim16RandomFour[] = {
     MONJUMPCHANCE(monAnim03ThreeWavePattern, TWO_PERCENT_CHANCE),
     MONJUMPCHANCE(monAnim08RedBarGraph, TWO_PERCENT_CHANCE),
     MONJUMPCHANCE(monAnim05GreenTextUp, TWO_PERCENT_CHANCE),
@@ -2935,7 +2952,7 @@ u32 monAnim16RandomFour[] = {
 };
 
 //[80031950	17	Base Function for random screens + random effects]
-u32 monAnim17RandImageEffect[] = {
+monword monAnim17RandImageEffect[] = {
     MONJUMPCHANCE(monRandEffectChanceSHUTTLE1, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monRandEffectChanceSHUTTLE2, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monRandEffectChanceEARTHFULL1, TEN_PERCENT_CHANCE),
@@ -2951,77 +2968,77 @@ u32 monAnim17RandImageEffect[] = {
 };
 
 //[800319D4	18	random screens + random effects - set image]
-u32 monRandEffectChanceSHUTTLE1[] = {
+monword monRandEffectChanceSHUTTLE1[] = {
     MONUSEIMAGE(IMGSHUTTLE1),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[800319F0	19	random screens + random effects - set image]
-u32 monRandEffectChanceSHUTTLE2[] = {
+monword monRandEffectChanceSHUTTLE2[] = {
     MONUSEIMAGE(IMGSHUTTLE2),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031A0C	1A	random screens + random effects - set image]
-u32 monRandEffectChanceEARTHFULL1[] = {
+monword monRandEffectChanceEARTHFULL1[] = {
     MONUSEIMAGE(IMGEARTHFULL1),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031A28	1B	random screens + random effects - set image]
-u32 monRandEffectChanceEARTHFULL2[] = {
+monword monRandEffectChanceEARTHFULL2[] = {
     MONUSEIMAGE(IMGEARTHFULL2),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031A44	1C	random screens + random effects - set image]
-u32 monRandEffectChanceBLUESTARS[] = {
+monword monRandEffectChanceBLUESTARS[] = {
     MONUSEIMAGE(IMGBLUESTARS),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031A60	1D	random screens + random effects - set image]
-u32 monRandEffectChanceGALAXY1[] = {
+monword monRandEffectChanceGALAXY1[] = {
     MONUSEIMAGE(IMGGALAXY1),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031A7C	1E	random screens + random effects - set image]
-u32 monRandEffectChanceGALAXY2[] = {
+monword monRandEffectChanceGALAXY2[] = {
     MONUSEIMAGE(IMGGALAXY2),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031A98	1F	random screens + random effects - set image]
-u32 monRandEffectChanceEARTHTEXT[] = {
+monword monRandEffectChanceEARTHTEXT[] = {
     MONUSEIMAGE(IMGEARTHTEXT),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031AB4	20	random screens + random effects - set image]
-u32 monRandEffectChanceTARGETEARTH[] = {
+monword monRandEffectChanceTARGETEARTH[] = {
     MONUSEIMAGE(IMGTARGETEARTH),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031AD0	21	random screens + random effects - set image]
-u32 monRandEffectChanceGALAXY3[] = {
+monword monRandEffectChanceGALAXY3[] = {
     MONUSEIMAGE(IMGGALAXY3),
     MONHOLDTIME(20),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, HUNDRED_PERCENT_CHANCE)
 };
 
 //[80031AEC	22	random screens + random effects - colourizer]
-u32 monRandChanceScrollOrZoomRandRGBN[] = {
+monword monRandChanceScrollOrZoomRandRGBN[] = {
     MONJUMPCHANCE(monRandChanceScrollOrZoomRed, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monRandChanceScrollOrZoomGreen, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monRandChanceScrollOrZoomBlue, TEN_PERCENT_CHANCE),
@@ -3030,22 +3047,22 @@ u32 monRandChanceScrollOrZoomRandRGBN[] = {
 };
 
 //[80031B24	23	random screens + random effects - colourizer]
-u32 monRandChanceScrollOrZoomRed[] = {
+monword monRandChanceScrollOrZoomRed[] = {
     MONRGBA(COLOR_PERSIANRED, 60),
     MONJUMPTO(monRandChanceScrollOrZoom)
 };
 
-u32 monRandChanceScrollOrZoomGreen[] = {
+monword monRandChanceScrollOrZoomGreen[] = {
     MONRGBA(COLOR_APPLE, 60),
     MONJUMPTO(monRandChanceScrollOrZoom)
 };
 
-u32 monRandChanceScrollOrZoomBlue[] = {
+monword monRandChanceScrollOrZoomBlue[] = {
     MONRGBA(COLOR_GOVERNORBAY, 60),
     MONJUMPTO(monRandChanceScrollOrZoom)
 };
 
-u32 monRandChanceScrollOrZoom[] = {
+monword monRandChanceScrollOrZoom[] = {
     MONHOLDTIME(50),
     MONJUMPCHANCE(monAnim27RandomEffectScrollRight, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monAnim28RandomEffectScrollUpFast, TEN_PERCENT_CHANCE),
@@ -3058,28 +3075,28 @@ u32 monRandChanceScrollOrZoom[] = {
 
 
 //[80031BB4	27	random screens + random effects - scroll right]
-u32 monAnim27RandomEffectScrollRight[] = {
+monword monAnim27RandomEffectScrollRight[] = {
     MONHORZSCROLL(0x800, 120),
     MONHOLDTIME(120),
     MONJUMPTO(monAnim2CRandEffectWaitRoute)
 };
 
 //[80031BD0	28	random screens + random effects - scroll up fast]
-u32 monAnim28RandomEffectScrollUpFast[] = {
+monword monAnim28RandomEffectScrollUpFast[] = {
     MONVERTSCROLL(0x2000, 50),
     MONHOLDTIME(200),
     MONJUMPTO(monAnim2CRandEffectWaitRoute)
 };
 
 //[80031BEC	29	random screens + random effects - scroll up]
-u32 monAnim29RandomEffectScrollUp[] = {
+monword monAnim29RandomEffectScrollUp[] = {
     MONVERTSCROLL(0x2000, 200),
     MONHOLDTIME(200),
     MONJUMPTO(monAnim2CRandEffectWaitRoute)
 };
 
 //[80031C08	2A	random screens + random effects - scroll and zoom]
-u32 monAnim2ARandEffectScrollZoom1[] = {
+monword monAnim2ARandEffectScrollZoom1[] = {
     MONHORZSCROLLNA(0x288, 300),
     MONVERTSCROLLNA(0x3AA, 300),
     MONZOOMSQUARE(0x80, 200),
@@ -3092,7 +3109,7 @@ u32 monAnim2ARandEffectScrollZoom1[] = {
 };
 
 //[80031C80	2B	random screens + random effects - scroll and zoom]
-u32 monAnim2ARandEffectScrollZoom2[] = {
+monword monAnim2ARandEffectScrollZoom2[] = {
     MONHORZSCROLLNA(0x320, 400),
     MONVERTSCROLLNA(0x190, 400),
     MONZOOMSQUARE(0x80, 200),
@@ -3109,7 +3126,7 @@ u32 monAnim2ARandEffectScrollZoom2[] = {
 };
 
 //[80031D30	2C	random screens + random effects - wait and route]
-u32 monAnim2CRandEffectWaitRoute[] = {
+monword monAnim2CRandEffectWaitRoute[] = {
     MONHOLDTIME(50),
     MONJUMPCHANCE(monRandChanceScrollOrZoomRandRGBN, TEN_PERCENT_CHANCE),
     MONJUMPCHANCE(monAnim2DRandEffectFlash, TWENTY_PERCENT_CHANCE),
@@ -3117,7 +3134,7 @@ u32 monAnim2CRandEffectWaitRoute[] = {
 };
 
 //[80031D58	2D	random screens + random effects - flash]
-u32 monAnim2DRandEffectFlash[] = {
+monword monAnim2DRandEffectFlash[] = {
     MONHOLDTIME(50),
     MONRGBA(COLOR_WHITE, 10),
     MONRGBA(COLOR_BLACK, 5),
@@ -3129,7 +3146,7 @@ u32 monAnim2DRandEffectFlash[] = {
 };
 
 //[80031DA8	2E	red brightening screen]
-u32 monAnim2ERedBrightening[] = {
+monword monAnim2ERedBrightening[] = {
      MONUSEIMAGE(IMGKEYBOARDKEY),
      MONZOOMSQUARE(0x200, 0),
      MONRGBA(COLOR_ALIZARINCRIMSON, 60),
@@ -3140,7 +3157,7 @@ u32 monAnim2ERedBrightening[] = {
 };
 
 //[80031DF4	2F	green brightening screen]
-u32 monAnim2FGreenBrightening[] = {
+monword monAnim2FGreenBrightening[] = {
      MONUSEIMAGE(IMGKEYBOARDKEY),
      MONZOOMSQUARE(0x200, 0),
      MONRGBA(COLOR_APPLE, 60),
@@ -3151,7 +3168,7 @@ u32 monAnim2FGreenBrightening[] = {
 };
 
 //[80031E40	30	grey solid]
-u32 monAnim30GreySolid[] = {
+monword monAnim30GreySolid[] = {
      MONUSEIMAGE(IMGKEYBOARDKEY),
      MONZOOMSQUARE(0x200, 0),
      MONRGBA(COLOR_MINESHAFT2, 10),
@@ -3160,7 +3177,7 @@ u32 monAnim30GreySolid[] = {
 };
 
 //[80031E78	31	red solid]
-u32 monAnim31RedSolid[] = {
+monword monAnim31RedSolid[] = {
      MONUSEIMAGE(IMGKEYBOARDKEY),
      MONZOOMSQUARE(0x200, 0),
      MONRGBA(COLOR_ALIZARINCRIMSON, 10),
@@ -3169,7 +3186,7 @@ u32 monAnim31RedSolid[] = {
 };
 
 //[80031EB0	32	green solid]
-u32 monAnim32GreenSolid[] = {
+monword monAnim32GreenSolid[] = {
      MONUSEIMAGE(IMGKEYBOARDKEY),
      MONZOOMSQUARE(0x200, 0),
      MONRGBA(COLOR_APPLE, 10),
@@ -3178,14 +3195,14 @@ u32 monAnim32GreenSolid[] = {
 };
 
 //[80031EE8	33	black solid]
-u32 monAnim33BlackSolid[] = {
+monword monAnim33BlackSolid[] = {
      MONUSEIMAGE(0),
      MONRGBA(COLOR_BLACK, 0),
      MONSTOPANIM()
 };
 
 //[80031F00	34	???	Not Included in Normal List - linked @ 0x9544]
-u32 monAnim34[] = {
+monword monAnim34[] = {
      MONZOOMSQUARE(0x400, 0),
      MONHOLDTIME(1),
      MONZOOMSQUARE(0x1000, 20),
@@ -3194,7 +3211,7 @@ u32 monAnim34[] = {
 };
 
 //[80031F44	35	Taser	Not Included in Normal List!]
-u32 monAnim35Taser[] = {
+monword monAnim35Taser[] = {
      MONUSEIMAGE(IMGBOND),
      MONHORZSCROLL(0x400, 20), MONHOLDTIME(20),
      MONVERTSCROLL(0x400, 20), MONRGBA(COLOR_BLACK, 20), MONHOLDTIME(20),
@@ -3972,7 +3989,7 @@ s32 sub_GAME_7F0448A8(struct PropRecord *argProp)
             if ((prop->type == PROP_TYPE_VIEWER) || (prop->type == PROP_TYPE_CHR))
             {
                 temp_v0_2 = prop->obj;
-                if ((temp_v0_2 == NULL) || !((s32) temp_v0_2->model & 0x400))
+                if ((temp_v0_2 == NULL) || !((uintptr_t) temp_v0_2->model & 0x400))
                 {
                     chrpropGetCollisionBounds(prop, &radius, &height, &arbitratyNumber);
 
@@ -4067,12 +4084,12 @@ s32 sub_GAME_7F044B38(ObjectRecord *obj)
 
     model = obj->model;
     prop = obj->prop;
-    modelpoint0 = (coord3d *) model->obj->Switches[1]->Data;
-    modelpoint1 = (coord3d *) model->obj->Switches[2]->Data;
-    modelpoint2 = (coord3d *) model->obj->Switches[3]->Data;
-    modelpoint3 = (coord3d *) model->obj->Switches[4]->Data;
+    modelpoint0 = (coord3d *) PGET(PGET(model->obj->Switches[1])->Data);
+    modelpoint1 = (coord3d *) PGET(PGET(model->obj->Switches[2])->Data);
+    modelpoint2 = (coord3d *) PGET(PGET(model->obj->Switches[3])->Data);
+    modelpoint3 = (coord3d *) PGET(PGET(model->obj->Switches[4])->Data);
     result = 1;
-    bbox = (ModelRoData_BoundingBoxRecord *) model->obj->Switches[6]->Data;
+    bbox = (ModelRoData_BoundingBoxRecord *) PGET(PGET(model->obj->Switches[6])->Data);
 
     matrix_4x4_set_rotation_around_y(((VehichleRecord *)obj)->roty, &mtx);
     matrix_scalar_multiply(model->scale, (f32 *) (&mtx));
@@ -4366,7 +4383,7 @@ s32 objTick(struct PropRecord *prop)
 	struct PropRecord *playerProp;
 	f32 xdiff;
 	f32 ydiff;
-	struct ModelNode **temp_v1_7;
+	ModelNodeWord *temp_v1_7;
 	f32 var_f0_3;
 	struct Projectile *temp_v0_40;
 	waypoint *currentWaypoint;
@@ -5732,7 +5749,7 @@ s32 objTick(struct PropRecord *prop)
 					}
 				}
 
-				temp_s0_5 = (f32 *) model->obj->Switches[3]->Data;
+				temp_s0_5 = (f32 *) PGET(PGET(model->obj->Switches[3])->Data);
 				if (g_GlobalTimerDelta > 0.0f)
 				{
 					truckAngularVelocity = (poTruck->roty - previousYaw) / g_GlobalTimerDelta;
@@ -5764,7 +5781,7 @@ s32 objTick(struct PropRecord *prop)
 					var_s2_5 = sub_GAME_7F0448A8(prop);
 					if (var_s2_5 != 0)
 					{
-						temp_v0_25 = (f32 *) model->obj->Switches[10]->Data;
+						temp_v0_25 = (f32 *) PGET(PGET(model->obj->Switches[10])->Data);
 						vec424.f[0] = temp_v0_25[1] * poTruck->mtx.m[0][0];
 						vec424.f[2] = temp_v0_25[1] * poTruck->mtx.m[0][2];
 						vec418.f[0] = temp_v0_25[2] * poTruck->mtx.m[0][0];
@@ -5990,7 +6007,7 @@ s32 objTick(struct PropRecord *prop)
 			}
 
 			temp_v0_29 = model->obj;
-			if ((temp_v0_29->Skeleton == (&skeleton_door)) && (modelGetNodeRwData(model, temp_v0_29->Switches[1])->Switch.visible == 0))
+			if ((temp_v0_29->Skeleton == (&skeleton_door)) && (modelGetNodeRwData(model, PGET(temp_v0_29->Switches[1]))->Switch.visible == 0))
 			{
 				var_s2_6 = 0;
 			}
@@ -6040,12 +6057,12 @@ s32 objTick(struct PropRecord *prop)
 			{
 				sp394 = M_TAU_F - ((sp39C->openPosition * M_TAU_F) / 360.0f);
 				render_pad388 = &mtxs[1];
-				temp_s0_10 = (Mtxf *) model->obj->Switches[1]->Data;
+				temp_s0_10 = (Mtxf *) PGET(PGET(model->obj->Switches[1])->Data);
 				matrix_4x4_set_rotation_around_x(sp394, render_pad388);
 				matrix_4x4_set_position((struct coord3d *) temp_s0_10, render_pad388);
 				matrix_4x4_multiply_in_place(mtxs, render_pad388);
 				render_pad388 = &mtxs[2];
-				temp_s0_10 = (Mtxf *) model->obj->Switches[2]->Data;
+				temp_s0_10 = (Mtxf *) PGET(PGET(model->obj->Switches[2])->Data);
 				matrix_4x4_set_rotation_around_x(M_TAU_F - sp394, render_pad388);
 				matrix_4x4_set_position((struct coord3d *) temp_s0_10, render_pad388);
 				matrix_4x4_multiply_in_place(mtxs, render_pad388);
@@ -6079,11 +6096,11 @@ s32 objTick(struct PropRecord *prop)
 				{
 					temp_v0_32 = sp38C << 1;
 					var_v1_5 = temp_v0_32 + 2;
-					sp390 = (Mtxf *) model->obj->Switches[temp_v0_32 + 1]->Data;
+					sp390 = (Mtxf *) PGET(PGET(model->obj->Switches[temp_v0_32 + 1])->Data);
 					matrix_4x4_set_rotation_around_z(sp380, (Mtxf *) ((((u8 *) mtxs) + (temp_v0_32 * (sizeof(Mtxf)))) + (sizeof(Mtxf))));
 					matrix_4x4_set_position((struct coord3d *) sp390, (Mtxf *) ((((u8 *) mtxs) + (temp_v0_32 * (sizeof(Mtxf)))) + (sizeof(Mtxf))));
 					matrix_4x4_multiply_in_place(mtxs, (Mtxf *) ((((u8 *) mtxs) + (temp_v0_32 * (sizeof(Mtxf)))) + (sizeof(Mtxf))));
-					sp390 = (Mtxf *) model->obj->Switches[var_v1_5]->Data;
+					sp390 = (Mtxf *) PGET(PGET(model->obj->Switches[var_v1_5])->Data);
 					matrix_4x4_set_rotation_around_z(sp384, (Mtxf *) (((u8 *) mtxs) + (var_v1_5 << 6)));
 					matrix_4x4_set_position((struct coord3d *) sp390, &mtxs[var_v1_5]);
 					matrix_4x4_multiply_in_place((Mtxf *) ((((u8 *) mtxs) + (temp_v0_32 * (sizeof(Mtxf)))) + (sizeof(Mtxf))), &mtxs[var_v1_5]);
@@ -6103,7 +6120,7 @@ s32 objTick(struct PropRecord *prop)
 			{
 				sp370 = (struct CCTVRecord *) prop->obj;
 				angleDelta_7 = sp370->unkC8;
-				temp_s0_13 = (struct coord3d *) model->obj->Switches[0]->Data;
+				temp_s0_13 = (struct coord3d *) PGET(PGET(model->obj->Switches[0])->Data);
 
 				if (angleDelta_7 < 0.0f)
 				{
@@ -6139,7 +6156,7 @@ s32 objTick(struct PropRecord *prop)
 					sp304 -= M_TAU_F;
 				}
 
-				temp_s0_13 = model->obj->Switches[1]->Data;
+				temp_s0_13 = PGET(PGET(model->obj->Switches[1])->Data);
 				sp308.f[0] = temp_s0_13->f[0];
 				sp308.f[1] = temp_s0_13->f[1];
 				sp308.f[2] = temp_s0_13->f[2];
@@ -6149,32 +6166,32 @@ s32 objTick(struct PropRecord *prop)
 				matrix_4x4_set_position(&sp308, &mtxs[1]);
 				matrix_scalar_multiply(sp318->model->scale, mtxs[1].m[0]);
 				matrix_4x4_multiply_homogeneous_in_place(camGetWorldToScreenMtxf(), &mtxs[1]);
-				temp_s0_13 = (struct coord3d *) model->obj->Switches[2]->Data;
+				temp_s0_13 = (struct coord3d *) PGET(PGET(model->obj->Switches[2])->Data);
 				matrix_4x4_set_rotation_around_z(sp300, &mtxs[2]);
 				matrix_4x4_set_position(temp_s0_13, &mtxs[2]);
 				matrix_4x4_multiply_homogeneous_in_place(&mtxs[1], &mtxs[2]);
 
-				if (model->obj->Switches[3] != NULL)
+				if (PGET(model->obj->Switches[3]) != NULL)
 				{
-					sp2FC = modelFindNodeMtx(model, model->obj->Switches[3], 0);
-					temp_s0_13 = (struct coord3d *) model->obj->Switches[3]->Data;
+					sp2FC = modelFindNodeMtx(model, PGET(model->obj->Switches[3]), 0);
+					temp_s0_13 = (struct coord3d *) PGET(PGET(model->obj->Switches[3])->Data);
 					matrix_4x4_set_rotation_around_x(sp318->unkB4, sp2FC);
 					matrix_4x4_set_position(temp_s0_13, sp2FC);
 					matrix_4x4_multiply_homogeneous_in_place(&mtxs[2], sp2FC);
 				}
 
-				if (model->obj->Switches[4] != NULL)
+				if (PGET(model->obj->Switches[4]) != NULL)
 				{
-					sp2FC = modelFindNodeMtx(model, model->obj->Switches[4], 0);
-					temp_s0_13 = (struct coord3d *) model->obj->Switches[4]->Data;
+					sp2FC = modelFindNodeMtx(model, PGET(model->obj->Switches[4]), 0);
+					temp_s0_13 = (struct coord3d *) PGET(PGET(model->obj->Switches[4])->Data);
 					matrix_4x4_set_identity_and_position(temp_s0_13, sp2FC);
 					matrix_4x4_multiply_homogeneous_in_place(&mtxs[2], sp2FC);
 				}
 
-				if (model->obj->Switches[6] != NULL)
+				if (PGET(model->obj->Switches[6]) != NULL)
 				{
-					sp2FC = modelFindNodeMtx(model, model->obj->Switches[6], 0);
-					temp_s0_13 = (struct coord3d *) model->obj->Switches[6]->Data;
+					sp2FC = modelFindNodeMtx(model, PGET(model->obj->Switches[6]), 0);
+					temp_s0_13 = (struct coord3d *) PGET(PGET(model->obj->Switches[6])->Data);
 					matrix_4x4_set_rotation_around_x(sp318->unkB4, sp2FC);
 					matrix_4x4_set_position(temp_s0_13, sp2FC);
 					matrix_4x4_multiply_homogeneous_in_place(&mtxs[2], sp2FC);
@@ -6198,13 +6215,13 @@ s32 objTick(struct PropRecord *prop)
 			}
 			else if (obj->type == PROPDEF_RACK)
 			{
-				matrix_4x4_set_identity_and_position(model->obj->Switches[0]->Data, &mtxs[1]);
+				matrix_4x4_set_identity_and_position(PGET(PGET(model->obj->Switches[0])->Data), &mtxs[1]);
 				matrix_4x4_multiply_homogeneous_in_place(&mtxs[0], &mtxs[1]);
-				matrix_4x4_set_identity_and_position(model->obj->Switches[1]->Data, &mtxs[2]);
+				matrix_4x4_set_identity_and_position(PGET(PGET(model->obj->Switches[1])->Data), &mtxs[2]);
 				matrix_4x4_multiply_homogeneous_in_place(&mtxs[0], &mtxs[2]);
-				matrix_4x4_set_identity_and_position(model->obj->Switches[2]->Data, &mtxs[3]);
+				matrix_4x4_set_identity_and_position(PGET(PGET(model->obj->Switches[2])->Data), &mtxs[3]);
 				matrix_4x4_multiply_homogeneous_in_place(&mtxs[0], &mtxs[3]);
-				matrix_4x4_set_identity_and_position(model->obj->Switches[3]->Data, &mtxs[4]);
+				matrix_4x4_set_identity_and_position(PGET(PGET(model->obj->Switches[3])->Data), &mtxs[4]);
 				matrix_4x4_multiply_homogeneous_in_place(&mtxs[0], &mtxs[4]);
 			}
 			else if (obj->type == PROPDEF_VEHICHLE)
@@ -6213,11 +6230,11 @@ s32 objTick(struct PropRecord *prop)
 
 				var_f0_3 = 0.0f;
 				temp_v1_7 = model->obj->Switches;
-				sp260 = temp_v1_7[1]->Data;
-				sp25C = temp_v1_7[2]->Data;
-				sp258 = temp_v1_7[3]->Data;
-				sp254 = temp_v1_7[4]->Data;
-				temp_v0_25 = temp_v1_7[6]->Data;
+				sp260 = PGET(PGET(temp_v1_7[1])->Data);
+				sp25C = PGET(PGET(temp_v1_7[2])->Data);
+				sp258 = PGET(PGET(temp_v1_7[3])->Data);
+				sp254 = PGET(PGET(temp_v1_7[4])->Data);
+				temp_v0_25 = PGET(PGET(temp_v1_7[6])->Data);
 				sp250 = (temp_v0_25[4] - temp_v0_25[3]) * model->scale;
 
 				if (isSimOwner)
@@ -6292,7 +6309,7 @@ s32 objTick(struct PropRecord *prop)
 			{
 				struct AircraftRecord *aircraft_render = (struct AircraftRecord *) obj;
 
-				sp1FC = model->obj->Switches[2]->Data;
+				sp1FC = PGET(PGET(model->obj->Switches[2])->Data);
 
 				if ((g_ClockTimer > 0) && (isSimOwner))
 				{
@@ -6334,20 +6351,20 @@ s32 objTick(struct PropRecord *prop)
 				matrix_4x4_set_position(sp1FC, &mtxs[2]);
 				matrix_4x4_multiply_homogeneous_in_place(&mtxs[1], &mtxs[2]);
 
-				if (model->obj->Switches[3] != NULL)
+				if (PGET(model->obj->Switches[3]) != NULL)
 				{
-					temp_s0_14 = (struct coord3d *) model->obj->Switches[3]->Data;
-					temp_s0_21 = modelFindNodeMtx(model, model->obj->Switches[3], 0);
+					temp_s0_14 = (struct coord3d *) PGET(PGET(model->obj->Switches[3])->Data);
+					temp_s0_21 = modelFindNodeMtx(model, PGET(model->obj->Switches[3]), 0);
 					matrix_4x4_set_rotation_around_x(aircraft_render->rotoryrot, &sp200);
 					matrix_4x4_copy(&sp200, temp_s0_21);
 					matrix_4x4_set_position(temp_s0_14, temp_s0_21);
 					matrix_4x4_multiply_homogeneous_in_place(&mtxs[1], temp_s0_21);
 				}
 
-				if (model->obj->Switches[4] != NULL)
+				if (PGET(model->obj->Switches[4]) != NULL)
 				{
-					temp_s0_14 = (struct coord3d *) model->obj->Switches[4]->Data;
-					temp_s0_21 = modelFindNodeMtx(model, model->obj->Switches[4], 0);
+					temp_s0_14 = (struct coord3d *) PGET(PGET(model->obj->Switches[4])->Data);
+					temp_s0_21 = modelFindNodeMtx(model, PGET(model->obj->Switches[4]), 0);
 					matrix_4x4_set_identity_and_position(temp_s0_14, temp_s0_21);
 					matrix_4x4_multiply_homogeneous_in_place(&mtxs[1], temp_s0_21);
 				}
@@ -6357,11 +6374,11 @@ s32 objTick(struct PropRecord *prop)
 				struct TankRecord *tank_render = (struct TankRecord *) obj;
 
 				temp_v1_7 = model->obj->Switches;
-				sp168 = temp_v1_7[1]->Data;
-				sp164 = temp_v1_7[3]->Data;
-				sp160 = temp_v1_7[4]->Data;
-				sp15C = temp_v1_7[2]->Data;
-				sp158 = temp_v1_7[6]->Data;
+				sp168 = PGET(PGET(temp_v1_7[1])->Data);
+				sp164 = PGET(PGET(temp_v1_7[3])->Data);
+				sp160 = PGET(PGET(temp_v1_7[4])->Data);
+				sp15C = PGET(PGET(temp_v1_7[2])->Data);
+				sp158 = PGET(PGET(temp_v1_7[6])->Data);
 				sp154 = -tank_render->turret_vertical_angle;
 
 				if (sp154 < 0.0f)
@@ -6390,14 +6407,14 @@ s32 objTick(struct PropRecord *prop)
 				matrix_4x4_multiply_homogeneous(currentPlayerGetViewToWorldMtxf(), &mtxs[1], &sp16C);
 				sub_GAME_7F03F540(sp158, &sp16C, &tank_render->rect, (struct collision_data *) (&tank_render->collision));
 
-				if (model->obj->Switches[7] != NULL)
+				if (PGET(model->obj->Switches[7]) != NULL)
 				{
-					modelGetNodeRwData(model, model->obj->Switches[7])->Gunfire.visible = (s16) tank_render->is_firing_tank;
+					modelGetNodeRwData(model, PGET(model->obj->Switches[7]))->Gunfire.visible = (s16) tank_render->is_firing_tank;
 				}
 
-				if (model->obj->Switches[8] != NULL)
+				if (PGET(model->obj->Switches[8]) != NULL)
 				{
-					modelGetNodeRwData(model, model->obj->Switches[8])->Switch.visible = 0;
+					modelGetNodeRwData(model, PGET(model->obj->Switches[8]))->Switch.visible = 0;
 				}
 			}
 		}
@@ -6515,7 +6532,7 @@ s32 objTick(struct PropRecord *prop)
 				autogun->unkAC = autogun->unkAC + 1;
 				sp13C = (autogun->unkAC & 1) == 0;
 
-				if (model->obj->Switches[5] != 0)
+				if (PGET(model->obj->Switches[5]) != 0)
 				{
 					sp138 = (autogun->unkAC & 1) == 1;
 				}
@@ -6571,15 +6588,15 @@ s32 objTick(struct PropRecord *prop)
 					sp100 = getCurrentPlayerProp();
 					var_a0_6 = 5;
 
-					if ((model->obj->Switches[7] != 0) && (!(autogun->unkAC & 7)))
+					if ((PGET(model->obj->Switches[7]) != 0) && (!(autogun->unkAC & 7)))
 					{
 						var_a0_6 = 7;
 					}
 
-					if ((prop->flags & PROPFLAG_ONSCREEN) && (model->obj->Switches[var_a0_6] != NULL))
+					if ((prop->flags & PROPFLAG_ONSCREEN) && (PGET(model->obj->Switches[var_a0_6]) != NULL))
 					{
-						temp_s2_7 = modelFindNodeMtx(model, model->obj->Switches[var_a0_6], 0);
-						temp_v1_11 = model->obj->Switches[var_a0_6]->Data;
+						temp_s2_7 = modelFindNodeMtx(model, PGET(model->obj->Switches[var_a0_6]), 0);
+						temp_v1_11 = PGET(PGET(model->obj->Switches[var_a0_6])->Data);
 						sp12C.f[0] = temp_v1_11->f[0];
 						sp12C.f[1] = temp_v1_11->f[1];
 						sp12C.f[2] = temp_v1_11->f[2];
@@ -6732,14 +6749,14 @@ s32 objTick(struct PropRecord *prop)
 			if (agFire || autogun->is_active == 0 || (obj->flags & PROPFLAG_IS_DRONE_GUN))
 #endif
 			{
-			if (model->obj->Switches[5] != NULL)
+			if (PGET(model->obj->Switches[5]) != NULL)
 			{
-				modelGetNodeRwData(model, model->obj->Switches[5])->Gunfire.visible = (s16) sp13C;
+				modelGetNodeRwData(model, PGET(model->obj->Switches[5]))->Gunfire.visible = (s16) sp13C;
 			}
 
-			if (model->obj->Switches[7] != NULL)
+			if (PGET(model->obj->Switches[7]) != NULL)
 			{
-				modelGetNodeRwData(model, model->obj->Switches[7])->Gunfire.visible = (s16) sp138;
+				modelGetNodeRwData(model, PGET(model->obj->Switches[7]))->Gunfire.visible = (s16) sp138;
 			}
 			}
 		}
@@ -7007,7 +7024,7 @@ Gfx *process_monitor_animation_microcode(Model *model, ModelNode *node, MonitorR
     {
         Vertex *vertices = dynAllocateVertices(4);
         Gfx *savedgdl = gdl++;
-        union ModelRoData *rodata = node->Data;
+        union ModelRoData *rodata = PGET(node->Data);
         union ModelRwData *rwdata = modelGetNodeRwData(model, node);
         sImageTableEntry *tconfig;
         bool yielding = FALSE;
@@ -7066,7 +7083,7 @@ Gfx *process_monitor_animation_microcode(Model *model, ModelNode *node, MonitorR
                 screen->offset += 3;
                 break;
             case TVCMD_SETTEXTURE:
-                save_img_index_to_obj_ani_slot(screen, m->time);
+                save_img_index_to_obj_ani_slot(screen, (void *) (intptr_t) m->time);
                 screen->offset += 2;
                 break;
             case TVCMD_PAUSE:
@@ -7094,12 +7111,12 @@ Gfx *process_monitor_animation_microcode(Model *model, ModelNode *node, MonitorR
                 }
                 break;
             case TVCMD_SETCMDLIST:
-                save_ptr_monitor_ani_code_to_obj_ani_slot(screen, (u32 *) m->time);
+                save_ptr_monitor_ani_code_to_obj_ani_slot(screen, (monword *) m->time);
                 break;
             case TVCMD_RANDSETCMDLIST:
                 if ((randomGetNext() >> 16) < m->arg2) 
                 {
-                    save_ptr_monitor_ani_code_to_obj_ani_slot(screen, (u32 *) m->time);
+                    save_ptr_monitor_ani_code_to_obj_ani_slot(screen, (monword *) m->time);
                 } 
                 else 
                 {
@@ -7246,17 +7263,17 @@ Gfx *process_monitor_animation_microcode(Model *model, ModelNode *node, MonitorR
         }
 
         // Set up everything for rendering
-        rwdata->DisplayListCollisions.gdl = gdl;
-        rwdata->DisplayListCollisions.Vertices = vertices;
+        PSET(rwdata->DisplayListCollisions.gdl, gdl);
+        PSET(rwdata->DisplayListCollisions.Vertices, vertices);
 
-        vertices[0] = rodata->DisplayListCollisions.Vertices[0];
-        vertices[1] = rodata->DisplayListCollisions.Vertices[1];
-        vertices[2] = rodata->DisplayListCollisions.Vertices[2];
-        vertices[3] = rodata->DisplayListCollisions.Vertices[3];
+        vertices[0] = PGET(rodata->DisplayListCollisions.Vertices)[0];
+        vertices[1] = PGET(rodata->DisplayListCollisions.Vertices)[1];
+        vertices[2] = PGET(rodata->DisplayListCollisions.Vertices)[2];
+        vertices[3] = PGET(rodata->DisplayListCollisions.Vertices)[3];
 
-        if ((u32)screen->tconfig < 100) 
+        if ((uintptr_t)screen->tconfig < 100) 
         {
-            tconfig = &monitorimages[(s32)screen->tconfig];
+            tconfig = &monitorimages[(s32)(uintptr_t)screen->tconfig];
         } 
         else 
         {
@@ -7400,7 +7417,7 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
         Gfx *g;
         Gfx *g2;
         bool destroyed;
-        union ModelRwData **rwdataSlot;
+        ModelRwWord *rwdataSlot;
 
         obj = prop->obj;
         model = obj->model;
@@ -7431,7 +7448,7 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
                     mN = 1;
                 }
 
-                gdl = process_monitor_animation_microcode(model, model->obj->Switches[0], &((MonitorObjRecord *)prop->obj)->Monitor, gdl, mN, 1);
+                gdl = process_monitor_animation_microcode(model, PGET(model->obj->Switches[0]), &((MonitorObjRecord *)prop->obj)->Monitor, gdl, mN, 1);
             }
         }
         else if (obj->type == PROPDEF_MULTI_MONITOR)
@@ -7453,7 +7470,7 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
                     mN = 1;
                 }
 
-                gdl = process_monitor_animation_microcode(model, model->obj->Switches[0], &((MultiMonitorObjRecord *)o)->Monitor[0], gdl, mN, 1);
+                gdl = process_monitor_animation_microcode(model, PGET(model->obj->Switches[0]), &((MultiMonitorObjRecord *)o)->Monitor[0], gdl, mN, 1);
 
                 if (obj->flags2 & PROPFLAG2_00010000)
                 {
@@ -7468,11 +7485,11 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
                     mN = 1;
                 }
 
-                gdl = process_monitor_animation_microcode(model, model->obj->Switches[1], &((MultiMonitorObjRecord *)o)->Monitor[1], gdl, mN, 1);
+                gdl = process_monitor_animation_microcode(model, PGET(model->obj->Switches[1]), &((MultiMonitorObjRecord *)o)->Monitor[1], gdl, mN, 1);
 
-                gdl = process_monitor_animation_microcode(model, model->obj->Switches[2], &((MultiMonitorObjRecord *)o)->Monitor[2], gdl, mN, 1);
+                gdl = process_monitor_animation_microcode(model, PGET(model->obj->Switches[2]), &((MultiMonitorObjRecord *)o)->Monitor[2], gdl, mN, 1);
 
-                gdl = process_monitor_animation_microcode(model, model->obj->Switches[3], &((MultiMonitorObjRecord *)o)->Monitor[3], gdl, mN, 1);
+                gdl = process_monitor_animation_microcode(model, PGET(model->obj->Switches[3]), &((MultiMonitorObjRecord *)o)->Monitor[3], gdl, mN, 1);
             }
         }
 
@@ -7505,13 +7522,13 @@ void sub_GAME_7F04AC20(PropRecord *prop, ModelRenderData *mrData, s32 arg2)
             {
                 union ModelRoData *nodedata;
 
-                nodedata = node->Data;
+                nodedata = PGET(node->Data);
 
                 if (nodedata != NULL)
                 {
                     rwdataSlot = &obj->model->datas[nodedata->DisplayListCollisions.RwDataIndex];
 
-                    if (nodedata->DisplayListCollisions.Vertices != (Vertex *)*rwdataSlot)
+                    if (PGET(nodedata->DisplayListCollisions.Vertices) != (Vertex *)PGET(*rwdataSlot))
                     {
                         recolor = 1;
                     }
@@ -7796,21 +7813,21 @@ ModelNode* sub_GAME_7F04B478(ObjectRecord* obj)
                 break;
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -7826,7 +7843,7 @@ bool sub_GAME_7F04B590(ModelFileHeader* arg0, ModelNode* arg1)
 
     if ((onescreen == arg0->Skeleton))
     {
-        if (arg1 == arg0->Switches[0])
+        if (arg1 == PGET(arg0->Switches[0]))
         {
             return FALSE;
         }
@@ -7834,7 +7851,7 @@ bool sub_GAME_7F04B590(ModelFileHeader* arg0, ModelNode* arg1)
 
     if (fourscreen == arg0->Skeleton)
     {
-        if ((arg1 == arg0->Switches[0]) || (arg1 == arg0->Switches[1]) || (arg1 == arg0->Switches[2]) || (arg1 == arg0->Switches[3]))
+        if ((arg1 == PGET(arg0->Switches[0])) || (arg1 == PGET(arg0->Switches[1])) || (arg1 == PGET(arg0->Switches[2])) || (arg1 == PGET(arg0->Switches[3])))
         {
             return FALSE;
         }
@@ -7857,7 +7874,7 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
     ModelNode *node;
     ModelRoData_DisplayList_CollisionRecord *rodata;
     Model *model;
-    Vertex **vtxslot;
+    PTR32(Vertex) *vtxslot; /* the RwData word holding the live vertices */
     Vertex *newverts;
     s32 adjust_height;
     s32 ymid;
@@ -7886,7 +7903,7 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
         return;
     }
     
-    rodata = (ModelRoData_DisplayList_CollisionRecord *) nodeCopy->Data;
+    rodata = (ModelRoData_DisplayList_CollisionRecord *) PGET(nodeCopy->Data);
     
     if (rodata == NULL)
     {
@@ -7898,7 +7915,7 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
         return;
     }
     
-    vtxslot = (Vertex **) (&model->datas[rodata->RwDataIndex]);
+    vtxslot = (void *) (&model->datas[rodata->RwDataIndex]);
     
 #ifdef VERSION_EU
     if (obj->obj < PROP_WINDOW)
@@ -7964,31 +7981,31 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
     
     if (newverts != NULL)
     {
-        if ((*vtxslot) != rodata->Vertices)
+        if (PGET(*vtxslot) != PGET(rodata->Vertices))
         {
             for (i = 0, offset = 0; i < rodata->numVertices; i++, offset += sizeof(Vertex))
             {
-                *((Word4 *) (((u8 *) newverts) + offset)) = *((Word4 *) (((u8 *) (*vtxslot)) + offset));
+                *((Word4 *) (((u8 *) newverts) + offset)) = *((Word4 *) (((u8 *) PGET(*vtxslot)) + offset));
             }
 
-            sub_GAME_7F09C044(*vtxslot);
+            sub_GAME_7F09C044(PGET(*vtxslot));
         }
         else
         {
             for (i = 0, offset = 0; i < ((0, rodata))->numVertices; i++, offset += sizeof(Vertex))
             {
-                *((Word4 *) (((u8 *) newverts) + offset)) = *((Word4 *) (((u8 *) rodata->Vertices) + offset));
+                *((Word4 *) (((u8 *) newverts) + offset)) = *((Word4 *) (((u8 *) PGET(rodata->Vertices)) + offset));
             }
         }
         
-        *vtxslot = newverts;
+        PSET(*vtxslot, newverts);
     }
     else
     {
-        if ((*vtxslot) != rodata->Vertices)
+        if (PGET(*vtxslot) != PGET(rodata->Vertices))
         {
-            sub_GAME_7F09C044(*vtxslot);
-            *vtxslot = rodata->Vertices;
+            sub_GAME_7F09C044(PGET(*vtxslot));
+            PSET(*vtxslot, PGET(rodata->Vertices));
             obj->runtime_bitflags |= 4;
         }
         
@@ -8027,14 +8044,14 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
         
         do
         {
-            if (((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y < ymin)
+            if (((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y < ymin)
             {
-                ymin = ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y;
+                ymin = ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y;
             }
             
-            if (ymax < ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y)
+            if (ymax < ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y)
             {
-                ymax = ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y;
+                ymax = ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y;
             }
             
             i++;
@@ -8087,14 +8104,14 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
     
     do
     {
-        chrObjRandomSetSeed(((((Vertex *) (((u8 *) rodata->Vertices) + offset))->coord.z + ((Vertex *) (((u8 *) rodata->Vertices) + offset))->coord.x) + ((Vertex *) (((u8 *) rodata->Vertices) + offset))->coord.y) + deformseed);
+        chrObjRandomSetSeed(((((Vertex *) (((u8 *) PGET(rodata->Vertices)) + offset))->coord.z + ((Vertex *) (((u8 *) PGET(rodata->Vertices)) + offset))->coord.x) + ((Vertex *) (((u8 *) PGET(rodata->Vertices)) + offset))->coord.y) + deformseed);
         chance = 0;
         
         if (allow_blackening)
         {
             if (obj->mtx.m[1][1] >= 0.0f)
             {
-                if (((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y >= ymid)
+                if (((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y >= ymid)
                 {
                     if (adjust_height)
                     {
@@ -8114,7 +8131,7 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
                     chance = 90;
                 }
             }
-            else if ((ymid ^ 0) >= ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y)
+            else if ((ymid ^ 0) >= ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y)
             {
                 if (adjust_height)
                 {
@@ -8143,10 +8160,10 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
         {
             if (((s32) (chrObjRandomGetNext() % 100)) < chance)
             {
-                ((Vertex *) (((u8 *) (*vtxslot)) + offset))->r = 0;
-                ((Vertex *) (((u8 *) (*vtxslot)) + offset))->g = 0;
-                ((Vertex *) (((u8 *) (*vtxslot)) + offset))->b = 0;
-                ((Vertex *) (((u8 *) (*vtxslot)) + offset))->a = 255;
+                ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->r = 0;
+                ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->g = 0;
+                ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->b = 0;
+                ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->a = 255;
             }
             else
 #ifdef VERSION_EU
@@ -8155,17 +8172,17 @@ void objDeform(ObjectRecord *obj, E_EXPLOSIONTYPE explosiontype)
             if ((explosiontype * 2) == EXPLOSION_MEDIUM)
 #endif
             {
-                ((Vertex *) (((u8 *) (*vtxslot)) + offset))->a = 0;
+                ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->a = 0;
             }
             
-            ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y = (((f32) (((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y - ymin)) * yscale) + ((f32) ymin);
-            ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.x += (chrObjRandomGetNext() % 80) - 40;
-            ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y += (chrObjRandomGetNext() % 80) - 40;
-            ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.z += (chrObjRandomGetNext() % 80) - 40;
+            ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y = (((f32) (((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y - ymin)) * yscale) + ((f32) ymin);
+            ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.x += (chrObjRandomGetNext() % 80) - 40;
+            ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y += (chrObjRandomGetNext() % 80) - 40;
+            ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.z += (chrObjRandomGetNext() % 80) - 40;
                 
-            if (((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y < ymin)
+            if (((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y < ymin)
             {
-                ((Vertex *) (((u8 *) (*vtxslot)) + offset))->coord.y = ymin;
+                ((Vertex *) (((u8 *) PGET(*vtxslot)) + offset))->coord.y = ymin;
             }
 
             i++;
@@ -8789,7 +8806,7 @@ bool bgTestHitOnObj(coord3d *arg0, coord3d *arg1, coord3d *arg2, Gfx *gdl, Gfx *
                 }
                 else
                 {
-                    vtxbase = (Vertex *) ((((s32) vertices) + (vaddr & 0x00ffffff)) - (op << 4));
+                    vtxbase = (Vertex *) ((((uintptr_t) vertices) + (vaddr & 0x00ffffff)) - (op << 4));
                 }
             }
 #endif
@@ -9160,10 +9177,10 @@ bool propobjFindHit(Model *model, ModelNode *startNode, coord3d *rayPos, coord3d
         {
             case MODELNODE_OPCODE_DLCOLLISION:
                 {
-                    ModelRoData_DisplayList_CollisionRecord *rodata = &node->Data->DisplayListCollisions;
+                    ModelRoData_DisplayList_CollisionRecord *rodata = &PGET(node->Data)->DisplayListCollisions;
                     ModelRwData_DisplayList_CollisionRecord *rwdata = modelGetNodeRwData(model, node);
 
-                    if (rwdata->gdl != NULL)
+                    if (PGET(rwdata->gdl) != NULL)
                     {
 #ifdef TARGET_N64
                         if (rwdata->gdl == rodata->Primary)
@@ -9183,24 +9200,24 @@ bool propobjFindHit(Model *model, ModelNode *startNode, coord3d *rayPos, coord3d
                         /* PORT: Primary/Secondary already hold converted host GDL pointers,
                          * which the N64's base + low-24-bits rebuild would
                          * mangle (see the matching fix in front.c). */
-                        s3 = rwdata->gdl;
+                        s3 = PGET(rwdata->gdl);
 
-                        if (rodata->Secondary != NULL)
+                        if (PGET(rodata->Secondary) != NULL)
                         {
-                            s5 = rodata->Secondary;
+                            s5 = PGET(rodata->Secondary);
                         }
 #endif
 
-                        vertices = rwdata->Vertices;
+                        vertices = PGET(rwdata->Vertices);
                     }
                 }
                 break;
 
             case MODELNODE_OPCODE_DL:
                 {
-                    ModelRoData_DisplayListRecord *rodata = &node->Data->DisplayList;
+                    ModelRoData_DisplayListRecord *rodata = &PGET(node->Data)->DisplayList;
 
-                    if (rodata->Primary != NULL)
+                    if (PGET(rodata->Primary) != NULL)
                     {
 #ifdef TARGET_N64
                         s3 = (Gfx *)((uintptr_t)rodata->BaseAddr + ((u32)rodata->Primary & 0xffffff));
@@ -9211,15 +9228,15 @@ bool propobjFindHit(Model *model, ModelNode *startNode, coord3d *rayPos, coord3d
                         }
 #else
                         /* PORT: as above - the converted pointers ARE the DLs */
-                        s3 = rodata->Primary;
+                        s3 = PGET(rodata->Primary);
 
-                        if (rodata->Secondary != NULL)
+                        if (PGET(rodata->Secondary) != NULL)
                         {
-                            s5 = rodata->Secondary;
+                            s5 = PGET(rodata->Secondary);
                         }
 #endif
 
-                        vertices = (void *)(uintptr_t)rodata->BaseAddr;
+                        vertices = (void *)(uintptr_t)PGET(rodata->BaseAddr);
                     }
                 }
                 break;
@@ -9279,9 +9296,9 @@ bool propobjFindHit(Model *model, ModelNode *startNode, coord3d *rayPos, coord3d
             }
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         } else {
             while (node)
             {
@@ -9291,13 +9308,13 @@ bool propobjFindHit(Model *model, ModelNode *startNode, coord3d *rayPos, coord3d
                     break;
                 }
 
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -9316,8 +9333,8 @@ void sub_GAME_7F04DCB4(ObjectRecord* obj)
     explosionClearBulletImpactRoomByFlag(prop, FALSE);
     explosionClearBulletImpactRoomByFlag(prop, TRUE);
 
-    sub_GAME_7F0A1DA0(&obj->runtime_pos.f[0],
-        &obj->mtx.m[0][0], &obj->mtx.m[1][0], &obj->mtx.m[2][0],
+    sub_GAME_7F0A1DA0((coord3d *) &obj->runtime_pos.f[0],
+        (coord3d *) &obj->mtx.m[0][0], (coord3d *) &obj->mtx.m[1][0], (coord3d *) &obj->mtx.m[2][0],
         bbox->Bounds.xmin, bbox->Bounds.xmax,
         bbox->Bounds.ymin, bbox->Bounds.ymax,
         bbox->Bounds.zmin, bbox->Bounds.zmax);
@@ -9341,14 +9358,14 @@ void sub_GAME_7F04DD68(DoorRecord *door)
 
     prop = door->prop;
     model = door->model;
-    bbox = (struct ModelRoData_BoundingBoxRecord *) model->obj->Switches[2]->Data;
+    bbox = (struct ModelRoData_BoundingBoxRecord *) PGET(PGET(model->obj->Switches[2])->Data);
 
     door7F0526EC(door, &mtx);
-    sub_GAME_7F0A1DA0(&mtx.m[3][0], &mtx.m[0][0], &mtx.m[1][0], &mtx.m[2][0], bbox->Bounds.xmin, bbox->Bounds.xmax, bbox->Bounds.ymin, bbox->Bounds.ymax, bbox->Bounds.zmin, bbox->Bounds.zmax);
+    sub_GAME_7F0A1DA0((coord3d *) &mtx.m[3][0], (coord3d *) &mtx.m[0][0], (coord3d *) &mtx.m[1][0], (coord3d *) &mtx.m[2][0], bbox->Bounds.xmin, bbox->Bounds.xmax, bbox->Bounds.ymin, bbox->Bounds.ymax, bbox->Bounds.zmin, bbox->Bounds.zmax);
 
     explosionClearBulletImpactRoomByFlag(prop, 1);
 
-    switchdata = (struct ModelRwData_SwitchRecord *)modelGetNodeRwData(model, model->obj->Switches[1]);
+    switchdata = (struct ModelRwData_SwitchRecord *)modelGetNodeRwData(model, PGET(model->obj->Switches[1]));
     switchdata->visible = FALSE;
 }
 
@@ -9370,18 +9387,18 @@ void objBreakCCTVGlass(ObjectRecord *obj)
 
     if (prop->flags & PROPFLAG_ONSCREEN)
     {
-        rodata = model->obj->Switches[2]->Data;
+        rodata = PGET(PGET(model->obj->Switches[2])->Data);
 
-        node_mtx = modelFindNodeMtx(model, model->obj->Switches[1], 0);
+        node_mtx = modelFindNodeMtx(model, PGET(model->obj->Switches[1]), 0);
 
         matrix_4x4_multiply_homogeneous(currentPlayerGetViewToWorldMtxf(), node_mtx, &glassNodeWorldMtx);
 
-        sub_GAME_7F0A1DA0(glassNodeWorldMtx.m[3], glassNodeWorldMtx.m[0], glassNodeWorldMtx.m[1], glassNodeWorldMtx.m[2], ((f32 *)rodata)[1], ((f32 *)rodata)[2], ((f32 *)rodata)[3], ((f32 *)rodata)[4], ((f32 *)rodata)[5], ((f32 *)rodata)[6]);
+        sub_GAME_7F0A1DA0((coord3d *) glassNodeWorldMtx.m[3], (coord3d *) glassNodeWorldMtx.m[0], (coord3d *) glassNodeWorldMtx.m[1], (coord3d *) glassNodeWorldMtx.m[2], ((f32 *)rodata)[1], ((f32 *)rodata)[2], ((f32 *)rodata)[3], ((f32 *)rodata)[4], ((f32 *)rodata)[5], ((f32 *)rodata)[6]);
     }
 
     explosionClearBulletImpactRoomByFlag(prop, 1);
 
-    *(s32 *)modelGetNodeRwData(model, model->obj->Switches[3]) = 0;
+    *(s32 *)modelGetNodeRwData(model, PGET(model->obj->Switches[3])) = 0;
 }
 
 
@@ -9941,13 +9958,13 @@ dummy_label_995911:
                     {
                         penetrates = FALSE;
                     }
-                    else if ((obj->model->obj->Skeleton == (&skeleton_door)) && (hitnode == obj->model->obj->Switches[3]))
+                    else if ((obj->model->obj->Skeleton == (&skeleton_door)) && (hitnode == PGET(obj->model->obj->Switches[3])))
                     {
                         penetrates = FALSE;
                     }
                 }
 
-                chrpropAddBulletHit(hitinfo, prop, -pos.z, hitpart, node, &hit, mtxindex, (s32) hitnode, model, penetrates, (obj->flags2 & PROPFLAG2_00100000) != FALSE);
+                chrpropAddBulletHit(hitinfo, prop, -pos.z, hitpart, node, &hit, mtxindex, hitnode, model, penetrates, (obj->flags2 & PROPFLAG2_00100000) != FALSE);
             }
         }
     }
@@ -10106,7 +10123,7 @@ void objHit(ShotData *shotdata, BulletHit *hit)
 
             thing2_index = randomGetNext() % impact_sounds->thing2_len;
 
-            if (((obj->model->obj->Skeleton == &skeleton_door) && (hit->unk44 == obj->model->obj->Switches[3])) || ((obj->model->obj->Skeleton == &skeleton_cctv) && (hit->unk44 == obj->model->obj->Switches[1])))
+            if (((obj->model->obj->Skeleton == &skeleton_door) && (hit->unk44 == PGET(obj->model->obj->Switches[3]))) || ((obj->model->obj->Skeleton == &skeleton_cctv) && (hit->unk44 == PGET(obj->model->obj->Switches[1]))))
             {
                 room_clear_flag = 1;
             }
@@ -10130,7 +10147,7 @@ void objHit(ShotData *shotdata, BulletHit *hit)
         {
             if (obj->model->obj->Skeleton == &skeleton_cctv)
             {
-                if (hit->unk44 == obj->model->obj->Switches[1])
+                if (hit->unk44 == PGET(obj->model->obj->Switches[1]))
                 {
                     damage *= 100.0f;
                     objBreakCCTVGlass(obj);
@@ -11636,13 +11653,13 @@ void sub_GAME_7F050DE8(Model* model)
         switch (node->Opcode & 0xFF)
         {
             case MODELNODE_OPCODE_DLCOLLISION:
-                rodata = node->Data;
+                rodata = PGET(node->Data);
                 rwdata = modelGetNodeRwData(model, node);
 
-                if ((rwdata->DisplayListCollisions.Vertices != rodata->DisplayListCollisions.Vertices) && (sub_GAME_7F04B590(header, node) != 0))
+                if ((PGET(rwdata->DisplayListCollisions.Vertices) != PGET(rodata->DisplayListCollisions.Vertices)) && (sub_GAME_7F04B590(header, node) != 0))
                 {
-                    sub_GAME_7F09C044(rwdata->DisplayListCollisions.Vertices);
-                    rwdata->DisplayListCollisions.Vertices = rodata->DisplayListCollisions.Vertices;
+                    sub_GAME_7F09C044(PGET(rwdata->DisplayListCollisions.Vertices));
+                    PSET(rwdata->DisplayListCollisions.Vertices, PGET(rodata->DisplayListCollisions.Vertices));
                 }
                 break;
             case MODELNODE_OPCODE_LOD:
@@ -11656,21 +11673,21 @@ void sub_GAME_7F050DE8(Model* model)
                 break;
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -11687,7 +11704,7 @@ PropRecord *hatApplyToChr(HatRecord *hat, ChrRecord *chr, ModelFileHeader *filed
 
         modelSetScale(hat->model, hat->model->scale * scale);
         hat->model->attachedto = chr->model;
-        hat->model->attachedto_objinst = chr->model->obj->Switches[6];
+        hat->model->attachedto_objinst = PGET(chr->model->obj->Switches[6]);
 
         chrpropReparent(prop, chr->prop);
         chr->handle_positiondata_hat = prop;
@@ -12280,11 +12297,11 @@ bool chrEquipWeapon(WeaponObjRecord *wep, ChrRecord *chr)
 
                 if (hand == GUNRIGHT)
                 {
-                    wep2->model->attachedto_objinst = chr->model->obj->Switches[3];
+                    wep2->model->attachedto_objinst = PGET(chr->model->obj->Switches[3]);
                 }
                 else
                 {
-                    wep2->model->attachedto_objinst = chr->model->obj->Switches[5];
+                    wep2->model->attachedto_objinst = PGET(chr->model->obj->Switches[5]);
                 }
 
                 chr->weapons_held[hand] = wep2->prop;
@@ -12704,13 +12721,13 @@ void weaponSetGunfireVisible(PropRecord *prop, s32 firing)
     ModelNode *node;
 
     if (model && model->obj->Skeleton == &skeleton_prop_weapon) {
-        node = model->obj->Switches[0];
+        node = PGET(model->obj->Switches[0]);
         if (node) {
             struct ModelRwData_GunfireRecord *rwdata = modelGetNodeRwData(model, node);
             rwdata->visible = firing;
         }
 
-        node = model->obj->Switches[2];
+        node = PGET(model->obj->Switches[2]);
         if (node) {
             struct ModelRwData_BSPRecord *rwdata = modelGetNodeRwData(model, node);
             rwdata->visible = firing;
@@ -12730,13 +12747,13 @@ s32 weaponIsGunfireVisible(PropRecord *prop)
     ModelNode *node;
 
     if (model && model->obj->Skeleton == &skeleton_prop_weapon) {
-        node = model->obj->Switches[0];
+        node = PGET(model->obj->Switches[0]);
         if (node) {
             struct ModelRwData_GunfireRecord *rwdata = modelGetNodeRwData(model, node);
             return rwdata->visible;
         }
 
-        node = model->obj->Switches[2];
+        node = PGET(model->obj->Switches[2]);
         if (node) {
             struct ModelRwData_BSPRecord *rwdata = modelGetNodeRwData(model, node);
             return rwdata->visible;
@@ -12911,7 +12928,7 @@ void doorUpdateBbox(DoorRecord *door)
     struct ModelRoData_BoundingBoxRecord *door_bb;
     Mtxf sp2C;
 
-    door_bb = (struct ModelRoData_BoundingBoxRecord *)door->model->obj->RootNode->Child->Data;
+    door_bb = (struct ModelRoData_BoundingBoxRecord *)PGET(PGET(door->model->obj->RootNode->Child)->Data);
 
     // struct copy
     door->bbox = *door_bb;
@@ -13012,8 +13029,8 @@ void doorBuildClippedVertices(DoorRecord *inDoor)
     {
         door = inDoor;
         mdl = inDoor->model;
-        mdlDLCNode = mdl->obj->RootNode->Child->Child;
-        src = (struct ModelRoData_DisplayList_CollisionRecord *)mdlDLCNode->Data;
+        mdlDLCNode = PGET(PGET(mdl->obj->RootNode->Child)->Child);
+        src = (struct ModelRoData_DisplayList_CollisionRecord *)PGET(mdlDLCNode->Data);
         inDoor = (DoorRecord *)modelGetNodeRwData(mdl, mdlDLCNode);
 
         if (door->doorType == DOORTYPE_VERTICAL)
@@ -13025,20 +13042,20 @@ void doorBuildClippedVertices(DoorRecord *inDoor)
             cutoff = door->bbox.Bounds.xmin + 0.5f;
         }
 
-        ((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices = dynAllocateVertices(src->numVertices);
+        PSET(((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices, dynAllocateVertices(src->numVertices));
 
         for (i = 0; i < src->numVertices / 4; i++)
         {
             for (j = 0; j < 4; j++)
             {
-                dcur = &(&((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices[i * 4])[j];
-                d1 = &(&((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices[i * 4])[(j + 1) % 4];
-                d2 = &(&((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices[i * 4])[(j + 2) % 4];
-                d3 = &(&((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices[i * 4])[(j + 3) % 4];
-                cur = &(&src->Vertices[i * 4])[j];
-                n1 = &(&src->Vertices[i * 4])[(j + 1) % 4];
-                n2 = &(&src->Vertices[i * 4])[(j + 2) % 4];
-                n3 = &(&src->Vertices[i * 4])[(j + 3) % 4];
+                dcur = &(&PGET(((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices)[i * 4])[j];
+                d1 = &(&PGET(((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices)[i * 4])[(j + 1) % 4];
+                d2 = &(&PGET(((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices)[i * 4])[(j + 2) % 4];
+                d3 = &(&PGET(((struct ModelRwData_DisplayList_CollisionRecord *)inDoor)->Vertices)[i * 4])[(j + 3) % 4];
+                cur = &(&PGET(src->Vertices)[i * 4])[j];
+                n1 = &(&PGET(src->Vertices)[i * 4])[(j + 1) % 4];
+                n2 = &(&PGET(src->Vertices)[i * 4])[(j + 2) % 4];
+                n3 = &(&PGET(src->Vertices)[i * 4])[(j + 3) % 4];
 
                 if (j == 0)
                 {
@@ -13157,7 +13174,7 @@ PropRecord* doorInit(DoorRecord* door, coord3d* pos, Mtxf* mtx, StandTile* stan,
     door->linkedDoor = NULL;
 
     if (door->doorFlags & DOORFLAG_CLIP_TO_BBOX) {
-        union ModelRoData *rodata = door->model->obj->RootNode->Child->Child->Data;
+        union ModelRoData *rodata = PGET(PGET(PGET(door->model->obj->RootNode->Child)->Child)->Data);
         door->unkcc = mempAllocBytesInBank(rodata->DisplayListCollisions.numVertices * sizeof(Vertex), MEMPOOL_STAGE);
     } else {
         door->unkcc = NULL;
@@ -14778,16 +14795,16 @@ void door7F054FB4(DoorRecord *door)
         else if  (var_s1->doorFlags & DOORFLAG_CLIP_TO_BBOX)
         {
             temp_a0 = var_s1->model;
-            temp_a1 = temp_a0->obj->RootNode->Child->Child;
-            temp_s0 = (struct ModelRoData_DisplayList_CollisionRecord *)temp_a1->Data;
+            temp_a1 = PGET(PGET(temp_a0->obj->RootNode->Child)->Child);
+            temp_s0 = (struct ModelRoData_DisplayList_CollisionRecord *)PGET(temp_a1->Data);
             temp_v0_3 = (struct ModelRwData_DisplayList_CollisionRecord*)modelGetNodeRwData(temp_a0, temp_a1);
 
-            if (temp_v0_3->Vertices != var_s1->unkcc)
+            if (PGET(temp_v0_3->Vertices) != var_s1->unkcc)
             {
                 for (var_a0 = 0; var_a0 < temp_s0->numVertices; var_a0++)
                 {
                     // struct copy
-                    var_s1->unkcc[var_a0] = temp_v0_3->Vertices[var_a0];
+                    var_s1->unkcc[var_a0] = PGET(temp_v0_3->Vertices)[var_a0];
                 }
 #ifndef TARGET_N64
                 { /* port: unkcc is rewritten in place with the stopped door's
@@ -14800,7 +14817,7 @@ void door7F054FB4(DoorRecord *door)
 #endif
             }
 
-            temp_v0_3->Vertices = var_s1->unkcc;
+            PSET(temp_v0_3->Vertices, var_s1->unkcc);
         }
 
 #ifndef TARGET_N64
@@ -15520,7 +15537,7 @@ void sub_GAME_7F056690(void)
     Model *s3;
     PropRecord *s2;
     ObjectRecord *s1;
-    union ModelRwData **new_var;
+    ModelRwWord *new_var;
     ModelNode *t0;
     ModelRoData_DisplayList_CollisionRecord *s0;
 
@@ -15539,7 +15556,7 @@ void sub_GAME_7F056690(void)
                     return;
                     t0 = sub_GAME_7F04B478(s1);
                 }
-                s0 = (ModelRoData_DisplayList_CollisionRecord *)t0->Data;
+                s0 = (ModelRoData_DisplayList_CollisionRecord *)PGET(t0->Data);
                 if (s0 == NULL)
                 {
                     return;
@@ -15547,7 +15564,7 @@ void sub_GAME_7F056690(void)
                 if (sub_GAME_7F04B590(s1->model->obj, t0) != 0)
                 {
                     new_var = &s3->datas[s0->RwDataIndex];
-                    if ((s32)s0->Vertices != (s32)*new_var)
+                    if ((uintptr_t)PGET(s0->Vertices) != (uintptr_t)PGET(*new_var))
                     {
                         objFreePermanently(s1, 1);
                         return;

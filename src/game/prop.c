@@ -32,6 +32,13 @@
 #include "stan.h"
 #include "model.h"
 #include "token.h"
+#include "bondinv.h"
+#include "cheat.h"
+#include "deb_loadallmodels.h"
+#include "front.h"
+#include "initguards.h"
+#include "initunk_005520.h"
+#include "lv.h"
 
 /**
  * EU .bss 0x80068480
@@ -736,8 +743,8 @@ void setupCctv(s32 arg0, CCTVRecord *arg1, s32 cmdindex)
          * Switches[0]->Data and ->prop, since the code below dereferences them
          * all. */
         if (arg1->model == NULL || arg1->prop == NULL || arg1->model->obj == NULL ||
-            arg1->model->obj->Switches == NULL || arg1->model->obj->Switches[0] == NULL ||
-            arg1->model->obj->Switches[0]->Data == NULL)
+            arg1->model->obj->Switches == NULL || PGET(arg1->model->obj->Switches[0]) == NULL ||
+            PGET(PGET(arg1->model->obj->Switches[0])->Data) == NULL)
         {
             extern int printf(const char *, ...);
             static s32 warned;
@@ -753,7 +760,7 @@ void setupCctv(s32 arg0, CCTVRecord *arg1, s32 cmdindex)
             return;
         }
 #endif
-        temp_a2 = (struct coord3d*)arg1->model->obj->Switches[0]->Data;
+        temp_a2 = (struct coord3d*)PGET(PGET(arg1->model->obj->Switches[0])->Data);
 
         if (isNotBoundPad(arg1->lookpad))
         {
@@ -995,19 +1002,19 @@ void setupSingleMonitor(s32 stageID, MonitorObjRecord *monitor, s32 cmdindex)
 
             if (monitor->OwnerPart == 0)
             {
-                monitor->model->attachedto_objinst = owner->model->obj->Switches[0];
+                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[0]);
             }
             else if (monitor->OwnerPart == 1)
             {
-                monitor->model->attachedto_objinst = owner->model->obj->Switches[1];
+                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[1]);
             }
             else if (monitor->OwnerPart == 2)
             {
-                monitor->model->attachedto_objinst = owner->model->obj->Switches[2];
+                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[2]);
             }
             else
             {
-                monitor->model->attachedto_objinst = owner->model->obj->Switches[3];;
+                monitor->model->attachedto_objinst = PGET(owner->model->obj->Switches[3]);;
             }
 
             chrpropReparent(prop, owner->prop);
@@ -1266,7 +1273,7 @@ void setupDoor(s32 arg0, struct DoorRecord *door, s32 arg2)
         matrix_4x4_multiply_in_place(&sp12C, &spD4);
         sub_GAME_7F001BD4(pad, &sp118);
 
-        temp_v0 = (struct ModelRoData_BoundingBoxRecord *)sp124->RootNode->Child->Data;
+        temp_v0 = (struct ModelRoData_BoundingBoxRecord *)PGET(PGET(sp124->RootNode->Child)->Data);
 
         xscale = (bb2.ymin - bb2.ymax) / (temp_v0->Bounds.xmax - temp_v0->Bounds.xmin);
         yscale = (bb2.xmin - bb2.xmax) / (temp_v0->Bounds.ymax - temp_v0->Bounds.ymin);
@@ -1540,7 +1547,7 @@ static u32 portMeasurePads(u32 *pads)
         pad++;
     }
 
-    return ((u32) (pad + 1) - (u32) pads) / 4; /* include the terminator record */
+    return ((uintptr_t) (pad + 1) - (uintptr_t) pads) / 4; /* include the terminator record */
 }
 
 static u32 portMeasureBoundPads(u32 *pads)
@@ -1552,7 +1559,7 @@ static u32 portMeasureBoundPads(u32 *pads)
         vol++;
     }
 
-    return ((u32) (vol + 1) - (u32) pads) / 4;
+    return ((uintptr_t) (vol + 1) - (uintptr_t) pads) / 4;
 }
 
 /* Load-time setup lint: byte-swapped or garbled setup data shows up as
@@ -2164,7 +2171,7 @@ void proplvreset2(enum LEVELID stageId)
                 /** Ugly matching hack. 
                 *   TODO: investigate if there's a way to get rid of this.
                 */
-                if ((((u32) local_stage) ^ 0) + ((u32)vol->plink));
+                if ((((uintptr_t) local_stage) ^ 0) + ((uintptr_t)vol->plink));
 
                 vol->plink = SETUP_PROMOTE(local_stage, vol->plink);
                 vol->pos.f[0] *= roompos_2;
@@ -2526,9 +2533,9 @@ void proplvreset2(enum LEVELID stageId)
 
                             if (pdef_veh->model != NULL)
                             {
-                                if (pdef_veh->model->obj->Switches[5] != NULL)
+                                if (PGET(pdef_veh->model->obj->Switches[5]) != NULL)
                                 {
-                                    modelGetNodeRwData(pdef_veh->model, pdef_veh->model->obj->Switches[5])->Raw.unk00 = (pdef_veh->flags & 0x10000000) == 0;
+                                    modelGetNodeRwData(pdef_veh->model, PGET(pdef_veh->model->obj->Switches[5]))->Raw.unk00 = (pdef_veh->flags & 0x10000000) == 0;
                                 }
                             }
 

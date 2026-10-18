@@ -129,7 +129,7 @@ s32 alResampleParam(void *filter, s32 paramID, void *param)
             break;
             
         case (AL_FILTER_SET_PITCH):
-            data.i = (s32) param;
+            data.i = (intptr_t) param;
             r->ratio = data.f;
             break;
             

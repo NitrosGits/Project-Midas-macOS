@@ -7,6 +7,7 @@ file bgroomtrans.c
 #include "bg.h"
 #include "bgroomtrans.h"
 #include "matrixmath.h"
+#include <string.h>
 
 #ifndef TARGET_N64
 #include <stdio.h>  /* GE_ROOM_AUDIT matrix-pool watch (see bg.c) */

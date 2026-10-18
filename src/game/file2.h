@@ -37,5 +37,18 @@ void fileGetHighestStageDifficultyCompletedForFolder(s32 foldernum, LEVEL_SOLO_S
 bool check_aztec_completed_any_folder_secret_00(void);
 bool fileIsEgyptCompletedOn00AnyFolder(void);
 LEVEL_SOLO_SEQUENCE fileGetHighestStageUnlockedAnyFolder(void);
+void fileClearSavefileForFolder(s32 folder);
+void fileCopyDemoSaveToRamRomSave(u32 folder, save_data *save);
+void fileCopyFolderToFirstFree(s32 foldernum);
+void fileCopySave(s32 folder, save_data *out_save);
+save_data * fileGetSaveForFoldernum(u32 folder);
+s32 fileGetSaveStageDifficultyTime(save_data* save, LEVEL_SOLO_SEQUENCE levelid, DIFFICULTY difficulty);
+s32 fileIs007ModeUnlocked(u32 folder);
+bool fileIsAztecCompletedOnSecretOr00ForFolder(s32 folder);
+bool fileIsCradleCompletedAnyFolder(void);
+bool fileIsCradleCompletedForFolder(s32 folder);
+bool fileIsEgyptCompletedOn00ForFolder(int foldernum);
+void fileResetRamRomSave(void);
+void fileUpdateSelectedBondInSave(s32 folder);
 
 #endif

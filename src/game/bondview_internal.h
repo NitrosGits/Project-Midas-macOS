@@ -40,6 +40,11 @@ extern f32 watch_time_0;
 #else
 extern s32 watch_time_0;
 #endif
+/* canonical sizes (bondview2.c); repeated here for other includers */
+#ifndef BONDVIEW_HUD_MSG_TOP_BUFFER_LENGTH
+#define BONDVIEW_HUD_MSG_TOP_BUFFER_LENGTH 0x97
+#define BONDVIEW_HUD_MSG_BOTTOM_BUFFER_LENGTH 0x65
+#endif
 extern char stringbuffer_lowerleft[5][BONDVIEW_HUD_MSG_BOTTOM_BUFFER_LENGTH];
 #if defined(BUGFIX_R1)
 extern s32 dword_CODE_bss_jp80079Cd8[5];
@@ -130,8 +135,8 @@ extern coord3d ZeroCoordSpawnPos;
 extern s32 status_bar_text_buffer_index;
 extern s32 display_statusbar;
 #ifdef BUGFIX_R0
-extern s32 copy_1stfonttable;
-extern s32 copy_2ndfonttable;
+extern struct font *copy_1stfonttable;
+extern struct fontchar *copy_2ndfonttable;
 #endif
 extern s32 upper_text_buffer_index;
 extern s32 display_upper_text_window;

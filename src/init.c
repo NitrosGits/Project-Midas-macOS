@@ -13,6 +13,10 @@
 #include "thread_config.h"
 
 #include "usb.h"
+#include <boss.h>
+#include <pi.h>
+#include <token.h>
+#include <vi.h>
 
 /**
  * EU .data, offset from start of data_seg : 0x22B0
@@ -126,7 +130,7 @@ void init(void)
     decompress_result = jump_decompressfile(datazipram, csegmentSegmentVaddrStart, RZIPBUFADDR);
     if (decompress_result);
 
-    inflate_code_size = (s32) ((u32) &_inflateSegmentRomStart - (u32) &_codeSegmentRomStart);
+    inflate_code_size = (s32) ((uintptr_t) &_inflateSegmentRomStart - (uintptr_t) &_codeSegmentRomStart);
     if (inflate_code_size > MAXCODESIZE)
     {
         osPiRawStartDma(OS_READ, &_alt_startSegmentRomStart, &_alt_startSegmentStart, inflate_code_size - MAXCODESIZE);

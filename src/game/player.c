@@ -6,6 +6,8 @@
 #include "unk_092E50.h"
 #include "bondview.h"
 #include "lv.h"
+#include "gun.h"
+#include "propobj.h"
 
 struct player *g_playerPointers[4];
 struct player_data g_playerPlayerData[4];

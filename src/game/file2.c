@@ -8,6 +8,8 @@
 #include "file2.h"
 #include "front.h"
 #include "cheat.h"
+#include "crc.h"
+#include <string.h>
 #ifndef TARGET_N64
 #include <stdio.h> /* stderr - save-write diagnostics (see file.c portMissionEndLog) */
 #endif

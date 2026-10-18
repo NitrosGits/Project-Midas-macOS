@@ -498,9 +498,9 @@ void chrlvKneelingAnimationRelated(ChrRecord *self)
         self->act_stand.wallcount = (randomGetNext() % 120) + 180;
         self->sleep = 0;
 
-        if ((s32)objecthandlerGetModelAnim(self->model) == PTR_ANIM_fire_kneel_forward_one_handed_weapon_slow + (s32)&ptr_animation_table->data)
+        if ((intptr_t)objecthandlerGetModelAnim(self->model) == PTR_ANIM_fire_kneel_forward_one_handed_weapon_slow + (intptr_t)&ptr_animation_table->data)
         {
-            modelSetAnimation(self->model, (struct ModelAnimation*)(PTR_ANIM_fire_kneel_forward_one_handed_weapon_slow + (s32)&ptr_animation_table->data), (s32) self->model->gunhand, 109.0f, chrlvGetGuard007SpeedRating(self, 0.5f, 0.8f), 16.0f);
+            modelSetAnimation(self->model, (struct ModelAnimation*)(PTR_ANIM_fire_kneel_forward_one_handed_weapon_slow + (intptr_t)&ptr_animation_table->data), (s32) self->model->gunhand, 109.0f, chrlvGetGuard007SpeedRating(self, 0.5f, 0.8f), 16.0f);
             modelSetAnimEndFrame(self->model, 140.0f);
         }
         else
@@ -1231,17 +1231,17 @@ void chrlvInitActAttack(ChrRecord *self, struct anim_group_info **arg1, s32 arg2
     //     &arg1[anim_index]->table[next_anim]
     //     arg1[anim_index]->table + next_anim
     panim_float = (struct weapon_firing_animation_table *)(
-            (s32)arg1[anim_index]->table + (s32)((s32)next_anim * (s32)sizeof(struct weapon_firing_animation_table))
+            (intptr_t)arg1[anim_index]->table + (s32)((s32)next_anim * (s32)sizeof(struct weapon_firing_animation_table))
         );
 
     if ((self->chrflags & CHRSTART_FORCENOBLOOD)
-        && ((s32)panim_float->anim.anim == (s32)&ptr_animation_table->data[PTR_ANIM_fire_hip]))
+        && ((intptr_t)panim_float->anim.anim == (intptr_t)&ptr_animation_table->data[PTR_ANIM_fire_hip]))
     {
         // should be:
         //     panim_float = &arg1[anim_index]->table[(next_anim + 1) % len]
         // where `len = arg1[anim_index]->len`
         panim_float = (struct weapon_firing_animation_table *)(
-            (s32)arg1[anim_index]->table + (s32)(((next_anim + 1) % arg1[anim_index]->len) * (s32)sizeof(struct weapon_firing_animation_table))
+            (intptr_t)arg1[anim_index]->table + (s32)(((next_anim + 1) % arg1[anim_index]->len) * (s32)sizeof(struct weapon_firing_animation_table))
         );
     }
 
@@ -1574,7 +1574,7 @@ void chrlvInitActAttackWalk(ChrRecord *chr, s32 arg1)
     }
     else if (weaponIsOneHanded(left) || weaponIsOneHanded(right))
     {
-        sp78 = (s32)left != 0;
+        sp78 = (intptr_t)left != 0;
 
         if (arg1)
         {
@@ -1596,7 +1596,7 @@ void chrlvInitActAttackWalk(ChrRecord *chr, s32 arg1)
     }
     else
     {
-        sp78 = (s32)left != 0;
+        sp78 = (intptr_t)left != 0;
 
         if (arg1)
         {
@@ -1715,7 +1715,7 @@ void chrlvInitActAttackRoll(ChrRecord *chr, GUNHAND side)
         }
         else
         {
-            sp7C = (s32)right_2 == 0;
+            sp7C = (intptr_t)right_2 == 0;
             sp78 = 1;
             sp64.p[1] = sp7C;
             sp64.p[0] = sp7C == 0;
@@ -1723,14 +1723,14 @@ void chrlvInitActAttackRoll(ChrRecord *chr, GUNHAND side)
     }
     else if (weaponIsOneHanded(left) || weaponIsOneHanded(right))
     {
-        sp7C = (s32)left != 0;
+        sp7C = (intptr_t)left != 0;
         sp78 = 1;
         sp64.p[1] = sp7C;
         sp64.p[0] = sp7C == 0;
     }
     else
     {
-        sp7C = (s32)left != 0;
+        sp7C = (intptr_t)left != 0;
         sp64.p[1] = sp7C;
         sp64.p[0] = sp7C == 0;
     }
@@ -2167,7 +2167,7 @@ void triggered_on_shot_hit(ChrRecord *self, coord3d *arg1, f32 arg2, s32 req_ani
 
                     modelSetAnimationWithMerge(model, struck_anib->struck_anim, struck_anib->flip, 0.0f, struck_anib->speed, 16.0f, flag1 == 0);
 
-                    if ((s32)struck_anib->struck_anim == ((s32)&ptr_animation_table->data[PTR_ANIM_death_neck]) && ((randomGetNext() % (u32)0x64) != 0))
+                    if ((intptr_t)struck_anib->struck_anim == ((intptr_t)&ptr_animation_table->data[PTR_ANIM_death_neck]) && ((randomGetNext() % (u32)0x64) != 0))
                     {
                         modelSetAnimEndFrame(model, 241.0f);
                     }
@@ -2266,11 +2266,11 @@ void triggered_on_shot_hit(ChrRecord *self, coord3d *arg1, f32 arg2, s32 req_ani
                     another_flag = 1;
                     something_ani = &g_HitReactionTable[animation_something_index];
 
-                    if (((s32)&g_HitReactionTable[9] == (s32)something_ani) && (temp_left != NULL))
+                    if (((intptr_t)&g_HitReactionTable[9] == (intptr_t)something_ani) && (temp_left != NULL))
                     {
                         animation_something_index = 10;
                     }
-                    else if (((s32)&g_HitReactionTable[12] == (s32)something_ani) && (temp_right != NULL))
+                    else if (((intptr_t)&g_HitReactionTable[12] == (intptr_t)something_ani) && (temp_right != NULL))
                     {
                         animation_something_index = 13;
                     }
@@ -2780,7 +2780,7 @@ s32 chrlvExplosionDamage(ChrRecord *self, coord3d *arg1, f32 damage, s32 arg3)
 
         modelSetAnimation(
             self_model,
-            (struct ModelAnimation *) ((s32)sp38->anonymous_0 + (s32)&ptr_animation_table->data),
+            (struct ModelAnimation *) ((s32)sp38->anonymous_0 + (intptr_t)&ptr_animation_table->data),
             sp38->anonymous_1,
             sp38->anonymous_3,
             sp38->anonymous_2,
@@ -3031,37 +3031,37 @@ f32 chrlvModelScaleAnimationRelated(ChrRecord *self)
 {
     f32 scale_factor = D_80030984;
 
-    if ((s32)objecthandlerGetModelAnim(self->model) == (s32)&ptr_animation_table->data[PTR_ANIM_sprinting])
+    if ((intptr_t)objecthandlerGetModelAnim(self->model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_sprinting])
     {
         scale_factor = D_8003098C;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == (s32)&ptr_animation_table->data[PTR_ANIM_running])
+    else if ((intptr_t)objecthandlerGetModelAnim(self->model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_running])
     {
         scale_factor = D_80030988;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == PTR_ANIM_sprinting_one_handed_weapon + (s32)&ptr_animation_table->data[0])
+    else if ((intptr_t)objecthandlerGetModelAnim(self->model) == PTR_ANIM_sprinting_one_handed_weapon + (intptr_t)&ptr_animation_table->data[0])
     {
         scale_factor = D_80030998;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == (s32)&ptr_animation_table->data[PTR_ANIM_running_one_handed_weapon])
+    else if ((intptr_t)objecthandlerGetModelAnim(self->model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_running_one_handed_weapon])
     {
         scale_factor = D_80030994;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == (s32)&ptr_animation_table->data[PTR_ANIM_walking_unarmed])
+    else if ((intptr_t)objecthandlerGetModelAnim(self->model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_walking_unarmed])
     {
         scale_factor = D_80030990;
     }
     // typo/mistake, `ANIM_DATA_sprinting_one_handed_weapon` is duplicate of above.
     // compiler swaps addition order when reading this from the stack, unlike addresses only seen once (seen once means not saved to stack).
-    else if ((s32)objecthandlerGetModelAnim(self->model) == PTR_ANIM_sprinting_one_handed_weapon + (s32)&ptr_animation_table->data[0])
+    else if ((intptr_t)objecthandlerGetModelAnim(self->model) == PTR_ANIM_sprinting_one_handed_weapon + (intptr_t)&ptr_animation_table->data[0])
     {
         scale_factor = D_800309A4;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == (s32)&ptr_animation_table->data[PTR_ANIM_running_female])
+    else if ((intptr_t)objecthandlerGetModelAnim(self->model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_running_female])
     {
         scale_factor = D_800309A0;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == (s32)&ptr_animation_table->data[PTR_ANIM_walking_female])
+    else if ((intptr_t)objecthandlerGetModelAnim(self->model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_walking_female])
     {
         scale_factor = D_8003099C;
     }
@@ -3659,13 +3659,13 @@ void get_sound_at_range(ChrRecord *self, s32 arg1, s32 arg2)
         {
             t = 0;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = (intptr_t)left != 0;
         }
         else
         {
             t = 1;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = (intptr_t)left != 0;
         }
     }
 
@@ -3830,13 +3830,13 @@ void chrlvWalkingAnimationRelated(ChrRecord *self)
         {
             t = 0;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = (intptr_t)left != 0;
         }
         else
         {
             t = 1;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = (intptr_t)left != 0;
         }
     }
 
@@ -3888,13 +3888,13 @@ void set_actor_on_path(ChrRecord *self, struct patrol_path *path)
                 {
                     f32 v[7];
                     once++;
-                    v[0] = (f32) (u32) path;
-                    v[1] = (f32) (u32) path->data;
+                    v[0] = (f32) (uintptr_t) path;
+                    v[1] = (f32) (uintptr_t) path->data;
                     v[2] = (f32) *dataptr;
                     v[3] = (f32) count;
-                    v[4] = (f32) (u32) pta;
+                    v[4] = (f32) (uintptr_t) pta;
                     v[5] = (f32) pta->padID;
-                    v[6] = (f32) (u32) g_CurrentSetup.pads;
+                    v[6] = (f32) (uintptr_t) g_CurrentSetup.pads;
                     ge_dbg_vec("pathbad path/data/wpidx/count/wp/padid/pads", v, 7);
                 }
             }
@@ -5212,7 +5212,7 @@ void chrlvTickStand(ChrRecord *self)
                     modelSetAnimation(
                         self->model,
                         // awkward fix: addu instruction is backwards
-                        (struct ModelAnimation *)(PTR_ANIM_walking_unarmed + (s32)&ptr_animation_table->data),
+                        (struct ModelAnimation *)(PTR_ANIM_walking_unarmed + (intptr_t)&ptr_animation_table->data),
                         i,
                         0.0f,
                         0.5f,
@@ -5220,14 +5220,14 @@ void chrlvTickStand(ChrRecord *self)
 
                     modelSetAnimEndFrame(
                         self->model,
-                        (((u16*)(PTR_ANIM_walking_unarmed + (s32)&ptr_animation_table->data))[2] - 1));
+                        (((u16*)(PTR_ANIM_walking_unarmed + (intptr_t)&ptr_animation_table->data))[2] - 1));
                 }
                 else if ((right != NULL) || (left != NULL))
                 {
                     modelSetAnimation(
                         self->model,
                         // awkward fix: addu instruction is backwards
-                        (struct ModelAnimation *)(PTR_ANIM_walking + (s32)&ptr_animation_table->data),
+                        (struct ModelAnimation *)(PTR_ANIM_walking + (intptr_t)&ptr_animation_table->data),
                         left != NULL,
                         0.0f,
                         0.5f,
@@ -5235,7 +5235,7 @@ void chrlvTickStand(ChrRecord *self)
 
                     modelSetAnimEndFrame(
                         self->model,
-                        (((u16*)(PTR_ANIM_walking + (s32)&ptr_animation_table->data))[2] - 1));
+                        (((u16*)(PTR_ANIM_walking + (intptr_t)&ptr_animation_table->data))[2] - 1));
                 }
             }
             else if (self->act_stand.face_entitytype & 0x10)
@@ -5380,7 +5380,7 @@ void chrlvTickAnim(ChrRecord *self)
     }
 
     if (
-        ((s32)objecthandlerGetModelAnim(self->model) == (s32)&ptr_animation_table->data[PTR_ANIM_sneeze])
+        ((intptr_t)objecthandlerGetModelAnim(self->model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_sneeze])
         && (modelGetAnimFrame(self->model) >= 42.0f)
         && !(self->chrflags & CHRFLAG_02000000)
        )
@@ -5413,7 +5413,7 @@ void chrlvTickSurrender(ChrRecord *self)
         model = self->model;
         self->sleep = 0x10;
 
-        if (((s32)objecthandlerGetModelAnim(model) == (s32)&ptr_animation_table->data[PTR_ANIM_surrendering_armed_drop_weapon])
+        if (((intptr_t)objecthandlerGetModelAnim(model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_surrendering_armed_drop_weapon])
             && (modelGetAnimFrame(model) >= 80.0f))
         {
             coord3d sp30 = D_80030A44;
@@ -5583,17 +5583,17 @@ void chrlvTickDie(ChrRecord *self)
 
     if (modelGetAnimFrame(model) >= modelGetAnimEndFrame(model))
     {
-        if ((s32)objecthandlerGetModelAnim(model) == (s32)&ptr_animation_table->data[PTR_ANIM_death_left_leg])
+        if ((intptr_t)objecthandlerGetModelAnim(model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_death_left_leg])
         {
             modelSetAnimation(
                 model,
-                (void*)(PTR_ANIM_jump_backwards + (s32)&ptr_animation_table->data),
+                (void*)(PTR_ANIM_jump_backwards + (intptr_t)&ptr_animation_table->data),
                 objecthandlerGetModelGunhand(model) == 0,
                 50.0f,
                 0.3f,
-                (((u16*)(PTR_ANIM_jump_backwards + (s32)&ptr_animation_table->data))[2] - 1.0f) - 50.0f);
+                (((u16*)(PTR_ANIM_jump_backwards + (intptr_t)&ptr_animation_table->data))[2] - 1.0f) - 50.0f);
 
-            modelSetAnimSpeed(model, 0.5f, (((u16*)(PTR_ANIM_jump_backwards + (s32)&ptr_animation_table->data))[2] - 1.0f) - 50.0f);
+            modelSetAnimSpeed(model, 0.5f, (((u16*)(PTR_ANIM_jump_backwards + (intptr_t)&ptr_animation_table->data))[2] - 1.0f) - 50.0f);
 
             return;
         }
@@ -5618,7 +5618,7 @@ void chrlvTickArgh(ChrRecord *self)
     {
         chrlvSetTargetToPlayer(self);
 
-        if ((s32)objecthandlerGetModelAnim(model) == (s32)&ptr_animation_table->data[PTR_ANIM_death_left_leg])
+        if ((intptr_t)objecthandlerGetModelAnim(model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_death_left_leg])
         {
             chrlvIdleAnimationRelated7F023E14(self, 26.0f);
         }
@@ -5748,11 +5748,11 @@ void chrlvTickSurprised(ChrRecord *self)
 
     if (modelGetAnimFrame(model) >= modelGetAnimEndFrame(model))
     {
-        if ((s32)objecthandlerGetModelAnim(model) == (s32)&ptr_animation_table->data[PTR_ANIM_surrendering_armed])
+        if ((intptr_t)objecthandlerGetModelAnim(model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_surrendering_armed])
         {
             chrlvIdleAnimationRelated7F023E14(self, 26.0f);
         }
-        else if ((s32)objecthandlerGetModelAnim(model) == (s32)&ptr_animation_table->data[PTR_ANIM_spotting_bond])
+        else if ((intptr_t)objecthandlerGetModelAnim(model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_spotting_bond])
         {
             chrlvIdleAnimationRelated7F023E14(self, 26.0f);
         }
@@ -6205,10 +6205,10 @@ s32 chrlvUpdateAimendsideback(ChrRecord *self, struct weapon_firing_animation_ta
                 weapon_prop_model = obj->model;
                 intersect_flag = 0;
 
-                if (weapon_prop_model->obj->Switches[0])
+                if (PGET(weapon_prop_model->obj->Switches[0]))
                 {
-                    temp_a0 = modelFindNodeMtx(weapon_prop_model, weapon_prop_model->obj->Switches[0], 0);
-                    spB8 = weapon_prop_model->obj->Switches[0]->Data;
+                    temp_a0 = modelFindNodeMtx(weapon_prop_model, PGET(weapon_prop_model->obj->Switches[0]), 0);
+                    spB8 = PGET(PGET(weapon_prop_model->obj->Switches[0])->Data);
                     sub_GAME_7F058E78(temp_a0, &spBC);
 
                     matrix_4x4_multiply_homogeneous_in_place(currentPlayerGetMatrix10EC(), &spBC);
@@ -6225,9 +6225,9 @@ s32 chrlvUpdateAimendsideback(ChrRecord *self, struct weapon_firing_animation_ta
 
                     intersect_flag = 1;
                 }
-                else if (weapon_prop_model->obj->Switches[1])
+                else if (PGET(weapon_prop_model->obj->Switches[1]))
                 {
-                    temp_a0 = modelFindNodeMtx(weapon_prop_model, weapon_prop_model->obj->Switches[1], 0);
+                    temp_a0 = modelFindNodeMtx(weapon_prop_model, PGET(weapon_prop_model->obj->Switches[1]), 0);
                     sub_GAME_7F058E78(temp_a0, &sp68);
                     matrix_4x4_multiply_homogeneous_in_place(currentPlayerGetMatrix10EC(), &sp68);
                     sp104.f[0] = sp68.m[3][0];
@@ -6720,10 +6720,10 @@ s32 sub_GAME_7F02D630(ChrRecord *self, GUNHAND hand, coord3d *arg2)
 
         if ((weapon_prop->flags & 2))
         {
-            if (weapon_prop_model->obj->Switches[0])
+            if (PGET(weapon_prop_model->obj->Switches[0]))
             {
-                temp_a0 = modelFindNodeMtx(weapon_prop_model, weapon_prop_model->obj->Switches[0], 0);
-                spB8 = weapon_prop_model->obj->Switches[0]->Data;
+                temp_a0 = modelFindNodeMtx(weapon_prop_model, PGET(weapon_prop_model->obj->Switches[0]), 0);
+                spB8 = PGET(PGET(weapon_prop_model->obj->Switches[0])->Data);
 
                 arg2->f[0] = spB8[0];
                 arg2->f[1] = spB8[1];
@@ -6734,9 +6734,9 @@ s32 sub_GAME_7F02D630(ChrRecord *self, GUNHAND hand, coord3d *arg2)
 
                 ret = 1;
             }
-            else if (weapon_prop_model->obj->Switches[1])
+            else if (PGET(weapon_prop_model->obj->Switches[1]))
             {
-                temp_a0_2 = modelFindNodeMtx(weapon_prop_model, weapon_prop_model->obj->Switches[1], 0);
+                temp_a0_2 = modelFindNodeMtx(weapon_prop_model, PGET(weapon_prop_model->obj->Switches[1]), 0);
                 matrix_4x4_multiply_homogeneous(currentPlayerGetViewToWorldMtxf(), temp_a0_2, &sp68);
 
                 arg2->f[0] = sp68.m[3][0];
@@ -8371,7 +8371,7 @@ void chrlvTickRunPos(ChrRecord *self)
 
         sp2C = D_80030988;
 
-        if ((s32)objecthandlerGetModelAnim(self_model) == (s32)&ptr_animation_table->data[PTR_ANIM_running_one_handed_weapon])
+        if ((intptr_t)objecthandlerGetModelAnim(self_model) == (intptr_t)&ptr_animation_table->data[PTR_ANIM_running_one_handed_weapon])
         {
             sp2C = D_80030994;
         }
@@ -9367,8 +9367,8 @@ void chrlvTravelTick(ChrRecord *self, coord3d *arg1, StandTile *arg2, struct way
 
         if ((phi_s3 == NULL) || ((self->hidden & CHRHIDDEN_OFFSCREEN_PATROL) != 0))
         {
-            if ((objecthandlerGetModelAnim(self->model) == (struct ModelAnimation *)(PTR_ANIM_idle_unarmed + (s32)&ptr_animation_table->data))
-                || (objecthandlerGetModelAnim(self->model) == (struct ModelAnimation *)(PTR_ANIM_idle + (s32)&ptr_animation_table->data)))
+            if ((objecthandlerGetModelAnim(self->model) == (struct ModelAnimation *)(PTR_ANIM_idle_unarmed + (intptr_t)&ptr_animation_table->data))
+                || (objecthandlerGetModelAnim(self->model) == (struct ModelAnimation *)(PTR_ANIM_idle + (intptr_t)&ptr_animation_table->data)))
             {
                 if (self->actiontype == ACT_PATROL)
                 {

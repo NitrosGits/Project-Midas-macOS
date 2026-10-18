@@ -1,6 +1,7 @@
 #include <ultra64.h>
 #include "joy.h"
 #include <PR/os.h>
+#include <deb.h>
 
 #define JOY_CLAMP_MIN          0
 #define JOY_CLAMP_MAX        120

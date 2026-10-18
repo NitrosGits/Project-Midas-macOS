@@ -11,11 +11,16 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <string.h>
 #include <ultra64.h>
 #ifdef _WIN32
 #include <direct.h>   /* _mkdir: portLogPath */
 #else
 #include <sys/stat.h> /* mkdir: portLogPath */
+#include <unistd.h>   /* _exit */
+#endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h> /* _NSGetExecutablePath: portInitRootDir */
 #endif
 
 /* port_console.c: same output as the fprintf(stderr, ...) this replaced,
@@ -604,7 +609,13 @@ static void portInitRootDir(const char *argv0)
      * eeprom.bin/midas.ini across directories. So use /proc/self/exe, the Linux
      * equivalent of GetModuleFileNameA, and keep argv[0] only as the fallback
      * for other POSIX. */
+#ifdef __APPLE__
+    /* macOS has no /proc: dyld knows the executable's path */
+    uint32_t len = sizeof(sPortRootDir);
+    ssize_t n = (_NSGetExecutablePath(sPortRootDir, &len) == 0) ? (ssize_t) strlen(sPortRootDir) : -1;
+#else
     ssize_t n = readlink("/proc/self/exe", sPortRootDir, sizeof(sPortRootDir) - 1);
+#endif
     if (n > 0 && (size_t) n < sizeof(sPortRootDir) - 1) {
         sPortRootDir[n] = '\0';
     } else if (argv0 == NULL ||
@@ -744,6 +755,11 @@ int main(int argc, char **argv)
         extern void portConInit(void);
         portConInit();
     }
+#ifdef GE_64BIT
+    /* before anything can encode a pointer: sets the window base, reserves
+     * the arenas' space and patches the static display-list slots */
+    portWindowInit();
+#endif
     portInitRootDir(argv[0]);
     portMigrateIni();
 

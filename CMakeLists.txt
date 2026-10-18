@@ -7,13 +7,43 @@ project(ge007 C)
 
 set(CMAKE_C_STANDARD 11)
 
+# GE_64BIT: native 64-bit build, the only kind macOS can run (it has no 32-bit
+# runtime). Display lists stay 8 bytes: pointers in them are 32-bit offsets into
+# the port's address window (port/include/port_hostptr.h).
+if(APPLE)
+    set(GE_64BIT_DEFAULT ON)
+else()
+    set(GE_64BIT_DEFAULT OFF)
+endif()
+option(GE_64BIT "Native 64-bit build (default on macOS)" ${GE_64BIT_DEFAULT})
+if(APPLE AND NOT GE_64BIT)
+    message(FATAL_ERROR "macOS builds must be 64-bit (GE_64BIT=ON)")
+endif()
+
+if(GE_64BIT)
+    add_compile_options(
+        # No FMA contraction: fused multiply-adds round differently from the
+        # N64 FPU, like x87 excess precision does on the 32-bit build.
+        -ffp-contract=off
+    )
+    add_compile_definitions(GE_64BIT=1)
+endif()
+if(APPLE)
+    # The SDK's fortify macros redefine sprintf, which GE implements itself
+    # (src/sprintf.c).
+    add_compile_definitions(_FORTIFY_SOURCE=0)
+else()
+    add_compile_options(
+        -m32
+        # Use SSE scalar floats so every operation rounds to single precision like
+        # the N64 FPU; x87's 80-bit excess precision flips borderline comparisons
+        # (it broke the stan.c tile-walk edge test and room visibility in Egypt).
+        -msse2
+        -mfpmath=sse
+    )
+endif()
+
 add_compile_options(
-    -m32
-    # Use SSE scalar floats so every operation rounds to single precision like
-    # the N64 FPU; x87's 80-bit excess precision flips borderline comparisons
-    # (it broke the stan.c tile-walk edge test and room visibility in Egypt).
-    -msse2
-    -mfpmath=sse
     -fno-strict-aliasing
     -fwrapv
     -funsigned-char
@@ -29,7 +59,15 @@ add_compile_options(
     -O2
     # (Audit recipe: swap the -w below for -Wreturn-type and rebuild, since
     # falling off a non-void function is live UB at -O2. Keep the tree clean.)
-    -w
+    # GE_64BIT keeps every pointer-width diagnostic as a hard error instead:
+    # each one is a real truncation there (docs/port/macos-arm64.md).
+    $<IF:$<BOOL:${GE_64BIT}>,-Wno-everything,-w>
+    $<$<BOOL:${GE_64BIT}>:-Werror=int-conversion>
+    $<$<BOOL:${GE_64BIT}>:-Werror=pointer-to-int-cast>
+    $<$<BOOL:${GE_64BIT}>:-Werror=int-to-pointer-cast>
+    $<$<BOOL:${GE_64BIT}>:-Werror=void-pointer-to-int-cast>
+    $<$<BOOL:${GE_64BIT}>:-Werror=int-to-void-pointer-cast>
+    $<$<BOOL:${GE_64BIT}>:-Werror=shorten-64-to-32>
     # C-only: game code is self-contained against repo-local headers;
     # fast3d C++ needs hosted stdlib and no ms-extensions quirks.
     $<$<COMPILE_LANGUAGE:C>:-ffreestanding>
@@ -49,6 +87,9 @@ if(WIN32)
                      -Wl,--image-base=0x10000000 -Wl,--disable-dynamicbase
                      -Wl,--stack,16777216)
     link_libraries(dbghelp)
+elseif(APPLE)
+    # macOS executables are always PIE. 16MB main-thread stack, as on Windows.
+    add_link_options(-Wl,-stack_size,0x1000000)
 else()
     add_link_options(-m32 -no-pie)
 endif()
@@ -265,6 +306,14 @@ else()
     set(ASSET_OBJS ${ASSET_OBJS_KEEP})
     message(STATUS "GE_ROMDATA_FALLBACK=OFF: dropping the served asset objects from the exe (ROM mandatory)")
 endif()
+if(GE_64BIT)
+    # The compiled-in assets reproduce the N64's 32-bit layout, so a 64-bit
+    # build reads every asset from the ROM, the three menu models included.
+    if(GE_ROMDATA_FALLBACK)
+        message(FATAL_ERROR "GE_ROMDATA_FALLBACK needs the 32-bit build (GE_64BIT=OFF)")
+    endif()
+    set(ASSET_OBJS)
+endif()
 set_source_files_properties(${ASSET_OBJS} PROPERTIES EXTERNAL_OBJECT TRUE GENERATED TRUE)
 
 # Loose single-TU asset data (unique symbol names; compiled like game code):
@@ -428,6 +477,20 @@ target_include_directories(ge PRIVATE ${CMAKE_BINARY_DIR}/generated)
 # libm: sinf/cosf/sqrtf (math_sincos.s and gu asm on N64; libm on PC).
 target_link_libraries(ge m)
 
+# Mach-O has no weak undefined symbols at static link time: let the dropped
+# asset file symbols (assets/obseg/obseg.h) stay undefined so they resolve to
+# NULL at load, as they do on ELF and PE.
+if(APPLE)
+    file(STRINGS ${CMAKE_SOURCE_DIR}/assets/obseg/obseg.h PORT_WEAK_ASSET_LINES
+         REGEX "^extern u8 __attribute__\\(\\(weak\\)\\) [A-Za-z0-9_]+\\[\\];")
+    set(PORT_WEAK_ASSET_LINK)
+    foreach(line ${PORT_WEAK_ASSET_LINES})
+        string(REGEX REPLACE "^extern u8 __attribute__\\(\\(weak\\)\\) ([A-Za-z0-9_]+)\\[\\];.*" "\\1" sym "${line}")
+        list(APPEND PORT_WEAK_ASSET_LINK "LINKER:-U,_${sym}")
+    endforeach()
+    target_link_options(ge PRIVATE ${PORT_WEAK_ASSET_LINK})
+endif()
+
 if(GE_VIDEO)
     if(WIN32)
         # the SDL2 MinGW development package: third_party/ by default, or
@@ -443,6 +506,11 @@ if(GE_VIDEO)
         # the game needs SDL2.dll beside the exe
         add_custom_command(TARGET ge POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SDL2_ROOT}/bin/SDL2.dll $<TARGET_FILE_DIR:ge>)
+    elseif(APPLE)
+        # SDL2 from Homebrew (brew install sdl2) or any SDL2 CMake package;
+        # OpenGL is the system framework (core profile, see gfx_sdl2.cpp).
+        find_package(SDL2 REQUIRED CONFIG)
+        target_link_libraries(ge SDL2::SDL2 "-framework OpenGL")
     else()
         # 32-bit SDL2: needs libsdl2-dev:i386 (+ libgl-dev:i386), or set
         # SDL2_LINUX_ROOT to a self-built prefix (e.g. CI's cached, user-writable

@@ -41,6 +41,7 @@
 #include <ultra64.h>
 #include <PR/libaudio.h>
 #include <PR/abi.h>
+#include <string.h>
 
 /* ---- config ------------------------------------------------------------ */
 
@@ -499,9 +500,9 @@ void portAcmdRun(Acmd *list, s32 count)
                 if (n > DMEM_SIZE) {
                     n = DMEM_SIZE;
                 }
-                memcpy(&s_Dmem[s_BufIn & (DMEM_SIZE - 1)], (void *)w1, n);
+                memcpy(&s_Dmem[s_BufIn & (DMEM_SIZE - 1)], portPtr64(w1), n);
             } else {
-                memcpy((void *)w1, &s_Dmem[s_BufOut & (DMEM_SIZE - 1)], s_BufCount);
+                memcpy(portPtr64(w1), &s_Dmem[s_BufOut & (DMEM_SIZE - 1)], s_BufCount);
             }
             break;
 
@@ -520,12 +521,12 @@ void portAcmdRun(Acmd *list, s32 count)
             if (n > sizeof(s_Book)) {
                 n = sizeof(s_Book);
             }
-            memcpy(s_Book, (void *)w1, n);
+            memcpy(s_Book, portPtr64(w1), n);
             break;
         }
 
         case A_SETLOOP:
-            s_LoopState = (s16 *)w1;
+            s_LoopState = (s16 *) portPtr64(w1);
             break;
 
         case A_ADPCM:
@@ -553,15 +554,15 @@ void portAcmdRun(Acmd *list, s32 count)
                 }
                 break;
             }
-            portAcmdAdpcm((w0 >> 16) & 0xFF, (void *)w1);
+            portAcmdAdpcm((w0 >> 16) & 0xFF, portPtr64(w1));
             break;
 
         case A_RESAMPLE:
-            portAcmdResample((w0 >> 16) & 0xFF, w0 & 0xFFFF, (void *)w1);
+            portAcmdResample((w0 >> 16) & 0xFF, w0 & 0xFFFF, portPtr64(w1));
             break;
 
         case A_ENVMIXER:
-            portAcmdEnvMixer((w0 >> 16) & 0xFF, (void *)w1);
+            portAcmdEnvMixer((w0 >> 16) & 0xFF, portPtr64(w1));
             break;
 
         case A_MIXER: {
@@ -609,7 +610,7 @@ void portAcmdRun(Acmd *list, s32 count)
              * reverb sounds far too wet. */
             u32 fl = (w0 >> 16) & 0xFF;
             s32 fgain = (s16)(w0 & 0xFFFF);
-            s16 *st = (s16 *)w1;
+            s16 *st = (s16 *) portPtr64(w1);
             s16 *buf = dmem16(s_BufIn);
             s32 n = s_BufCount >> 1;
             s32 fc = s_Book[8];

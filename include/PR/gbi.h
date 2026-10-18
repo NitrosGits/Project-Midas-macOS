@@ -22,6 +22,16 @@
 
 #include <PR/ultratypes.h>
 
+/* Address operand of a runtime g* macro. The static gs* forms keep the plain
+ * cast: in a GE_64BIT build a static DL with an address operand fails to
+ * compile and needs PORT_STATIC_PTR32 instead (port_hostptr.h). */
+#ifdef GE_64BIT
+#include "port_hostptr.h"
+#define GBI_ADDR(a) portPtr32((const void *) (uintptr_t) (a))
+#else
+#define GBI_ADDR(a) (uintptr_t)(a)
+#endif
+
 /*
  * To use the F3DEX ucodes, define F3DEX_GBI before include this file.
  *
@@ -1725,10 +1735,19 @@ typedef struct {
 /*
  * Generic Gfx Packet
  */
+#ifdef GE_64BIT
+/* GE 64-bit build: display lists stay 8 bytes (ROM model DLs are used in
+ * place); address operands are 32-bit window words (port_hostptr.h). */
+typedef struct {
+	unsigned int w0;
+	unsigned int w1;
+} Gwords;
+#else
 typedef struct {
 	uintptr_t w0;
 	uintptr_t w1;
 } Gwords;
+#endif
 
 /*
  * This union is the fundamental type of the display list.
@@ -1774,7 +1793,7 @@ typedef union {
 	Gfx *_g = (Gfx *)(pkt);						\
 									\
 	_g->words.w0 = _SHIFTL((c), 24, 8) | _SHIFTL((l), 0, 24);	\
-	_g->words.w1 = (uintptr_t)(s);				\
+	_g->words.w1 = GBI_ADDR(s);				\
 }
 
 #define	gsDma0p(c, s, l)						\
@@ -1788,7 +1807,7 @@ typedef union {
 									\
 	_g->words.w0 = (_SHIFTL((c), 24, 8) | _SHIFTL((p), 16, 8) |	\
 			_SHIFTL((l), 0, 16));				\
-	_g->words.w1 = (uintptr_t)(s);				\
+	_g->words.w1 = GBI_ADDR(s);				\
 }
 
 #define	gsDma1p(c, s, l, p)						\
@@ -1803,7 +1822,7 @@ typedef union {
 	Gfx *_g = (Gfx *)(pkt);						\
 	_g->words.w0 = (_SHIFTL((c),24,8)|_SHIFTL(((len)-1)/8,19,5)|	\
 			_SHIFTL((ofs)/8,8,8)|_SHIFTL((idx),0,8));	\
-	_g->words.w1 = (uintptr_t)(adrs);				\
+	_g->words.w1 = GBI_ADDR(adrs);				\
 }
 #define	gsDma2p(c, adrs, len, idx, ofs)					\
 {{									\
@@ -1840,7 +1859,7 @@ typedef union {
 	Gfx *_g = (Gfx *)(pkt);						\
 	_g->words.w0 =							\
 	  _SHIFTL(G_VTX,24,8)|_SHIFTL((n),12,8)|_SHIFTL((v0)+(n),1,7);	\
-	_g->words.w1 = (uintptr_t)(v);				\
+	_g->words.w1 = GBI_ADDR(v);				\
 }
 # define	gsSPVertex(v, n, v0)					\
 {{									\
@@ -1910,7 +1929,7 @@ typedef union {
 	Gfx *_g = (Gfx *)(pkt);						\
 									\
 	_g->words.w0 = _SHIFTL((c), 24, 8);				\
-	_g->words.w1 = (uintptr_t)(p0);				\
+	_g->words.w1 = GBI_ADDR(p0);				\
 }
 
 #define	gsImmp1(c, p0)							\
@@ -1952,7 +1971,7 @@ typedef union {
 									\
 	_g->words.w0 = (_SHIFTL((c), 24, 8)  | _SHIFTL((p0), 8, 16) |	\
 			_SHIFTL((p1), 0, 8));				\
-	_g->words.w1 = (uintptr_t) (dat);				\
+	_g->words.w1 = GBI_ADDR(dat);				\
 }
 
 #define	gsImmp21(c, p0, p1, dat)					\
@@ -2405,7 +2424,7 @@ typedef union {
 {									\
 	Gfx *_g = (Gfx *)(pkt);						\
 	_g->words.w0 = _SHIFTL(G_RDPHALF_1,24,8);			\
-	_g->words.w1 = (uintptr_t)(dl);				\
+	_g->words.w1 = GBI_ADDR(dl);				\
 	_g = (Gfx *)(pkt);						\
 	_g->words.w0 = (_SHIFTL(G_BRANCH_Z,24,8)|			\
 		        _SHIFTL((vtx)*5,12,12)|_SHIFTL((vtx)*2,0,12));	\
@@ -2434,7 +2453,7 @@ typedef union {
 {									\
 	Gfx *_g = (Gfx *)(pkt);						\
 	_g->words.w0 = _SHIFTL(G_RDPHALF_1,24,8);			\
-	_g->words.w1 = (uintptr_t)(dl);				\
+	_g->words.w1 = GBI_ADDR(dl);				\
 	_g = (Gfx *)(pkt);						\
 	_g->words.w0 = (_SHIFTL(G_BRANCH_Z,24,8)|			\
 		        _SHIFTL((vtx)*5,12,12)|_SHIFTL((vtx)*2,0,12));	\
@@ -2457,11 +2476,11 @@ typedef union {
 {									\
 	Gfx *_g = (Gfx *)(pkt);						\
 	_g->words.w0 = _SHIFTL(G_RDPHALF_1,24,8);			\
-	_g->words.w1 = (uintptr_t)(uc_dstart);			\
+	_g->words.w1 = GBI_ADDR(uc_dstart);			\
 	_g = (Gfx *)(pkt);						\
 	_g->words.w0 = (_SHIFTL(G_LOAD_UCODE,24,8)|			\
 			_SHIFTL((int)(uc_dsize)-1,0,16));		\
-	_g->words.w1 = (uintptr_t)(uc_start);			\
+	_g->words.w1 = GBI_ADDR(uc_start);			\
 }
 
 #define	gsSPLoadUcodeEx(uc_start, uc_dstart, uc_dsize)			\
@@ -2493,7 +2512,7 @@ typedef union {
 	Gfx *_g = (Gfx *)(pkt);						\
 	_g->words.w0 = _SHIFTL(G_DMA_IO,24,8)|_SHIFTL((flag),23,1)|	\
 	  _SHIFTL((dmem)/8,13,10)|_SHIFTL((size)-1,0,12);		\
-	_g->words.w1 = (uintptr_t)(dram);				\
+	_g->words.w1 = GBI_ADDR(dram);				\
 }
 
 #define	gsSPDma_io(flag, dmem, dram, size)				\
@@ -3100,7 +3119,7 @@ typedef union {
 									\
 	_g->words.w0 = _SHIFTL(cmd, 24, 8) | _SHIFTL(fmt, 21, 3) |	\
 		       _SHIFTL(siz, 19, 2) | _SHIFTL((width)-1, 0, 12);	\
-	_g->words.w1 = (uintptr_t)(i);				\
+	_g->words.w1 = GBI_ADDR(i);				\
 }
 
 #define	gsSetImage(cmd, fmt, siz, width, i)				\

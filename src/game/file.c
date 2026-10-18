@@ -2,6 +2,9 @@
 #include "file.h"
 #include "file2.h"
 #include "front.h"
+#include "bondview.h"
+#include "lv.h"
+#include "player.h"
 #ifndef TARGET_N64
 #include <stdio.h> /* stderr - mission-end diagnostics */
 #endif

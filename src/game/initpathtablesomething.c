@@ -16,7 +16,7 @@ static void padres_rc(s32 rc, struct StandTile *t)
     f32 v[3];
     v[0] = (f32) n++;
     v[1] = (f32) rc;
-    v[2] = (f32) (u32) t;
+    v[2] = (f32) (uintptr_t) t;
     ge_dbg_vec("padrc n/rc/tile", v, 3);
 }
 #endif
@@ -40,7 +40,7 @@ s32 init_pathtable_something(struct PadRecord *pad, char *tilename, struct Stand
         v[0] = (f32) count++;
         v[1] = (f32) hi;
         v[2] = (f32) lo;
-        v[3] = (f32) (u32) *tile_stack;
+        v[3] = (f32) (uintptr_t) *tile_stack;
         v[4] = pad->pos.f[0];
         v[5] = pad->pos.f[2];
         v[6] = (f32) (u8) tilename[0];

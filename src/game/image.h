@@ -104,5 +104,12 @@ void texLoad(s32 *updateword, struct texpool *pool);
 void texInitPool(struct texpool *arg0, u8 *arg1, s32 arg2);
 void texLoadFromTextureNum(s32 texturenum, struct texpool *arg1);
 void texLoadFromModelFileHeader(ModelFileHeader* arg0, struct texpool* arg1);
+s32 texBuildLookup(s8 *lookup, s32 bitsperpixel);
+s32 texChannelsToPixels(u8 *src, s32 width, s32 height, u8 *dst, s32 format);
+s32 texInflateLookup(s32 width, s32 height, u8 *dst, u8 *lookup, s32 numcolours, s32 format);
+s32 texInflateLookupFromBuffer(u8 *src, s32 width, s32 height, u8 *dst, u8 *lookup, s32 numcolours, s32 format);
+void texLoadFromDisplayList(Gfx *gdl, struct texpool *arg1);
+s32 texReadUncompressed(u8 *dst, s32 width, s32 height, s32 format);
+s32 texShrinkNonPaletted(u8 *src, u8 *dst, s32 srcwidth, s32 srcheight, s32 format);
 
 #endif

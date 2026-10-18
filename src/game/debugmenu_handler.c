@@ -3,6 +3,18 @@
 #include "initgamedata.h"
 #include <boss.h>
 #include <fr.h>
+#include "bondinv.h"
+#include "bondview.h"
+#include "bondview2.h"
+#include "chr.h"
+#include "chrprop.h"
+#include "deb_loadallmodels.h"
+#include "debug_camera.h"
+#include "debugmenu_08FE00.h"
+#include "gun.h"
+#include "player.h"
+#include "ramromreplay.h"
+#include <debugmenu.h>
 
 #ifndef DEBUG
     #ifdef TARGET_N64
@@ -457,7 +469,7 @@ s32 debug_menu_processor(s8 stick_h, s8 stick_v, u16 button_held, u16 button_pre
 
         if (varv0)
         {
-            stop_recording_ramrom(button_held);
+            stop_recording_ramrom();
         }
 
         return show_debug_menu_flag;

@@ -306,19 +306,19 @@ ModelHitEntry* sub_GAME_7F06B120(ModelHitEntry* head, Model* context) {
             break;
         }
 
-        childPtr = sceneCursor->Child;
+        childPtr = PGET(sceneCursor->Child);
         if (childPtr != NULL) {
             sceneCursor = childPtr;
             continue;
         }
 
         while (sceneCursor != NULL) {
-            childPtr = sceneCursor->Next;
+            childPtr = PGET(sceneCursor->Next);
             if (childPtr != NULL) {
                 sceneCursor = childPtr;
                 break;
             }
-            sceneCursor = sceneCursor->Parent;
+            sceneCursor = PGET(sceneCursor->Parent);
         }
     }
 
@@ -402,8 +402,8 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 ModelNode *othernode;
                 Mtxf *mtx;
 
-                data = node->Data;
-                othernode = data->Header.FirstGroupNode;
+                data = PGET(node->Data);
+                othernode = PGET(data->Header.FirstGroupNode);
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
 
@@ -427,8 +427,8 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 ModelNode *othernode;
                 Mtxf *mtx;
 
-                data = node->Data;
-                othernode = data->Group.ChildGroupNode;
+                data = PGET(node->Data);
+                othernode = PGET(data->Group.ChildGroupNode);
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
 
@@ -452,8 +452,8 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 ModelNode *othernode;
                 Mtxf *mtx;
 
-                data = node->Data;
-                othernode = data->Group.ChildGroupNode;
+                data = PGET(node->Data);
+                othernode = PGET(data->Group.ChildGroupNode);
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
 
@@ -486,7 +486,7 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 f32 *data;
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
-                data = (f32 *)node->Data;
+                data = (f32 *)PGET(node->Data);
 
                 arg0->sortvalue = -(data[0] * mtx->m[0][2]
                                 + data[1] * mtx->m[1][2]
@@ -503,7 +503,7 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 f32 sortvalue2;
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
-                interlinkage = &node->Data->Interlinkage;
+                interlinkage = &PGET(node->Data)->Interlinkage;
 
                 sortvalue1 = -(interlinkage->pos.x * mtx->m[0][2]
                             + interlinkage->pos.y * mtx->m[1][2]
@@ -532,7 +532,7 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 f32 *data;
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
-                data = (f32 *)node->Data;
+                data = (f32 *)PGET(node->Data);
 
                 arg0->sortvalue = -(data[0] * mtx->m[0][2]
                                 + data[1] * mtx->m[1][2]
@@ -549,7 +549,7 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 ModelRoData_Op11Record *op11;
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
-                op11 = &node->Data->Op11;
+                op11 = &PGET(node->Data)->Op11;
 
                 arg0->sortvalue = -(op11->pos.x * mtx->m[0][2]
                                 + op11->pos.y * mtx->m[1][2]
@@ -564,7 +564,7 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 f32 *data;
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
-                data = (f32 *)node->Data;
+                data = (f32 *)PGET(node->Data);
 
                 arg0->sortvalue = -(data[0] * mtx->m[0][2]
                                 + data[1] * mtx->m[1][2]
@@ -580,9 +580,9 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
                 union ModelRwData *rwdata;
 
                 mtx = modelFindNodeMtx(arg0->model, node, 0);
-                shadow = &node->Data->Shadow;
+                shadow = &PGET(node->Data)->Shadow;
 
-                rwdata = modelGetNodeRwData(arg0->model, shadow->HeaderNode);
+                rwdata = modelGetNodeRwData(arg0->model, PGET(shadow->HeaderNode));
 
                 arg0->sortvalue = -(shadow->pos.x * mtx->m[0][2]
                                 + (rwdata->Header.ground - rwdata->Header.pos.y) * mtx->m[1][2]
@@ -601,7 +601,7 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
 
         if (model->attachedto != NULL)
         {
-            ModelNode **switches;
+            ModelNodeWord *switches;
             ModelNode *node0e;
             ModelNode *specialnode;
             void *op16data;
@@ -624,13 +624,13 @@ void sub_GAME_7F06B29C(ModelHitEntry *arg0)
 
             tempf = special->sortvalue;
             specialnode = special->rootnode;
-            op16data = specialnode->Data;
+            op16data = PGET(specialnode->Data);
 
             switches = model->attachedto->obj->Switches;
 
-            node0e = switches[OP16_NODEINDEX_0E(op16data)];
-            node0c = switches[OP16_NODEINDEX_0C(op16data)];
-            node10 = switches[OP16_NODEINDEX_10(op16data)];
+            node0e = PGET(switches[OP16_NODEINDEX_0E(op16data)]);
+            node0c = PGET(switches[OP16_NODEINDEX_0C(op16data)]);
+            node10 = PGET(switches[OP16_NODEINDEX_10(op16data)]);
 
             entry10 = NULL;
             entry0e = NULL;
@@ -981,9 +981,9 @@ void drawjointlist(ModelRenderData *data, ModelHitEntry *entry)
                     break;
                 }
 
-                if (descend && node->Child != NULL)
+                if (descend && PGET(node->Child) != NULL)
                 {
-                    node = node->Child;
+                    node = PGET(node->Child);
                 }
                 else if (node != NULL)
                 {
@@ -995,13 +995,13 @@ void drawjointlist(ModelRenderData *data, ModelHitEntry *entry)
                             break;
                         }
 
-                        if (node->Next != NULL)
+                        if (PGET(node->Next) != NULL)
                         {
-                            node = node->Next;
+                            node = PGET(node->Next);
                             break;
                         }
 
-                        node = node->Parent;
+                        node = PGET(node->Parent);
                     }
                     while (node != NULL);
                 }
@@ -1096,9 +1096,9 @@ void drawjointlist(ModelRenderData *data, ModelHitEntry *entry)
                     break;
                 }
 
-                if (descend && node->Child != NULL)
+                if (descend && PGET(node->Child) != NULL)
                 {
-                    node = node->Child;
+                    node = PGET(node->Child);
                 }
                 else if (node != NULL)
                 {
@@ -1110,13 +1110,13 @@ void drawjointlist(ModelRenderData *data, ModelHitEntry *entry)
                             break;
                         }
 
-                        if (node->Next != NULL)
+                        if (PGET(node->Next) != NULL)
                         {
-                            node = node->Next;
+                            node = PGET(node->Next);
                             break;
                         }
 
-                        node = node->Parent;
+                        node = PGET(node->Parent);
                     }
                     while (node != NULL);
                 }
@@ -1152,20 +1152,20 @@ s32 probably_damage_detail_blood_effect_related(ModelHitEntry **entryptr, coord3
         }
 
         while (node != NULL) {
-            if (descend && node->Child != NULL) {
-                node = node->Child;
+            if (descend && PGET(node->Child) != NULL) {
+                node = PGET(node->Child);
             } else {
                 if (node != NULL) {
 walk_node:
                     if (node == root) {
                         node = NULL;
                     } else {
-                        next = node->Next;
+                        next = PGET(node->Next);
 
                         if (next != NULL) {
                             node = next;
                         } else {
-                            node = node->Parent;
+                            node = PGET(node->Parent);
 
                             if (node != NULL) {
                                 goto walk_node;
@@ -1209,7 +1209,7 @@ walk_node:
                         *inoutNode = node;
                         *entryptr = entry;
             
-                        return *(s32 *)node->Data;
+                        return *(s32 *)PGET(node->Data);
                     }
             
                     descend = FALSE;
@@ -1221,7 +1221,7 @@ walk_node:
                         *inoutNode = node;
                         *entryptr = entry;
             
-                        return *(s32 *)node->Data;
+                        return *(s32 *)PGET(node->Data);
                     }
             
                     descend = FALSE;

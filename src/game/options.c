@@ -20,11 +20,21 @@
 #include "glass.h"
 #include "frametiming.h"
 #include "assets/obseg/text/LoptionE.h"
+#include "bondinv.h"
+#include "bondview2.h"
+#include "debugmenu_handler.h"
+#include "gun.h"
+#include "gunfire.h"
+#include "lv.h"
+#include "mp_music.h"
+#include "objective_status.h"
+#include <string.h>
 #ifndef TARGET_N64
 #include "port_watchpages.h" /* the port watch pages */
 /* Defined further down, next to the vanilla page drawer they replace; the
  * watch MOUSE layer needs them a few thousand lines earlier. */
 extern s32 g_portWatchPage;
+extern s32 portInputDeviceCount(void); /* input_pc.c; weak headless */
 Gfx *portWatchDrawRows(Gfx *gdl);
 void portWatchRowNavigate(void);
 void portWatchResetPage(void);
@@ -284,9 +294,7 @@ u16 mTrack2Vol = 0x7FFF;
 //D:80040B5C
 coord3d g_ControllerPos = {0.0f, 200.0f, -200.0f};
 
-typedef struct WatchContButtonPositions {
-    f32 words[55]; /* 0xdc bytes */
-} WatchContButtonPositions;
+/* WatchContButtonPositions (0xdc bytes, 55 floats) is defined in gun.h */
 
 //D:80040B68
 // 3D positions for the buttons at the sides of the screen for the 1x control styles.
@@ -5441,7 +5449,7 @@ Gfx *draw_watch_controller(Gfx *gdl)
     }
     else
     {
-        gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, (s32) watchTable, &contpadnum0);
+        gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, (intptr_t) watchTable, &contpadnum0);
     }
 
     if (controllerCheckDualControllerTypesAllowed())
@@ -5492,7 +5500,7 @@ Gfx *draw_watch_controller(Gfx *gdl)
         }
         else
         {
-            gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, (s32) (&table2), &contpadnum1);
+            gdl = watchRenderControllerOpaque(gdl, &finalmtx, 1, (intptr_t) (&table2), &contpadnum1);
         }
     }
 

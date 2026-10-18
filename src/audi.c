@@ -5,6 +5,7 @@
 #include "thread_config.h"
 #include "bondgame.h"
 #include "speed_graph.h"
+#include <init.h>
 
 /**
  * EU .data, offset from start of data_seg : 0x23A0
@@ -546,10 +547,10 @@ void amHandleFrameMessage(AudioInfo *info, AudioInfo *lastInfo)
     info->task.msg = info;
     info->task.flags = OS_SC_NEEDS_RSP;
     info->task.list.t.data_ptr = (u64*)(g_AudioManager.cmdList[g_CurrentAcmdList]);
-    info->task.list.t.data_size = (((s32)cmdlp - (s32)g_AudioManager.cmdList[g_CurrentAcmdList]) >> 3) * sizeof(Acmd);
+    info->task.list.t.data_size = (((intptr_t)cmdlp - (intptr_t)g_AudioManager.cmdList[g_CurrentAcmdList]) >> 3) * sizeof(Acmd);
     info->task.list.t.type = M_AUDTASK;
     info->task.list.t.ucode_boot = (u64*)rspbootTextStart;
-    info->task.list.t.ucode_boot_size = ((s32)gsp3DTextStart - (s32)rspbootTextStart);
+    info->task.list.t.ucode_boot_size = ((intptr_t)gsp3DTextStart - (intptr_t)rspbootTextStart);
     info->task.list.t.flags = 0; // 1c
     info->task.list.t.ucode = (u64*)aspMainTextStart;
     info->task.list.t.ucode_data = (u64*)aspMainDataStart;

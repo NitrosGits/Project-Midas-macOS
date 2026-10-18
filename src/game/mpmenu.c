@@ -20,6 +20,9 @@
 #include "mp_music.h"
 #include "file.h"
 #include "assets/obseg/text/LmpmenuE.h"
+#include "bg.h"
+#include <fr.h>
+#include <string.h>
 
 #ifdef REFRESH_PAL
 #define MPMENU_YOFF 8   /* PAL: every text row sits 8 pixels lower */
@@ -1657,10 +1660,10 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
                 gdl = textRender(gdl, &x, &y, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0x00ff00b0, viewleft, h1, 0, 0);
             }
  
-            q = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
+            q = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
  
             // Must remain a comma expression for matching
-            h2 = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1D_KILLS)), /* KILLS */
+            h2 = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1D_KILLS)), /* KILLS */
                 sprintf(rankbuffer, ascii_pnum_KILLS, (char *) q, curplayernum + 1, (char *) h2); /* -> "P<n> KILLS" */
 #ifndef TARGET_N64
             {   /* PORT: the profile's name is shown instead of P1 to P4 in game
@@ -1739,10 +1742,10 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
                 gdl = textRender(gdl, &x, &y, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0x00ff00b0, viewleft, h1, 0, 0);
             }
  
-            q = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
+            q = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
  
             // Must remain a comma expression for matching.
-            h2 = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1E_LOSSES)), /* LOSSES */
+            h2 = (intptr_t) langGet(getStringID(LMPMENU, MPMENU_STR_1E_LOSSES)), /* LOSSES */
                 sprintf(rankbuffer, ascii_pnum_LOSSES, (char *) q, curplayernum + 1, (char *) h2); /* -> "P<n> LOSSES" */
 #ifndef TARGET_N64
             {   /* PORT: the profile's name is shown instead of P1 to P4 in game

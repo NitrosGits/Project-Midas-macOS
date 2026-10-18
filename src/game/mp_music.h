@@ -13,5 +13,7 @@ void             musicStopSlot(s32 slot);
 void             musicPlaySlot(s32 slot, s32 min, s32 sec);
 void sub_GAME_7F0C1340(void);
 u16 sub_GAME_7F0C0BF0(void);
+void set_missionstate_zero(void);
+void sub_GAME_7F0C1310(void);
 
 #endif

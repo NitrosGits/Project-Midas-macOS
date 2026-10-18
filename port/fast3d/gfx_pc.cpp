@@ -5234,7 +5234,9 @@ static void gfx_sp_moveword(uint8_t index, uint16_t offset, uintptr_t data) {
             // (silent corruption, surfaces later) - drop it loudly instead.
             uint32_t seg = offset >> 2;
             if (seg < 16) {
-                segmentPointers[seg] = data;
+                /* a segment base is a physical address: in a 64-bit build a
+                 * window word, so keep the decoded host address here */
+                segmentPointers[seg] = (uintptr_t) portPtr64((uint32_t) data);
 #ifdef GE_XBOX
                 if (ge_xbox_trace_dl) {
                     portXboxTrace("dl: segment %u = %08x", (unsigned)seg, (unsigned)data);
@@ -6970,7 +6972,7 @@ static inline void *seg_addr(uintptr_t w1) {
             return (void *)(segmentPointers[seg] + (w1 & 0x00ffffff));
         }
     }
-    return (void *)w1;
+    return portPtr64((uint32_t) w1); /* a host address (window word in 64-bit builds) */
 }
 
 uintptr_t clearMtx;

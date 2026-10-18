@@ -2,6 +2,7 @@
 #include "ejectedcartridges.h"
 #include "bondtypes.h"
 #include "gun.h"
+#include "objecthandler.h"
 
 // Copied from another file. Might need code reorganization to prevent the use of extra externs.
 extern ALSoundState* g_CasingSfxState;

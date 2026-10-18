@@ -42,6 +42,9 @@
 #include "stan.h"
 #include "gbi_extension.h"
 #include "frametiming.h" /* speedgraphframes */
+#include "bg.h"
+#include "bondview2.h"
+#include "dyn.h"
 
 
 // bss
@@ -1022,7 +1025,7 @@ void portGunTexAudit(void)
              * pool allocation writes the texture number 8 bytes before the
              * data (texLoad's left-side header), so it is recoverable. */
             u32 id = h.Textures[t].TextureID;
-            s32 texnum = (id >= (u32)MAX_TEXTURES) ? *(s16 *)((u8 *)id - 8) : (s32)id;
+            s32 texnum = (id >= (u32)MAX_TEXTURES) ? *(s16 *)((u8 *)portPtr64(id) - 8) : (s32)id;
             extern struct texpool *portModelTexPool(void);
             struct tex *rec = texFindInPool(texnum, portModelTexPool());
 
@@ -1736,41 +1739,41 @@ void sub_GAME_7F05E83C(GUNHAND hand)
 
 void sub_GAME_7F05E978(Model* model, s32 val)
 {
-    if (model->obj->Switches[8] != NULL)
+    if (PGET(model->obj->Switches[8]) != NULL)
     {
-        modelGetNodeRwData(model, model->obj->Switches[8])->DisplayList.unk00 = val;
+        modelGetNodeRwData(model, PGET(model->obj->Switches[8]))->DisplayList.unk00 = val;
     }
 
-    if (model->obj->Switches[9] != NULL)
+    if (PGET(model->obj->Switches[9]) != NULL)
     {
-        modelGetNodeRwData(model, model->obj->Switches[9])->DisplayList.unk00 = val;
+        modelGetNodeRwData(model, PGET(model->obj->Switches[9]))->DisplayList.unk00 = val;
     }
 
-    if (model->obj->Switches[10] != NULL)
+    if (PGET(model->obj->Switches[10]) != NULL)
     {
-        modelGetNodeRwData(model, model->obj->Switches[10])->DisplayList.unk00 = val;
+        modelGetNodeRwData(model, PGET(model->obj->Switches[10]))->DisplayList.unk00 = val;
     }
 
-    if (model->obj->Switches[11] != NULL)
+    if (PGET(model->obj->Switches[11]) != NULL)
     {
-        modelGetNodeRwData(model, model->obj->Switches[11])->DisplayList.unk00 = val;
+        modelGetNodeRwData(model, PGET(model->obj->Switches[11]))->DisplayList.unk00 = val;
     }
 
-    if (model->obj->Switches[12] != NULL)
+    if (PGET(model->obj->Switches[12]) != NULL)
     {
-        modelGetNodeRwData(model, model->obj->Switches[12])->DisplayList.unk00 = val;
+        modelGetNodeRwData(model, PGET(model->obj->Switches[12]))->DisplayList.unk00 = val;
     }
 
-    if (model->obj->Switches[13] != NULL)
+    if (PGET(model->obj->Switches[13]) != NULL)
     {
-        modelGetNodeRwData(model, model->obj->Switches[13])->DisplayList.unk00 = val;
+        modelGetNodeRwData(model, PGET(model->obj->Switches[13]))->DisplayList.unk00 = val;
     }
 
     if (model->obj->numSwitches >= 0x24)
     {
-        if (model->obj->Switches[35] != NULL)
+        if (PGET(model->obj->Switches[35]) != NULL)
         {
-            modelGetNodeRwData(model, model->obj->Switches[35])->DisplayList.unk00 = val;
+            modelGetNodeRwData(model, PGET(model->obj->Switches[35]))->DisplayList.unk00 = val;
         }
     }
 }
@@ -1783,14 +1786,14 @@ void sub_GAME_7F05EA94(Model* model, s32 val)
 
     if (model->obj->numSwitches >= 0x10)
     {
-        switch_14 = model->obj->Switches[14];
+        switch_14 = PGET(model->obj->Switches[14]);
         if (switch_14 != NULL)
         {
             // Guessing DisplayList here
             modelGetNodeRwData(model, switch_14)->DisplayList.unk00 = val;
         }
 
-        switch_15 = model->obj->Switches[15];
+        switch_15 = PGET(model->obj->Switches[15]);
         if (switch_15 != NULL)
         {
             // Guessing DisplayList here

@@ -194,5 +194,8 @@ s32 sub_GAME_7F09C250(s32 arg0, struct coord3d *pos, struct StandTile *stan, s16
 void explosionCreate(PropRecord *arg0, struct coord3d *target_pos, StandTile *target_stan, s16 /* enum EXPLOSION_DEF */ explosion_type, s32 arg4, s32 player, u8 *rooms, s32 arg7);
 void sub_GAME_7F09C250(s32 arg0, struct coord3d *pos, struct StandTile *stan, s16 arg3, s32 flag4, s32 playernum, u8 *rooms, s32 flag7);
 #endif
+void explosionClearBulletImpactRoom(PropRecord* arg0);
+void explosionClearBulletImpactRoomByFlag(PropRecord* arg0, s8 arg1);
+void setSixExplosionAndSmokeEntries(void);
 
 #endif

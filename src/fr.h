@@ -218,6 +218,10 @@ void viSet800232A0(s32 arg0);
 Gfx *viClearZBufCurrentPlayer(Gfx *gdl);
 Gfx *viSetupCurrentPlayerView(Gfx *gdl);
 void viGetZRange(f32 *zrange);
+u16 viGetPerspNorm(void);
+void viSetColorMode16Bit(void);
+void viSetColorMode32Bit(void);
+
 #endif
 
 

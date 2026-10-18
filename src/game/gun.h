@@ -408,5 +408,22 @@ Gfx *generate_ammo_total_microcode(Gfx *gdl);
 s32 portGadgetHudNameShown(void); /* gadget name drawn in the left-hand ammo slot (joy_port whitelist) */
 s32 portMissionTimerShown(void); /* solo mission timer under that slot - lifts the bottom-left message too */
 #endif
+void currentPlayerCreateRocket(GUNHAND hand);
+void generate_player_thrown_grenade(s32 hand);
+void generate_player_thrown_knife(s32 hand);
+void generate_player_thrown_object(s32 hand);
+int getCurrentWeaponOrItem(void);
+u8 * getPlayerWeaponBufferForHand(GUNHAND hand);
+u32 getSizeBufferWeaponInHand(s32 hand);
+s32 get_itemtype_in_hand(GUNHAND hand);
+ModelFileHeader * get_ptr_itemheader_in_hand(GUNHAND hand);
+void gunSpawnGLGrenade(s32 handnum);
+void gunUpdateAttachedRocket(s32 handIndex);
+void sub_GAME_7F05C614(void);
+void sub_GAME_7F05D690(void);
+void sub_GAME_7F05E6B4(enum GUNHAND hand, s32 arg1);
+void sub_GAME_7F05E83C(GUNHAND hand);
+void sub_GAME_7F05E978(Model* model, s32 val);
+void used_to_load_1st_person_model_on_demand(GUNHAND hand);
 
 #endif

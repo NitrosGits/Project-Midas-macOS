@@ -36,6 +36,10 @@
 #include "objective_status.h"
 #include "stan.h"
 #include "tex.h"
+#include "bondview2.h"
+#include "bondview_internal.h"
+#include "gunfire.h"
+#include "lightfixture.h"
 
 
 // bss
@@ -1313,7 +1317,7 @@ void chraiDefaultWeaponFireHandler(s32 hand)
  * Hitscans gather candidate hits along the bullet path. This function records each candidate hit into shotdata
  * and enforces pentration limits and removes hits that should be blocked by closer objects.
  */
-void chrpropAddBulletHit(struct ShotData *shotdata, PropRecord *prop, f32 dist, s32 hitpart, ModelNode *node, struct HitThing *hitthing, s32 room, s32 unk44, Model *model, bool countsAsPenetration, s32 blocksFurtherHits)
+void chrpropAddBulletHit(struct ShotData *shotdata, PropRecord *prop, f32 dist, s32 hitpart, ModelNode *node, struct HitThing *hitthing, s32 room, ModelNode *unk44, Model *model, bool countsAsPenetration, s32 blocksFurtherHits)
 {
     s32 pad;
     s32 i;
@@ -3854,7 +3858,7 @@ void modelGetAxisExtents(Model* model, f32* max, f32* min, s32 axis)
 
         if (type == MODELNODE_OPCODE_BBOX)
         {
-            struct ModelRoData_BoundingBoxRecord *bbox = &node->Data->BoundingBox;
+            struct ModelRoData_BoundingBoxRecord *bbox = &PGET(node->Data)->BoundingBox;
             Mtxf *mtx = modelFindNodeMtx(model, node, 0);
             f32 dist1;
             f32 dist2;
@@ -3892,21 +3896,21 @@ void modelGetAxisExtents(Model* model, f32* max, f32* min, s32 axis)
             // empty
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }

@@ -1,6 +1,9 @@
 #include <stdarg.h>
 #include <ultra64.h>
+#include <string.h>
 /*#include <stddef.h>*/
+
+int _Printf(u8 *(*prout)(u8 *, const u8 *, size_t), u8 *arg, const u8 *fmt, va_list args); /* printf_port.c */
 
 
 

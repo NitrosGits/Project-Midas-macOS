@@ -39,6 +39,23 @@
 #include "game/player.h"
 #include "game/frametiming.h"
 #include "PR/R4300.h"
+#include "file2.h"
+#include "frametiming.h"
+#include "initactorpropstuff.h"
+#include "initanitable.h"
+#include "initgamedata.h"
+#include "initimages.h"
+#include "initnull_0009D0.h"
+#include "initnull_000BC0.h"
+#include "initplayergaitobject.h"
+#include "initweaponanigroups.h"
+#include "language.h"
+#include "ob.h"
+#include "objective_status.h"
+#include "player.h"
+#include "ramromreplay.h"
+#include "setguscale.h"
+#include "vtxstore.h"
 #ifndef TARGET_N64
 #include <stdio.h> /* intro timing log */
 #include <stdlib.h>
@@ -848,7 +865,7 @@ void bossMainloop(void)
                                 indycommHostSendDump(taskGrabBuffer, (u8*)0x80000000, 0x400000);
                             }
 
-                            rspReplyMsg = (s32)(&localGfxDoneMsg);
+                            rspReplyMsg = (intptr_t)(&localGfxDoneMsg);
                             rspGfxTaskStart(firstGdl, gdl, 0, (s32*)rspReplyMsg);
 
                             pendingGfx++;

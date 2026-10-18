@@ -24,4 +24,13 @@ extern s32 gunbarrelTimer;
 extern u32 D_8002A7D0;
 
 Gfx *titleRenderFolderMenuBackground(Gfx *gdl, s32 xOffset, struct FolderSelectColour *topColour, struct FolderSelectColour *bottomColour);
+void clearChrGunModelInstances(void);
+void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize);
+s32 isGunBarrelInMode2(void);
+s32 isGunBarrelInMode9(void);
+Gfx * renderGunbarrelEyeIntroSequence(Gfx *gdl);
+Gfx * retrieve_display_rareware_logo(Gfx *gdl);
+void setupRarewareLogoData(s32 address, s32 size);
+void sub_GAME_7F008DE4(u8 **addr, s32 *size);
+
 #endif

@@ -495,9 +495,9 @@ s32 status_bar_text_buffer_index = 0;
 s32 display_statusbar = 0;
 #ifdef BUGFIX_R0
 //D:800368A0
-s32 copy_1stfonttable = 0;
+struct font *copy_1stfonttable = NULL;
 //D:800368A4
-s32 copy_2ndfonttable = 0;
+struct fontchar *copy_2ndfonttable = NULL;
 #endif
 //D:800368A8
 s32 upper_text_buffer_index = 0;

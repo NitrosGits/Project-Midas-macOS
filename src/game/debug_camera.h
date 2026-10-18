@@ -5,5 +5,8 @@
 void debugFreeCamera(s8 joyX, s8 joyY, u16 joyBtns);
 void setDebugCameraScale(f32 scale);
 Gfx * sub_GAME_7F091580(Gfx *arg0);
+void initializeDebugCameraPosition(void);
+void resetDebugCameraToPlayerPosition(void);
+void updateDebugCameraWorldPosition(void);
 
 #endif

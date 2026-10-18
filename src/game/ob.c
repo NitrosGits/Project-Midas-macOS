@@ -7,6 +7,9 @@
 #include "decompress.h"
 #include "indy_comms.h"
 #include "assets/obseg/file_resource_id_enums.h"
+#include <ramrom.h>
+#include <stdio.h>
+#include <string.h>
 #ifndef TARGET_N64
 #include "romdata.h" /* ROM loader: romdataFilesApply / romdataFileServed / romdataFilePreprocess */
 void portHwNoteFile(s32 index); /* frametiming.c: records load hitches for tickhz=hw */
@@ -167,7 +170,7 @@ void obLoadBGFileBytesAtOffset(u8 *bgname, u8 *target, s32 offset, s32 len)
     {
       while (1){};
     }
-    romCopy(target, &fileentry->hw_address[offset], len, fileentry);
+    romCopy(target, &fileentry->hw_address[offset], len);
   }
 
 }
@@ -258,7 +261,7 @@ void obLoadBGFileBytesAtOffset(u8 *bgname, u8 *target, s32 offset, s32 len)
       return;
     }
   }
-  romCopy(target, &fileentry->hw_address[offset], len, fileentry);
+  romCopy(target, &fileentry->hw_address[offset], len);
   return;
 #endif
 
@@ -269,7 +272,7 @@ void obLoadBGFileBytesAtOffset(u8 *bgname, u8 *target, s32 offset, s32 len)
     {
       while (1){};
     }
-    romCopy(target, &fileentry->hw_address[offset], len, fileentry);
+    romCopy(target, &fileentry->hw_address[offset], len);
   }
 
 }

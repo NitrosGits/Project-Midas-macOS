@@ -9,6 +9,7 @@
 #include "gun.h"
 #include "lv.h"
 #include <bondtypes.h>
+#include "gunfire.h"
 
 void bondinvReinitInv(void)
 {

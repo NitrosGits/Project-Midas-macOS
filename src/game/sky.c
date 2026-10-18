@@ -17,6 +17,7 @@
 #include "othermodemicrocode.h"
 #include "fr.h"
 #include "image_bank.h"
+#include <math.h>
 
 #define SKYABS(val) (val >= 0.0f ? (val) : -(val))
 

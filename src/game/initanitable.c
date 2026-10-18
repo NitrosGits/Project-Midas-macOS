@@ -3,6 +3,8 @@
 #include "initanitable.h"
 #include "objecthandler.h"
 #include "bondgame.h"
+#include "initunk_0009E0.h"
+#include <ramrom.h>
 
 //bss
 
@@ -24,7 +26,7 @@ struct bondstruct_unk_animation_related D_80029D60 = {
     &animations_frame_buffer
 };
 
-s32 animation_table_ptrs1[] = {
+intptr_t animation_table_ptrs1[] = {
     PTR_ANIM_idle,
     PTR_ANIM_fire_standing,
     PTR_ANIM_fire_standing_fast,
@@ -212,9 +214,9 @@ s32 animation_table_ptrs1[] = {
 };
 
 struct ModelAnimation *animation_table_ptrs2[] = {
-    PTR_ANIM_helicopter_cradle,
-    PTR_ANIM_plane_runway,
-    PTR_ANIM_helicopter_takeoff,
+    (struct ModelAnimation *) (uintptr_t) PTR_ANIM_helicopter_cradle,
+    (struct ModelAnimation *) (uintptr_t) PTR_ANIM_plane_runway,
+    (struct ModelAnimation *) (uintptr_t) PTR_ANIM_helicopter_takeoff,
     0
 };
 
@@ -230,6 +232,7 @@ struct anim_entry
     s32 unk10;
 };
 
+#ifdef TARGET_N64
 void expand_ani_table_entries(s32** arg0)
 {
     s32** var_v0;
@@ -250,6 +253,33 @@ void expand_ani_table_entries(s32** arg0)
         }
     }
 }
+#else
+/* The same rebase at pointer width. The records live in the loaded segment, so
+ * their own pointer fields stay 32-bit words (PTR32; port_hostptr.h). */
+void expand_ani_table_entries(intptr_t *arg0)
+{
+    intptr_t *entry;
+    u8 *base = (u8 *) &ptr_animation_table->data;
+
+    for (entry = arg0; *entry != 0; entry++) {
+        if (*entry != 1) {
+            ModelAnimation *anim = (ModelAnimation *) (base + *entry);
+
+            *entry = (intptr_t) anim;
+            PSET(anim->bitDescriptors, base + PTRW(anim->bitDescriptors));
+            PSET(anim->bitStream, base + PTRW(anim->bitStream));
+        }
+    }
+
+    for (entry = arg0; *entry != 0; entry++) {
+        if (*entry != 1) {
+            ModelAnimation *anim = (ModelAnimation *) *entry;
+
+            anim->address = portPtr32((u8 *) _animation_entriesSegmentRomStart + anim->address);
+        }
+    }
+}
+#endif
 
 void alloc_load_expand_ani_table(void)
 {
@@ -258,11 +288,16 @@ void alloc_load_expand_ani_table(void)
     osCreateMesgQueue(&animMsgQ, animMesg, 8);
     initAnimationsBuffer(&D_80029D60, &animMsgQ, &dword_CODE_bss_80069458);
     
-    animsDataSegmentSize = (s32)&_animation_dataSegmentEnd - (s32)&_animation_dataSegmentStart;
+    animsDataSegmentSize = (s32) ((u8 *) &_animation_dataSegmentEnd - (u8 *) &_animation_dataSegmentStart);
     
     ptr_animation_table = mempAllocBytesInBank(animsDataSegmentSize, MEMPOOL_PERMANENT);
 
     romCopy(ptr_animation_table, &_animation_dataSegmentRomStart, animsDataSegmentSize);
+#ifdef TARGET_N64
     expand_ani_table_entries((s32*)&animation_table_ptrs1);
     expand_ani_table_entries((s32*)&animation_table_ptrs2);
+#else
+    expand_ani_table_entries(animation_table_ptrs1);
+    expand_ani_table_entries((intptr_t *) animation_table_ptrs2);
+#endif
 }

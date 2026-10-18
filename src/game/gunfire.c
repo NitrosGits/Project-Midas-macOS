@@ -42,6 +42,12 @@
 #include "bondinv.h"
 #include "stan.h"
 #include "gbi_extension.h"
+#include "dyn.h"
+#include "explosion.h"
+#include "gunfire.h"
+#include "language.h"
+#include "propobj.h"
+#include <string.h>
 
 
 #ifdef REFRESH_PAL
@@ -61,6 +67,7 @@
 #endif
 
 extern f32 g_TankShellSpeed;
+extern s32 portCrosshairColor(void); /* video.c; weak -1 headless */
 
 extern coord3d D_80035C40;
 extern coord3d D_80035C4C;
@@ -120,7 +127,7 @@ typedef struct ModelHeader {
     struct ChrRecord *chr;
     ModelFileHeader *obj;
     RenderPosView *render_pos;
-    union ModelRwData **datas;
+    ModelRwWord *datas;
     f32 scale;
     struct Model *attachedto;
     ModelNode *attachedto_objinst;
@@ -655,18 +662,18 @@ void gunUpdateAndFire(GUNHAND handnum)
         modelInit(model, mdlhdr, (s32 *) (&hand->modeldatas));
         sub_GAME_7F05E978(model, 1);
         sub_GAME_7F05EA94(model, hand->field_87E);
-        node = mdlhdr->Switches[1];
+        node = PGET(mdlhdr->Switches[1]);
 
         if (node != NULL)
         {
-            if (&node->Data->Switch);
+            if (&PGET(node->Data)->Switch);
 
-            flashvisptr = ((s32 *) (&hand->modeldatas)) + node->Data->Switch.RwDataIndex;
+            flashvisptr = ((s32 *) (&hand->modeldatas)) + PGET(node->Data)->Switch.RwDataIndex;
         }
 
-        if (mdlhdr->Switches[3] != NULL)
+        if (PGET(mdlhdr->Switches[3]) != NULL)
         {
-            flashdata = (f32 *) mdlhdr->Switches[3]->Data;
+            flashdata = (f32 *) PGET(PGET(mdlhdr->Switches[3])->Data);
         }
 
         hand->mtxlist = rwmtx;
@@ -694,7 +701,7 @@ void gunUpdateAndFire(GUNHAND handnum)
                     fprintf(stderr,
                             "gunprobe: item=%d skel=%p want=%p sw4=%p sw5=%p state=%d f890=%d recoilback=%f\n",
                             item, (void *) mdlhdr->Skeleton, (void *) &skeleton_gun_revolver,
-                            (void *) mdlhdr->Switches[4], (void *) mdlhdr->Switches[5],
+                            (void *) PGET(mdlhdr->Switches[4]), (void *) PGET(mdlhdr->Switches[5]),
                             hand->weapon_action_state, hand->field_890,
                             get_ptr_item_statistics(item)->RecoilBack);
                     fflush(stderr);
@@ -705,12 +712,12 @@ void gunUpdateAndFire(GUNHAND handnum)
 
         if (mdlhdr->Skeleton == (&skeleton_gun_revolver))
         {
-            swdata = (f32 *) mdlhdr->Switches[4];
+            swdata = (f32 *) PGET(mdlhdr->Switches[4]);
 
             if (swdata != NULL)
             {
                 rndf = 0.0f;
-                cylinderdata = (f32 *) ((ModelNode *) swdata)->Data;
+                cylinderdata = (f32 *) PGET(((ModelNode *) swdata)->Data);
 
                 if (item == ITEM_RUGER)
                 {
@@ -747,11 +754,11 @@ void gunUpdateAndFire(GUNHAND handnum)
                 matrix_4x4_multiply(&gunmtx, &tmpmtx, &rwmtx[3]);
             }
 
-            swdata = (f32 *) mdlhdr->Switches[5];
+            swdata = (f32 *) PGET(mdlhdr->Switches[5]);
 
             if (swdata != NULL)
             {
-                hammerdata = (ModelNode **) ((ModelNode *) swdata)->Data;
+                hammerdata = (ModelNode **) PGET(((ModelNode *) swdata)->Data);
 
                 if (hand->weapon_action_state == 1)
                 {
@@ -828,11 +835,11 @@ void gunUpdateAndFire(GUNHAND handnum)
                     *flashvisptr = 1;
                 }
 
-                nodeptr = (f32 *) mdlhdr->Switches[2];
+                nodeptr = (f32 *) PGET(mdlhdr->Switches[2]);
 
                 if (nodeptr != NULL)
                 {
-                    nodepos = (f32 *) ((ModelNode *) nodeptr)->Data;
+                    nodepos = (f32 *) PGET(((ModelNode *) nodeptr)->Data);
                     flashpos.x = (((((f32 *) nodepos)[0] * flashmtx.m[0][0]) + (((f32 *) nodepos)[1] * flashmtx.m[1][0])) + (((f32 *) nodepos)[2] * flashmtx.m[2][0])) + flashmtx.m[3][0];
                     flashpos.y = (((((f32 *) nodepos)[0] * flashmtx.m[0][1]) + (((f32 *) nodepos)[1] * flashmtx.m[1][1])) + (((f32 *) nodepos)[2] * flashmtx.m[2][1])) + flashmtx.m[3][1];
                     flashpos.z = (((((f32 *) nodepos)[0] * flashmtx.m[0][2]) + (((f32 *) nodepos)[1] * flashmtx.m[1][2])) + (((f32 *) nodepos)[2] * flashmtx.m[2][2])) + flashmtx.m[3][2];
@@ -849,11 +856,11 @@ void gunUpdateAndFire(GUNHAND handnum)
 
                 if (mdlhdr->Skeleton == (&skeleton_gun_kf7))
                 {
-                    nodeptr = (f32 *) mdlhdr->Switches[4];
+                    nodeptr = (f32 *) PGET(mdlhdr->Switches[4]);
 
                     if (nodeptr != NULL)
                     {
-                        nodepos = (f32 *) ((ModelNode *) nodeptr)->Data;
+                        nodepos = (f32 *) PGET(((ModelNode *) nodeptr)->Data);
                         flashpos.x = (((((f32 *) nodepos)[0] * flashmtx.m[0][0]) + (((f32 *) nodepos)[1] * flashmtx.m[1][0])) + (((f32 *) nodepos)[2] * flashmtx.m[2][0])) + flashmtx.m[3][0];
                         flashpos.y = (((((f32 *) nodepos)[0] * flashmtx.m[0][1]) + (((f32 *) nodepos)[1] * flashmtx.m[1][1])) + (((f32 *) nodepos)[2] * flashmtx.m[2][1])) + flashmtx.m[3][1];
                         flashpos.z = (((((f32 *) nodepos)[0] * flashmtx.m[0][2]) + (((f32 *) nodepos)[1] * flashmtx.m[1][2])) + (((f32 *) nodepos)[2] * flashmtx.m[2][2])) + flashmtx.m[3][2];
@@ -889,17 +896,17 @@ void gunUpdateAndFire(GUNHAND handnum)
             hand->field_B64 = -hand->gunmtx_camspace.m[3][2];
         }
 
-        node = mdlhdr->Switches[6];
+        node = PGET(mdlhdr->Switches[6]);
 
         if (node != NULL)
         {
-            swdata = (f32 *) node->Data;
+            swdata = (f32 *) PGET(node->Data);
             sw6mtxidx = modelFindNodeMtxIndex(node, 0);
             sub_GAME_7F05E6B4(handnum, hand->weapon_hold_time);
 
-            if ((mdlhdr->numSwitches >= 0x1D) && (mdlhdr->Switches[28] != NULL))
+            if ((mdlhdr->numSwitches >= 0x1D) && (PGET(mdlhdr->Switches[28]) != NULL))
             {
-                hingedata = (f32 *) mdlhdr->Switches[28]->Data;
+                hingedata = (f32 *) PGET(PGET(mdlhdr->Switches[28])->Data);
                 guRotateF(tmpmtx.m, (((hand->field_A84 + M_TAU_F) - get_value_if_watch_is_on_hand_or_not(handnum)) * 360.0f) / M_TAU_F, hingedata[0] - hingedata[3], hingedata[1] - hingedata[4], hingedata[2] - hingedata[5]);
                 matrix_4x4_set_position((coord3d *) swdata, &tmpmtx);
             }
@@ -916,11 +923,11 @@ void gunUpdateAndFire(GUNHAND handnum)
             bondviewSelectCuff(model, mdlhdr, 0x1D);
         }
 
-        node = mdlhdr->Switches[7];
+        node = PGET(mdlhdr->Switches[7]);
 
         if (node != NULL)
         {
-            sw7data = (f32 *) node->Data;
+            sw7data = (f32 *) PGET(node->Data);
             sw7mtxidx = modelFindNodeMtxIndex(node, 0);
             sub_GAME_7F05E83C(handnum);
             matrix_4x4_set_identity_and_position((coord3d *) sw7data, &tmpmtx);
@@ -937,9 +944,9 @@ void gunUpdateAndFire(GUNHAND handnum)
         {
             do
             {
-                if (mdlhdr->Switches[18 + shellidx] != 0)
+                if (PGET(mdlhdr->Switches[18 + shellidx]) != 0)
                 {
-                    nodeptr = (f32 *) modelGetNodeRwData(model, mdlhdr->Switches[18 + shellidx]);
+                    nodeptr = (f32 *) modelGetNodeRwData(model, PGET(mdlhdr->Switches[18 + shellidx]));
 
                     if (nodeptr != NULL)
                     {
@@ -947,9 +954,9 @@ void gunUpdateAndFire(GUNHAND handnum)
                     }
                 }
 
-                if (mdlhdr->Switches[23 + shellidx] != 0)
+                if (PGET(mdlhdr->Switches[23 + shellidx]) != 0)
                 {
-                    nodeptr = (f32 *) modelGetNodeRwData(model, mdlhdr->Switches[23 + shellidx]);
+                    nodeptr = (f32 *) modelGetNodeRwData(model, PGET(mdlhdr->Switches[23 + shellidx]));
 
                     if (nodeptr != NULL)
                     {
@@ -1645,11 +1652,11 @@ void gunRenderFirstPersonGunModels(Gfx **gdlptr)
 
         gSPPerspNormalize(gdl++, matrix_4x4_calc_depth_scale(0.0f, 300.0f));
 
-        if ((*(Model *)&handptr->field_B68).obj->numSwitches >= 0x11 && (*(Model *)&handptr->field_B68).obj->Switches[16] != NULL)
+        if ((*(Model *)&handptr->field_B68).obj->numSwitches >= 0x11 && PGET((*(Model *)&handptr->field_B68).obj->Switches[16]) != NULL)
         {
             union ModelRwData *rwdata;
             model = (Model *)&handptr->field_B68;
-            rwdata = modelGetNodeRwData(model, (*(Model *)&handptr->field_B68).obj->Switches[17]);
+            rwdata = modelGetNodeRwData(model, PGET((*(Model *)&handptr->field_B68).obj->Switches[17]));
 
             if (rwdata != NULL)
             {
@@ -1659,11 +1666,11 @@ void gunRenderFirstPersonGunModels(Gfx **gdlptr)
             if (item == ITEM_ROCKETLAUNCH)
             {
                 save_img_index_to_obj_ani_slot(&g_UnknownAnimController, crosshairimage);
-                gdl = process_monitor_animation_microcode(model, (*(Model *)&handptr->field_B68).obj->Switches[16], &g_UnknownAnimController, gdl, 0, 4);
+                gdl = process_monitor_animation_microcode(model, PGET((*(Model *)&handptr->field_B68).obj->Switches[16]), &g_UnknownAnimController, gdl, 0, 4);
             }
             else
             {
-                gdl = process_monitor_animation_microcode(model, (*(Model *)&handptr->field_B68).obj->Switches[16], &g_TaserAnimController, gdl, 0, 1);
+                gdl = process_monitor_animation_microcode(model, PGET((*(Model *)&handptr->field_B68).obj->Switches[16]), &g_TaserAnimController, gdl, 0, 1);
             }
         }
 
@@ -1819,9 +1826,9 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
     sub_GAME_7F05E978((Model *) &model, 0);
     sub_GAME_7F05EA94((Model *) &model, 1);
 
-    if (bodymodel->Switches[1] != NULL)
+    if (PGET(bodymodel->Switches[1]) != NULL)
     {
-        rwdata = modelGetNodeRwData((Model *) &model, bodymodel->Switches[1]);
+        rwdata = modelGetNodeRwData((Model *) &model, PGET(bodymodel->Switches[1]));
 
         if (rwdata != 0)
         {
@@ -1833,37 +1840,37 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
 
     if (bodymodel->Skeleton == (&skeleton_gun_revolver))
     {
-        if (bodymodel->Switches[4] != NULL)
+        if (PGET(bodymodel->Switches[4]) != NULL)
         {
-            matrix_4x4_set_identity_and_position((coord3d *) bodymodel->Switches[4]->Data, &sp74);
+            matrix_4x4_set_identity_and_position((coord3d *) PGET(PGET(bodymodel->Switches[4])->Data), &sp74);
             matrix_4x4_multiply(mtx, &sp74, &matrices[3]);
         }
-        if (bodymodel->Switches[5] != NULL)
+        if (PGET(bodymodel->Switches[5]) != NULL)
         {
-            matrix_4x4_set_identity_and_position((coord3d *) bodymodel->Switches[5]->Data, &sp74);
+            matrix_4x4_set_identity_and_position((coord3d *) PGET(PGET(bodymodel->Switches[5])->Data), &sp74);
             matrix_4x4_multiply(mtx, &sp74, &matrices[4]);
         }
     }
 
-    if (bodymodel->Switches[6] != NULL)
+    if (PGET(bodymodel->Switches[6]) != NULL)
     {
         coord3d *pos;
         s32 index;
 
-        pos = (coord3d *) bodymodel->Switches[6]->Data;
-        index = modelFindNodeMtxIndex(bodymodel->Switches[6], 0);
+        pos = (coord3d *) PGET(PGET(bodymodel->Switches[6])->Data);
+        index = modelFindNodeMtxIndex(PGET(bodymodel->Switches[6]), 0);
         matrix_4x4_set_identity_and_position(pos, &sp74);
         matrix_4x4_multiply(mtx, &sp74, &matrices[index]);
     }
 
-    if (bodymodel->Switches[7] != NULL)
+    if (PGET(bodymodel->Switches[7]) != NULL)
     {
         coord3d *pos;
         s32 index;
         u8 pad[8];
 
-        pos = (coord3d *) bodymodel->Switches[7]->Data;
-        index = modelFindNodeMtxIndex(bodymodel->Switches[7], 0);
+        pos = (coord3d *) PGET(PGET(bodymodel->Switches[7])->Data);
+        index = modelFindNodeMtxIndex(PGET(bodymodel->Switches[7]), 0);
         matrix_4x4_set_identity_and_position(pos, &sp74);
         matrix_4x4_multiply(mtx, &sp74, &matrices[index]);
     }
@@ -1872,9 +1879,9 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
     {
         for (j = 0; j != 20; j += 4)
         {
-            if ((*((ModelNode **) ((((u8 *) bodymodel->Switches) + j) + 0x48))) != NULL)
+            if ((PGET(*((ModelNodeWord *) ((((u8 *) bodymodel->Switches) + j) + 0x48)))) != NULL)
             {
-                rwdata = modelGetNodeRwData((Model *) &model, *((ModelNode **) ((((u8 *) bodymodel->Switches) + j) + 0x48)));
+                rwdata = modelGetNodeRwData((Model *) &model, PGET(*((ModelNodeWord *) ((((u8 *) bodymodel->Switches) + j) + 0x48))));
 
                 if (rwdata != NULL)
                 {
@@ -1882,9 +1889,9 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
                 }
             }
 
-            if ((*((ModelNode **) ((((u8 *) bodymodel->Switches) + j) + 0x5c))) != NULL)
+            if ((PGET(*((ModelNodeWord *) ((((u8 *) bodymodel->Switches) + j) + 0x5c)))) != NULL)
             {
-                rwdata = modelGetNodeRwData((Model *) &model, *((ModelNode **) ((((u8 *) bodymodel->Switches) + j) + 0x5c)));
+                rwdata = modelGetNodeRwData((Model *) &model, PGET(*((ModelNodeWord *) ((((u8 *) bodymodel->Switches) + j) + 0x5c))));
 
                 if (rwdata != NULL)
                 {
@@ -1904,9 +1911,9 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
 
     if (bodymodel->numSwitches >= 17)
     {
-        if (bodymodel->Switches[16] != NULL)
+        if (PGET(bodymodel->Switches[16]) != NULL)
         {
-            rwdata = modelGetNodeRwData((Model *) &model, bodymodel->Switches[17]);
+            rwdata = modelGetNodeRwData((Model *) &model, PGET(bodymodel->Switches[17]));
 
             if (rwdata != 0)
             {
@@ -1943,7 +1950,7 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
         {
             printf("watch3d2: item=%d emitted=%d numMtx=%d root=%08x obj=%08x rootop=%04x\n",
                    itemid, (s32) (renderdata.gdl - gdl), bodymodel->numMatrices,
-                   (u32) bodymodel->RootNode, (u32) ((Model *) &model)->obj,
+                   (uintptr_t) bodymodel->RootNode, (uintptr_t) ((Model *) &model)->obj,
                    (bodymodel->RootNode != NULL) ? (u16) bodymodel->RootNode->Opcode : 0xDEAD);
         }
     }
@@ -2076,7 +2083,7 @@ Gfx* watchRenderController(Gfx* gdl, Mtxf* basemtx, s32 envcolour, bool animateb
 
     for (i = 1; i < 13; i++)
     {
-        position = objheader->Switches[i]->Data;
+        position = PGET(PGET(objheader->Switches[i])->Data);
 
         // Update joy stick position and rotation.
         if (i == 2)
@@ -2117,7 +2124,7 @@ Gfx* watchRenderController(Gfx* gdl, Mtxf* basemtx, s32 envcolour, bool animateb
 
     for (i = 0; i < objheader->numMatrices; i++)
     {
-        matrix_4x4_copy((u32)modelstack.render_pos + i * sizeof(Mtxf), &sp41c);
+        matrix_4x4_copy((Mtxf *)((u8 *)modelstack.render_pos + i * sizeof(Mtxf)), &sp41c);
         matrix_4x4_f32_to_s32(&sp41c, &modelstack.render_pos[i]);
     }
 
@@ -2125,7 +2132,7 @@ Gfx* watchRenderController(Gfx* gdl, Mtxf* basemtx, s32 envcolour, bool animateb
 
     if (animatebuttons)
     {
-        node = objheader->Switches[13];
+        node = PGET(objheader->Switches[13]);
 
         if (node)
         {
@@ -2352,7 +2359,7 @@ Gfx* watchRenderController(Gfx* gdl, Mtxf* basemtx, s32 envcolour, bool animateb
 
         for (i = 0; i < objheader->numMatrices; i++)
         {
-            matrix_4x4_copy((u32)modelstack.render_pos + i * sizeof(Mtxf), &sp41c);
+            matrix_4x4_copy((Mtxf *)((u8 *)modelstack.render_pos + i * sizeof(Mtxf)), &sp41c);
             matrix_4x4_f32_to_s32(&sp41c, &modelstack.render_pos[i]);
         }
 
@@ -5600,11 +5607,11 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
     }
 
     handoffset = handnum * sizeof(struct hand);
-    switch0 = g_CurrentPlayer->copy_of_body_obj_header[handnum].Switches[0];
+    switch0 = PGET(g_CurrentPlayer->copy_of_body_obj_header[handnum].Switches[0]);
 
     if (switch0 != NULL)
     {
-        switchdata = (coord3d *) switch0->Data;
+        switchdata = (coord3d *) PGET(switch0->Data);
 
         switchpos.x = switchdata->x * g_CasingSwitchScale;
         switchpos.y = switchdata->y * g_CasingSwitchScale;
@@ -5958,11 +5965,11 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
     }
 
     handoffset = handnum * sizeof(struct hand);
-    switch0 = g_CurrentPlayer->copy_of_body_obj_header[handnum].Switches[0];
+    switch0 = PGET(g_CurrentPlayer->copy_of_body_obj_header[handnum].Switches[0]);
 
     if (switch0 != NULL)
     {
-        switchdata = (coord3d *) switch0->Data;
+        switchdata = (coord3d *) PGET(switch0->Data);
 
         switchpos.x = switchdata->x * g_CasingSwitchScale;
         switchpos.y = switchdata->y * g_CasingSwitchScale;
@@ -6175,7 +6182,7 @@ typedef struct ModelHead {
     void *chr;
     ModelFileHeader *obj;
     RenderPosView *render_pos;
-    union ModelRwData **datas;
+    ModelRwWord *datas;
     f32 scale;
     Model *attachedto;
     ModelNode *attachedto_objinst;
@@ -6587,7 +6594,7 @@ u32 portAmmoIconPtr(u32 icon)
     {
         return 0;
     }
-    return (u32) *slots[idx];
+    return (uintptr_t) *slots[idx];
 }
 #endif
 
@@ -7345,7 +7352,7 @@ static void portDrawTargetPlus(s32 *gdl)
     {
         PORT_HUD_ANCHOR_OFF(g);
     }
-    *gdl = (s32) g;
+    *gdl = (intptr_t) g;
 }
 #endif
 
@@ -7455,7 +7462,7 @@ void gunDrawSight(s32 *gdl) {
             {
                 Gfx *agdl = (Gfx *) sp54;
                 PORT_HUD_ANCHOR_OFF(agdl);
-                sp54 = (s32) agdl;
+                sp54 = (intptr_t) agdl;
             }
         }
 #else

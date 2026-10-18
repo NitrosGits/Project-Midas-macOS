@@ -2649,9 +2649,9 @@ extern s32 status_bar_text_buffer_index;
 //D:8003689C
 extern s32 display_statusbar;
 //D:800368A0
-extern s32 copy_1stfonttable;
+extern struct font *copy_1stfonttable;
 //D:800368A4
-extern s32 copy_2ndfonttable;
+extern struct fontchar *copy_2ndfonttable;
 //D:800368A8
 extern s32 upper_text_buffer_index;
 //D:800368AC
@@ -2768,7 +2768,7 @@ void jp_hudmsgBottomShow(char *string);
 // VERSION_US
 #define HUDMESSAGEBOTTOM hudmsgBottomShow
 void hudmsgBottomShow(char *string);
-void setFontTables(s32 arg0, s32 arg1);
+void setFontTables(struct fontchar *arg0, struct font *arg1);
 #endif
 
 Gfx * bondviewRenderDebugBondView(Gfx *arg0);
@@ -2848,5 +2848,20 @@ void bondviewRemovePlayerBody(void);
 void currentPlayerAdjustFade(f32 maxfadetime, s32 r, s32 g, s32 b, f32 frac);
 void bondviewSelectCuff(Model *model, ModelFileHeader *header, s32 switchindex);
 void sub_GAME_7F08976C(f32 param_1);
+void bondviewSetCurrentPlayerPosition(coord3d *pos, coord3d *pos2, coord3d *offset, StandTile *tile, coord3d *stan_walk_start);
+void bondviewUpdateFrustumPlanes(void);
+s32 currentPlayerGetCrouchPos(void);
+Mtx * currentPlayerGetMatrix10C8(void);
+void currentPlayerSetCameraMode(s32 mode);
+void currentPlayerSetMatrix10C4(Mtx *matrix);
+void currentPlayerSetMatrix10C8(Mtx *matrix);
+void * currentPlayerSetMatrix10CC(Mtxf *matrix);
+void currentPlayerSetProjectionMatrix(Mtx *matrix);
+void currentPlayerSetProjectionMatrixF(Mtxf *matrix);
+void currentPlayerSetViewToWorldMtxf(Mtxf *matrix);
+s32 playerGetCrouchPos(s32 playernum);
+void set_BONDdata_field_10E0(s32 arg0);
+void sub_GAME_7F078464(s32 arg0);
+void transform3Dto2DWithZScaling(coord3d *in, coord3d *out);
 
 #endif

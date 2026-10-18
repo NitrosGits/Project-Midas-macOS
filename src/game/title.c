@@ -25,6 +25,9 @@
 #include "title.h"
 #include "title2.h"
 #include "title3.h"
+#include "dyn.h"
+#include "frametiming.h"
+#include "rle.h"
 
 
 extern signed short sins(unsigned short x);
@@ -232,7 +235,7 @@ Gfx *sub_GAME_7F007F30(Gfx *gdl, s32 count, Mtxf *matrix)
             if (gunbarrelTimer == BOND_EYE_ANIM_START)
             {
                 // Terrible memory read that might just freeze the game. Fixed so it wouldn't happen anymore.
-                modelSetAnimation(chrModelInstance, (struct ModelAnimation *) (PTR_ANIM_bond_eye_fire + (s32) &ptr_animation_table->data), 0, 2.0f, 0.910000026f, 16.0f);
+                modelSetAnimation(chrModelInstance, (struct ModelAnimation *) (PTR_ANIM_bond_eye_fire + (intptr_t) &ptr_animation_table->data), 0, 2.0f, 0.910000026f, 16.0f);
             }
 
             if (gunbarrelTimer == BOND_EYE_ANIM_SPEEDUP)
@@ -261,14 +264,14 @@ Gfx *sub_GAME_7F007F30(Gfx *gdl, s32 count, Mtxf *matrix)
 #endif
     subcalcpos(chrModelInstance);
 
-    if (gunModelInstance->obj->Switches[0] != NULL)
+    if (PGET(gunModelInstance->obj->Switches[0]) != NULL)
     {
-        modelGetNodeRwData(gunModelInstance, gunModelInstance->obj->Switches[0])->Gunfire.visible = playedShot;
+        modelGetNodeRwData(gunModelInstance, PGET(gunModelInstance->obj->Switches[0]))->Gunfire.visible = playedShot;
     }
 
-    if (gunModelInstance->obj->Switches[2] != NULL)
+    if (PGET(gunModelInstance->obj->Switches[2]) != NULL)
     {
-        modelGetNodeRwData(gunModelInstance, gunModelInstance->obj->Switches[2])->Switch.visible = playedShot;
+        modelGetNodeRwData(gunModelInstance, PGET(gunModelInstance->obj->Switches[2]))->Switch.visible = playedShot;
     }
 
     renderData.basemtx = matrix;
@@ -417,7 +420,7 @@ void setupRarewareLogoData(s32 address, s32 size) {
     D_8002A89C = -40.0f;
     intro_eye_counter = 0;
     virtualaddress = address;
-    romCopy(virtualaddress, &_rarewarelogoSegmentRomStart, ALIGN64_V2((u32)&_rarewarelogoSegmentEnd - (u32)&_rarewarelogoSegmentStart));
+    romCopy(virtualaddress, &_rarewarelogoSegmentRomStart, ALIGN64_V2((uintptr_t)&_rarewarelogoSegmentEnd - (uintptr_t)&_rarewarelogoSegmentStart));
 
 #ifndef TARGET_N64
     { /* the logo data is typed host references throughout (the segment
@@ -500,7 +503,7 @@ void sub_GAME_7F008DE4(u8 **addr, s32 *size) {
     *size -= 0x40400;
     *addr += 0x40400;
     dword_CODE_bss_80069588 = *addr;
-    romCopy(dword_CODE_bss_80069588, (void *)(s32)&unknown2, ALIGN64_V2(((u32)&unknown2_end - (u32)&unknown2)));
+    romCopy(dword_CODE_bss_80069588, (void *)(intptr_t)&unknown2, ALIGN64_V2(((uintptr_t)&unknown2_end - (uintptr_t)&unknown2)));
     rle_expand_8bit(dword_CODE_bss_80069588, dword_CODE_bss_8006958C);
 }
 
@@ -576,7 +579,7 @@ void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize)
     modelSetAnimPlaySpeed(chrModelInstance, S_7F008E80_ANIM_SPEED, 0.0f);
 #undef S_7F008E80_ANIM_SPEED
     
-    animation = (struct ModelAnimation*)((s32)ptr_animation_table + PTR_ANIM_bond_eye_walk);
+    animation = (struct ModelAnimation*)((intptr_t)ptr_animation_table + PTR_ANIM_bond_eye_walk);
     startframe = animation->unk04 - 0x44;
     while (startframe < 0) // Very dangerous, can cause infinite loops
     {
@@ -597,7 +600,7 @@ void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize)
     modelSetScale(gunModelInstance, 0.18779343f);
     
     gunModelInstance->attachedto = chrModelInstance;
-    gunModelInstance->attachedto_objinst = chrModelInstance->obj->Switches[3];
+    gunModelInstance->attachedto_objinst = PGET(chrModelInstance->obj->Switches[3]);
     gunbarrelTimer = 0;    
 }
 

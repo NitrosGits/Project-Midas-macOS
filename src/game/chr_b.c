@@ -29,7 +29,11 @@ struct Model *makeonebody(s32 body, s32 head, struct ModelFileHeader *bodyHeader
 {
     f32 scale;
     f32 pov;
+#ifdef TARGET_N64
     s32 opcode;
+#else
+    ModelNode *opcode; /* the head attachment node (its Opcode is at +0) */
+#endif
     ModelRwData_SwitchRecord *rwdata;
 
     scale = c_item_entries[body].scale * 0.10000001f;
@@ -69,7 +73,11 @@ struct Model *makeonebody(s32 body, s32 head, struct ModelFileHeader *bodyHeader
 
     if ((c_item_entries[body].hasHead == 0) && (head >= 0))
     {
+#ifdef TARGET_N64
         opcode = &bodyHeader->Switches[4]->Opcode;
+#else
+        opcode = PGET(bodyHeader->Switches[4]);
+#endif
         if (opcode != 0)
         {
             if (headHeader->RootNode == 0)
@@ -117,9 +125,9 @@ struct Model *makeonebody(s32 body, s32 head, struct ModelFileHeader *bodyHeader
 
             if ((sunglasses == 0) && ((s32) headHeader->numSwitches > 0))
             {
-                if (headHeader->Switches[0] != 0)
+                if (PGET(headHeader->Switches[0]) != 0)
                 {
-                    rwdata = &modelGetNodeRwData(model, headHeader->Switches[0])->Switch;
+                    rwdata = &modelGetNodeRwData(model, PGET(headHeader->Switches[0]))->Switch;
                     rwdata->visible = 0;
                 }
             }

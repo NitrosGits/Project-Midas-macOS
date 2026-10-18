@@ -189,11 +189,11 @@ void bloodImgTranspose(u8 *src, s32 srcwidth, s32 srcheight, u8 *dst)
             var_t2 += 1;
             var_t0 += srcheight;
             
-        } while ((u32) var_v1 < rowend);
+        } while ((uintptr_t) var_v1 < rowend);
 
         var_t0 = (var_t0 - (pixelcount)) + 1;
         
-    } while ((u32) var_v1 < (u32) t1);
+    } while ((uintptr_t) var_v1 < (u32) t1);
 }
 
 

@@ -14,6 +14,9 @@
 #include "objecthandler.h"
 #include "quaternion.h"
 #include "random.h"
+#include "othermodemicrocode.h"
+#include <ramrom.h>
+#include <stdio.h>
 
 
 typedef struct ModelGroupMtxBuildArg {
@@ -218,7 +221,7 @@ void sub_GAME_7F06C418(Vew4s32 *src, Vew4s32 *dst) {
 }
 
 
-void set_vtxallocator(s32 param_1) {
+void set_vtxallocator(struct Vertex *(*param_1)(s32 numvertices)) {
   vtxallocator = param_1;
 }
 
@@ -302,24 +305,24 @@ s32 modelFindNodeMtxIndex(ModelNode *node, s32 arg1)
         switch (node->Opcode & 0xff)
         {
             case MODELNODE_OPCODE_HEADER:
-                rodata1 = node->Data;
+                rodata1 = PGET(node->Data);
                 return rodata1->Header.MatrixIndex;
 
             case MODELNODE_OPCODE_GROUP:
-                rodata2 = node->Data;
+                rodata2 = PGET(node->Data);
                 return rodata2->Group.MatrixIDs[arg1 == 0x200 ? 2 : (arg1 == 0x100 ? 1 : 0)];
 
             case MODELNODE_OPCODE_OP03:
-                rodata3 = node->Data;
+                rodata3 = PGET(node->Data);
                 return rodata3->Group.MatrixIDs[arg1 == 0x200 ? 2 : (arg1 == 0x100 ? 1 : 0)];
 
             case MODELNODE_OPCODE_GROUPSIMPLE:
-                rodata4 = node->Data;
+                rodata4 = PGET(node->Data);
                 return rodata4->GroupSimple.Group1;
                 break;
         }
 
-        node = node->Parent;
+        node = PGET(node->Parent);
     }
 
     return -1;
@@ -395,69 +398,69 @@ f32 sub_GAME_7F06C768(Model *objinst)
 union ModelRwData* modelGetNodeRwData(Model *Objinst, ModelNode *root)
 {
     s32 index  = 0;
-    union ModelRwData **data = Objinst->datas;
+    ModelRwWord *data = Objinst->datas;
 
     switch (root->Opcode & 0xff)
     {
         case MODELNODE_OPCODE_HEADER:
         {
-            index = root->Data->Header.RwDataIndex;
+            index = PGET(root->Data)->Header.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_DLCOLLISION:
         {
-            index = root->Data->DisplayListCollisions.RwDataIndex;
+            index = PGET(root->Data)->DisplayListCollisions.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_OP07:
         {
-            index = root->Data->Op07.RwDataIndex;
+            index = PGET(root->Data)->Op07.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_LOD:
         {
-            index = root->Data->LOD.RwDataIndex;
+            index = PGET(root->Data)->LOD.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_SWITCH:
         {
-            index = root->Data->Switch.RwDataIndex;
+            index = PGET(root->Data)->Switch.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_BSP:
         {
-            index = root->Data->BSP.RwDataIndex;
+            index = PGET(root->Data)->BSP.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_OP11:
         {
-            index = root->Data->Op11.RwDataIndex;
+            index = PGET(root->Data)->Op11.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_GUNFIRE:
         {
-            index = root->Data->Gunfire.RwDataIndex;
+            index = PGET(root->Data)->Gunfire.RwDataIndex;
             break;
         }
         case MODELNODE_OPCODE_HEAD:
         {
-            index = root->Data->HeadPlaceholder.RwDataIndex;
+            index = PGET(root->Data)->HeadPlaceholder.RwDataIndex;
             break;
         }
     }
 
-    while (root->Parent)
+    while (PGET(root->Parent))
     {
-        root = root->Parent;
+        root = PGET(root->Parent);
         if ((root->Opcode & 0xFF) == MODELNODE_OPCODE_HEAD)
         {
             ModelRwData_HeadPlaceholderRecord *tmp = modelGetNodeRwData(Objinst, root);
-            data = tmp->RwDatas;
+            data = PGET(tmp->RwDatas);
             break;
         }
     }
 
-    return &data[index];
+    return (union ModelRwData *) &data[index];
 }
 
 
@@ -488,7 +491,7 @@ void getpartoffset(Model *objinst, ModelNode *part, coord3d *offset) //#MATCH - 
         }
         case MODELNODE_OPCODE_GROUP:
         {
-            ModelRoData_GroupRecord *prt = &part->Data->Group;
+            ModelRoData_GroupRecord *prt = &PGET(part->Data)->Group;
             offset->x                  = prt->Origin.x;
             offset->y                  = prt->Origin.y;
             offset->z                  = prt->Origin.z;
@@ -496,7 +499,7 @@ void getpartoffset(Model *objinst, ModelNode *part, coord3d *offset) //#MATCH - 
         }
         case MODELNODE_OPCODE_OP03:
         {
-            ModelRoData_GroupSimpleRecord *prt = &part->Data->GroupSimple; //UNUSED at this time
+            ModelRoData_GroupSimpleRecord *prt = &PGET(part->Data)->GroupSimple; //UNUSED at this time
             offset->x                        = prt->Origin.x;
             offset->y                        = prt->Origin.y;
             offset->z                        = prt->Origin.z;
@@ -504,7 +507,7 @@ void getpartoffset(Model *objinst, ModelNode *part, coord3d *offset) //#MATCH - 
         }
         case MODELNODE_OPCODE_GROUPSIMPLE:
         {
-            ModelRoData_GroupSimpleRecord *prt = &part->Data->GroupSimple;
+            ModelRoData_GroupSimpleRecord *prt = &PGET(part->Data)->GroupSimple;
             offset->x                        = prt->Origin.x;
             offset->y                        = prt->Origin.y;
             offset->z                        = prt->Origin.z;
@@ -560,7 +563,7 @@ void setpartoffset(Model *model, ModelNode *node, coord3d *pos)
             break;
         case MODELNODE_OPCODE_GROUP:
             {
-                ModelRoData_GroupRecord *rodata = &node->Data->Group;
+                ModelRoData_GroupRecord *rodata = &PGET(node->Data)->Group;
                 rodata->Origin.x = pos->x;
                 rodata->Origin.y = pos->y;
                 rodata->Origin.z = pos->z;
@@ -568,7 +571,7 @@ void setpartoffset(Model *model, ModelNode *node, coord3d *pos)
             break;
         case MODELNODE_OPCODE_OP03:
             {
-                ModelRoData_GroupRecord *rodata = &node->Data->Group;
+                ModelRoData_GroupRecord *rodata = &PGET(node->Data)->Group;
                 rodata->Origin.x = pos->x;
                 rodata->Origin.y = pos->y;
                 rodata->Origin.z = pos->z;
@@ -576,7 +579,7 @@ void setpartoffset(Model *model, ModelNode *node, coord3d *pos)
             break;
         case MODELNODE_OPCODE_GROUPSIMPLE:
             {
-                ModelRoData_GroupSimpleRecord *rodata = &node->Data->GroupSimple;
+                ModelRoData_GroupSimpleRecord *rodata = &PGET(node->Data)->GroupSimple;
                 rodata->Origin.x = pos->x;
                 rodata->Origin.y = pos->y;
                 rodata->Origin.z = pos->z;
@@ -770,56 +773,56 @@ f32 getjointsize(Model *model, ModelNode *node)
             {
                 case MODELNODE_OPCODE_HEADER:
                 {
-                    ModelRoData_HeaderRecord *rodata = &node->Data->Header;
+                    ModelRoData_HeaderRecord *rodata = &PGET(node->Data)->Header;
                     return rodata->GroupsAsF32 * model->scale;
                 }
                 case MODELNODE_OPCODE_GROUP:
                 {
-                    ModelRoData_GroupRecord *rodata = &node->Data->Group;
+                    ModelRoData_GroupRecord *rodata = &PGET(node->Data)->Group;
                     return rodata->BoundingVolumeRadius * model->scale;
                 }
                 case MODELNODE_OPCODE_OP03:
                 {
-                    ModelRoData_GroupRecord *rodata = &node->Data->Group;
+                    ModelRoData_GroupRecord *rodata = &PGET(node->Data)->Group;
                     return rodata->BoundingVolumeRadius * model->scale;
                 }
                 case MODELNODE_OPCODE_GROUPSIMPLE:
                 {
-                    ModelRoData_GroupSimpleRecord *rodata = &node->Data->GroupSimple;
+                    ModelRoData_GroupSimpleRecord *rodata = &PGET(node->Data)->GroupSimple;
                     return rodata->BoundingVolumeRadius * model->scale;
                 }
                 case MODELNODE_OPCODE_OP11:
                 {
-                    ModelRoData_Op11Record *rodata = &node->Data->Op11;
+                    ModelRoData_Op11Record *rodata = &PGET(node->Data)->Op11;
                     return rodata->BoundingVolumeRadius * model->scale;
                 }
                 case MODELNODE_OPCODE_GUNFIRE:
                 {
-                    ModelRoData_GunfireRecord *rodata = &node->Data->Gunfire;
+                    ModelRoData_GunfireRecord *rodata = &PGET(node->Data)->Gunfire;
                     return rodata->Scale * model->scale;
                 }
                 case MODELNODE_OPCODE_SHADOW:
                 {
-                    ModelRoData_ShadowRecord *rodata = &node->Data->Shadow;
+                    ModelRoData_ShadowRecord *rodata = &PGET(node->Data)->Shadow;
                     return rodata->Scale * model->scale;
                 }
                 case MODELNODE_OPCODE_OP14:
                 {
-                    ModelRoData_Op14Record *rodata = &node->Data->Op14;
+                    ModelRoData_Op14Record *rodata = &PGET(node->Data)->Op14;
                     return rodata->Scale * model->scale;
                 }
                 case MODELNODE_OPCODE_INTERLINK:
                 {
-                    ModelRoData_InterlinkageRecord *rodata = &node->Data->Interlinkage;
+                    ModelRoData_InterlinkageRecord *rodata = &PGET(node->Data)->Interlinkage;
                     return rodata->Scale * model->scale;
                 }
                 case MODELNODE_OPCODE_OP16:
                 {
-                    ModelNode_Op16Record *rodata = &node->Data->Op16;
+                    ModelNode_Op16Record *rodata = &PGET(node->Data)->Op16;
                     return rodata->Scale * model->scale;
                 }
                 default:
-                    node = node->Parent;
+                    node = PGET(node->Parent);
             }
         } while (node);
     }
@@ -922,7 +925,7 @@ u16 modelAnimReadRootMotionValue(ModelAnimation *anim, s32 fieldIndex, s32 extra
     u8 bitsThisRead;
 
     result = 0;
-    desc = anim->bitDescriptors + fieldIndex;
+    desc = PGET(anim->bitDescriptors) + fieldIndex;
     bitsRemaining = desc->bitCount;
 
     if (bitsRemaining > 0)
@@ -930,7 +933,7 @@ u16 modelAnimReadRootMotionValue(ModelAnimation *anim, s32 fieldIndex, s32 extra
         totalBitOffset = extraBitOffset + desc->bitOffset;
         byteIndex = totalBitOffset >> 3;
         totalBitOffset &= 7;
-        byteptr = anim->bitStream + byteIndex;
+        byteptr = PGET(anim->bitStream) + byteIndex;
         bitsThisRead = 8 - totalBitOffset;
 
         if (bitsRemaining >= bitsThisRead)
@@ -1152,7 +1155,7 @@ void process_01_group_heading(ModelRenderData* renderdata, Model* model, ModelNo
     RenderPosView* renderpos;
     Mtxf sp20;
 
-    rodata = node->Data;
+    rodata = PGET(node->Data);
     rwdata = modelGetNodeRwData(model, node);
 
     scale = model->scale;
@@ -1161,9 +1164,9 @@ void process_01_group_heading(ModelRenderData* renderdata, Model* model, ModelNo
     modeltype = rodata->Header.MatrixIndex;
     renderpos = &model->render_pos[modeltype];
 
-    if (node->Parent != NULL)
+    if (PGET(node->Parent) != NULL)
     {
-        var_a3 = modelFindNodeMtx(model, node->Parent, 0);
+        var_a3 = modelFindNodeMtx(model, PGET(node->Parent), 0);
     }
     else
     {
@@ -1335,22 +1338,22 @@ void sub_GAME_7F06DB5C(ModelRenderData *arg0, Model *arg1, ModelNode *arg2, quat
     s32 sp4C;
     RenderPosView *sp48;
     s32 sp44;
-    s32 *new_var;
+    intptr_t *new_var;
     s32 sp40;
     quatf sp2C;
     Mtxf *sp28;
     f32 sp24;
     s32 _gap20;
-    s32 sp1C;
+    intptr_t sp1C; /* holds the parent node, then the matrix */
 
     spA4 = arg2->Opcode;
-    spA0 = (ModelRoData_GroupRecord *)arg2->Data;
+    spA0 = (ModelRoData_GroupRecord *)PGET(arg2->Data);
     sp54 = spA0->MatrixID0;
     sp50 = spA0->MatrixID1;
     sp4C = spA0->MatrixID2;
     new_var = &sp1C;
     sp48 = arg1->render_pos;
-    sp1C = (s32)arg2->Parent;
+    sp1C = (intptr_t)PGET(arg2->Parent);
 
     if (*new_var != 0) {
         sp9C = arg0->basemtx;
@@ -1361,10 +1364,15 @@ void sub_GAME_7F06DB5C(ModelRenderData *arg0, Model *arg1, ModelNode *arg2, quat
 
     if (sp9C != 0) {
         quaternion_to_transform_matrix(&spA0->Origin, arg3, &sp58);
-        sp1C = (s32)&sp48[sp54];
+        sp1C = (intptr_t)&sp48[sp54];
         matrix_4x4_multiply_homogeneous(sp9C, &sp58, (Mtxf *)sp1C);
         if (g_ModelJointPositionedFunc != NULL) {
+#ifdef TARGET_N64
             ((void (*)(s32, s32, s32)) g_ModelJointPositionedFunc)(sp54, sp1C, sp1C);
+#else
+            /* PORT: the callback is (s32 mtxindex, Mtxf *mtx) (objecthandler.h) */
+            g_ModelJointPositionedFunc(sp54, (Mtxf *) sp1C);
+#endif
         }
     } else {
         quaternion_to_transform_matrix(&spA0->Origin, arg3, (Mtxf *)&sp48[sp54]);
@@ -1541,7 +1549,7 @@ void process_02_position(ModelRenderData *arg0, Model *model, ModelNode *node)
     coord3d rot4;
     ModelRoData_GroupRecord *group;
 
-    group = &node->Data->Group;
+    group = &PGET(node->Data)->Group;
     jointnum.v = group->JointID;
     skeleton = model->obj->Skeleton;
 
@@ -1602,16 +1610,16 @@ void sub_GAME_7F06E2B8(ModelRenderData *renderData, Model *model, ModelNode *nod
     f32 scalar;
 
     opcode = node->Opcode;
-    data = node->Data;
+    data = PGET(node->Data);
     m0 = data->Group.MatrixID0;
     m1 = data->Group.MatrixID1;
     m2 = data->Group.MatrixID2;
     renderPosBase = model->render_pos;
     render_pos = renderPosBase;
 
-    if (node->Parent != NULL)
+    if (PGET(node->Parent) != NULL)
     {
-        mtx = modelFindNodeMtx(model, ((0, node))->Parent, 0);
+        mtx = modelFindNodeMtx(model, PGET(((0, node))->Parent), 0);
     }
     else
     {
@@ -1739,7 +1747,7 @@ void process_03_unknown(ModelRenderData *renderData, Model *model, ModelNode *no
     f32 tmp2;
     f32 tmp;
 
-    rodata = &node->Data->Group;
+    rodata = &PGET(node->Data)->Group;
     jointIndex = rodata->JointID;
     skeleton = model->obj->Skeleton;
 
@@ -1767,15 +1775,15 @@ void process_03_unknown(ModelRenderData *renderData, Model *model, ModelNode *no
 
 void process_15_subposition(ModelRenderData* arg0, Model *model, ModelNode *node)
 {
-    union ModelRoData *rodata = node->Data;
+    union ModelRoData *rodata = PGET(node->Data);
     Mtxf *sp68;
     Mtxf sp28;
     s32 mtxindex = rodata->GroupSimple.Group1;
     RenderPosView *matrices = model->render_pos;
 
-    if (node->Parent)
+    if (PGET(node->Parent))
     {
-        sp68 = modelFindNodeMtx(model, node->Parent, 0);
+        sp68 = modelFindNodeMtx(model, PGET(node->Parent), 0);
     }
     else
     {
@@ -1798,7 +1806,7 @@ void process_15_subposition(ModelRenderData* arg0, Model *model, ModelNode *node
 */
 void modelUpdateDistanceRelations(Model* model, ModelNode* node)
 {
-    union ModelRoData *rodata = node->Data;
+    union ModelRoData *rodata = PGET(node->Data);
     union ModelRwData *rwdata = modelGetNodeRwData(model, node);
     Mtxf *mtx = modelFindNodeMtx(model, node, 0);
     f32 distance;
@@ -1830,13 +1838,13 @@ void modelUpdateDistanceRelations(Model* model, ModelNode* node)
         if (distance <= rodata->LOD.MaxDistance * model->scale)
         {
             rwdata->LOD.visible = TRUE;
-            node->Child = rodata->LOD.Affects;
+            PSET(node->Child, PGET(rodata->LOD.Affects));
             return;
         }
     }
 
     rwdata->LOD.visible = FALSE;
-    node->Child = NULL;
+    PSET(node->Child, NULL);
 }
 
 /*
@@ -1844,32 +1852,32 @@ void modelUpdateDistanceRelations(Model* model, ModelNode* node)
 */
 void modelApplyDistanceRelations(Model* model, ModelNode* node)
 {
-    ModelRoData_LODRecord *rodata = &node->Data->LOD;
+    ModelRoData_LODRecord *rodata = &PGET(node->Data)->LOD;
     ModelRwData_LODRecord *rwdata = modelGetNodeRwData(model, node);
 
     if (rwdata->visible)
     {
-        node->Child = rodata->Affects;
+        PSET(node->Child, PGET(rodata->Affects));
     }
     else
     {
-        node->Child = NULL;
+        PSET(node->Child, NULL);
     }
 }
 
 
 void modelApplyToggleRelations(Model* model, ModelNode* node)
 {
-    ModelRoData_SwitchRecord *rodata = &node->Data->Switch;
+    ModelRoData_SwitchRecord *rodata = &PGET(node->Data)->Switch;
     ModelRwData_SwitchRecord *rwdata = modelGetNodeRwData(model, node);
 
     if (rwdata->visible)
     {
-        node->Child = rodata->Controls;
+        PSET(node->Child, PGET(rodata->Controls));
     }
     else
     {
-        node->Child = NULL;
+        PSET(node->Child, NULL);
     }
 }
 
@@ -1878,16 +1886,16 @@ void modelApplyHeadRelations(Model* model, ModelNode* bodynode)
 {
     struct ModelRwData_HeadPlaceholderRecord *rwdata = modelGetNodeRwData(model, bodynode);
 
-    if (rwdata->ModelFileHeader)
+    if (PGET(rwdata->ModelFileHeader))
     {
-        ModelNode *headnode = rwdata->ModelFileHeader->RootNode;
+        ModelNode *headnode = PGET(rwdata->ModelFileHeader)->RootNode;
 
-        bodynode->Child = headnode;
+        PSET(bodynode->Child, headnode);
 
         while (headnode)
         {
-            headnode->Parent = bodynode;
-            headnode = headnode->Next;
+            PSET(headnode->Parent, bodynode);
+            headnode = PGET(headnode->Next);
         }
     }
 }
@@ -1895,20 +1903,20 @@ void modelApplyHeadRelations(Model* model, ModelNode* bodynode)
 
 void modelApplyReorderRelationsByArg(ModelNode *basenode, bool visible)
 {
-    union ModelRoData *rodata = basenode->Data;
+    union ModelRoData *rodata = PGET(basenode->Data);
     ModelNode *node1;
     ModelNode *node2;
     ModelNode *loopnode;
 
     if (visible)
     {
-        node1 = rodata->BSP.leftChild;
-        node2 = rodata->BSP.rightChild;
+        node1 = PGET(rodata->BSP.leftChild);
+        node2 = PGET(rodata->BSP.rightChild);
     }
     else
     {
-        node1 = rodata->BSP.rightChild;
-        node2 = rodata->BSP.leftChild;
+        node1 = PGET(rodata->BSP.rightChild);
+        node2 = PGET(rodata->BSP.leftChild);
     }
 
     if (node1)
@@ -1918,41 +1926,41 @@ void modelApplyReorderRelationsByArg(ModelNode *basenode, bool visible)
         // and this is ensuring the node1 group is first.
         // Note that node2 might be NULL.
 
-        basenode->Child = node1;
-        node1->Prev = NULL;
+        PSET(basenode->Child, node1);
+        PSET(node1->Prev, NULL);
 
         // Skip through node1's siblings until node2 is found or the end is
         // reached
         loopnode = node1;
 
-        while (loopnode->Next && loopnode->Next != node2)
+        while (PGET(loopnode->Next) && PGET(loopnode->Next) != node2)
         {
-            loopnode = loopnode->Next;
+            loopnode = PGET(loopnode->Next);
         }
 
-        loopnode->Next = node2;
+        PSET(loopnode->Next, node2);
 
         if (node2)
         {
             // Append node2 and its siblings to node1's siblings
-            node2->Prev = loopnode;
+            PSET(node2->Prev, loopnode);
             loopnode = node2;
 
-            while (loopnode->Next && loopnode->Next != node1)
+            while (PGET(loopnode->Next) && PGET(loopnode->Next) != node1)
             {
-                loopnode = loopnode->Next;
+                loopnode = PGET(loopnode->Next);
             }
 
-            loopnode->Next = NULL;
+            PSET(loopnode->Next, NULL);
         }
     }
     else
     {
-        basenode->Child = node2;
+        PSET(basenode->Child, node2);
 
         if (node2)
         {
-            node2->Prev = NULL;
+            PSET(node2->Prev, NULL);
         }
     }
 }
@@ -1967,7 +1975,7 @@ void modelApplyReorderRelations(Model* model, ModelNode* node)
 
 void modelUpdateReorderRelations(Model *model, ModelNode *node)
 {
-    union ModelRoData *rodata = node->Data;
+    union ModelRoData *rodata = PGET(node->Data);
     union ModelRwData *rwdata = modelGetNodeRwData(model, node);
     Mtxf *mtx = modelFindNodeMtx(model, node, 0);
     coord3d sp38;
@@ -2023,7 +2031,7 @@ void modelUpdateReorderRelations(Model *model, ModelNode *node)
 
 void process_07_unknown(Model *model, ModelNode *node)
 {
-    union ModelRoData *rodata = node->Data;
+    union ModelRoData *rodata = PGET(node->Data);
     union ModelRwData *rwdata = modelGetNodeRwData(model, node);
     Mtxf *mtx = modelFindNodeMtx(model, node, 0);
     f32 ratio;
@@ -2059,7 +2067,7 @@ void process_07_unknown(Model *model, ModelNode *node)
 
 void modelUpdateRelationsQuick(Model *model, ModelNode *parent)
 {
-    ModelNode *node = parent->Child;
+    ModelNode *node = PGET(parent->Child);
     ModelNode **unused_parent;
 
     while (node)
@@ -2097,28 +2105,28 @@ void modelUpdateRelationsQuick(Model *model, ModelNode *parent)
                 break;
         }
 
-        if (dochildren && node->Child)
+        if (dochildren && PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             unused_parent = &parent;
             while (node)
             {
-                if (node == parent->Parent)
+                if (node == PGET(parent->Parent))
                 {
                     node = NULL;
                     break;
                 }
 
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -2164,21 +2172,21 @@ void modelUpdateNodeRelations(Model *model)
                 break;
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -2236,21 +2244,21 @@ void modelUpdateMatrices(ModelRenderData *arg0, Model *model)
                 break;
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -2573,7 +2581,7 @@ void modelSetAnimation2(Model *model, ModelAnimation *anim, s32 flip, f32 frame,
     type = model->obj->RootNode->Opcode & 0xff;
 
     if (type == MODELNODE_OPCODE_HEADER) {
-        ModelRoData_HeaderRecord *rodata = &model->obj->RootNode->Data->Header;
+        ModelRoData_HeaderRecord *rodata = &PGET(model->obj->RootNode->Data)->Header;
         ModelRwData_HeaderRecord *rwdata = modelGetNodeRwData(model, model->obj->RootNode);
         f32 temp_f14;
         f32 sinAngle;
@@ -2740,7 +2748,7 @@ void modelSetAnimEndFrame(Model *model, f32 endframe) {
 }
 
 void modelSetAnimFlipFunction(Model *model, void *callback) {
-    model->animflipfunc = callback;
+    model->animflipfunc = (intptr_t) callback;
 }
 
 
@@ -2806,7 +2814,7 @@ void modelSetAnimPlaySpeed(Model *model, f32 animation_rate, f32 startframe) {
 }
 
 
-void sub_GAME_7F06FF5C(Model *model, s32 arg1) {
+void sub_GAME_7F06FF5C(Model *model, intptr_t arg1) {
     model->unka0 = arg1;
 }
 
@@ -3005,14 +3013,14 @@ void modelSetAnimFrame2WithChrStuff(Model *model, f32 framea, f32 frameb, f32 fr
 
     if ((va & 0xff) == 1)
     {
-        node = (ModelNode *) root->Data;
+        node = (ModelNode *) PGET(root->Data);
         header = (ModelRwData_HeaderRecord *) modelGetNodeRwData(modelptr, root);
 
         if (header->unk00 == 0)
         {
             /* upstream's u16 AnimPart field (ex raw-word ModelType>>16)
              * is endian-neutral - one read serves both targets */
-            jointnum = ((union ModelRoData *) root->Data)->Header.AnimPart;
+            jointnum = ((union ModelRoData *) PGET(root->Data))->Header.AnimPart;
             skeleton = modelptr->obj->Skeleton;
             scale = modelptr->scale * modelptr->anim_translation_scale;
             pos = D_80036254;
@@ -4221,16 +4229,17 @@ void modelApplyCullMode(ModelRenderData *renderdata)
 /* port (GPU-retained model parts, port/fast3d/gfx_roomcache.inl): the next
  * G_DL is a part list whose vertices load through segment vtxseg (roc_hooks.c) */
 extern Gfx *portPartCacheEmit(Gfx *gdl, s32 vtxseg);
+extern int portPtrLooksBad(const void *p); /* model_audit.c */
 #endif
 void modelRenderNodeGundl(ModelRenderData* renderdata, ModelNode* arg1)
 {
-    ModelRoData_DisplayListRecord* rodata = &arg1->Data->DisplayList;
+    ModelRoData_DisplayListRecord* rodata = &PGET(arg1->Data)->DisplayList;
 
     if (renderdata->unk18 == 0)
     {
-        if ((renderdata->flags & 1) && rodata->Primary)
+        if ((renderdata->flags & 1) && PGET(rodata->Primary))
         {
-            gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(rodata->BaseAddr));
+            gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(rodata->BaseAddr)));
 
             if (renderdata->cullmode)
             {
@@ -4258,21 +4267,21 @@ void modelRenderNodeGundl(ModelRenderData* renderdata, ModelNode* arg1)
             /* the gun-DL node's lists address their vertices through SPSEGMENT_MODEL_COL1 = the model's base */
             renderdata->gdl = portPartCacheEmit(renderdata->gdl, SPSEGMENT_MODEL_COL1);
 #endif
-            gSPDisplayList(renderdata->gdl++, rodata->Primary);
+            gSPDisplayList(renderdata->gdl++, PGET(rodata->Primary));
 
-            if ((rodata->ModelType == 3) && rodata->Secondary)
+            if ((rodata->ModelType == 3) && PGET(rodata->Secondary))
             {
                 modelApplyRenderModeType3(renderdata, 0);
 #ifndef TARGET_N64
                 renderdata->gdl = portPartCacheEmit(renderdata->gdl, SPSEGMENT_MODEL_COL1);
 #endif
-                gSPDisplayList(renderdata->gdl++, rodata->Secondary);
+                gSPDisplayList(renderdata->gdl++, PGET(rodata->Secondary));
             }
         }
 
-        if ((renderdata->flags & 2) && rodata->Primary && (rodata->ModelType == 4) && rodata->Secondary)
+        if ((renderdata->flags & 2) && PGET(rodata->Primary) && (rodata->ModelType == 4) && PGET(rodata->Secondary))
         {
-            gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(rodata->BaseAddr));
+            gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(rodata->BaseAddr)));
 
             if (renderdata->cullmode)
             {
@@ -4283,7 +4292,7 @@ void modelRenderNodeGundl(ModelRenderData* renderdata, ModelNode* arg1)
 #ifndef TARGET_N64
             renderdata->gdl = portPartCacheEmit(renderdata->gdl, SPSEGMENT_MODEL_COL1);
 #endif
-            gSPDisplayList(renderdata->gdl++, rodata->Secondary);
+            gSPDisplayList(renderdata->gdl++, PGET(rodata->Secondary));
         }
     }
 }
@@ -4414,7 +4423,7 @@ GeometryMode is not in setup and is persistent accross parts.
 */
 void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *node)
 {
-    union ModelRoData *rodata = node->Data;
+    union ModelRoData *rodata = PGET(node->Data);
 
 #ifndef TARGET_N64
     { /* GE_PARTDBG=1: logs each DLCOLLISION render visit (which pass, and whether the
@@ -4430,11 +4439,11 @@ void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *nod
             printf("partdbg: node=%p ro=%p type=%d flags=%x unk18=%d prim=%p sec=%p rwgdl=%p rwvtx=%p rovtx=%p\n",
                     node, rodata, rodata->DisplayListCollisions.ModelType,
                     renderdata->flags, renderdata->unk18,
-                    rodata->DisplayListCollisions.Primary,
-                    rodata->DisplayListCollisions.Secondary,
-                    rw->DisplayListCollisions.gdl,
-                    rw->DisplayListCollisions.Vertices,
-                    rodata->DisplayListCollisions.Vertices);
+                    PGET(rodata->DisplayListCollisions.Primary),
+                    PGET(rodata->DisplayListCollisions.Secondary),
+                    PGET(rw->DisplayListCollisions.gdl),
+                    PGET(rw->DisplayListCollisions.Vertices),
+                    PGET(rodata->DisplayListCollisions.Vertices));
         }
     }
 #endif
@@ -4445,7 +4454,7 @@ void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *nod
         {
             union ModelRwData *rwdata = modelGetNodeRwData(model, node);
 
-            if (rwdata->DisplayListCollisions.gdl)
+            if (PGET(rwdata->DisplayListCollisions.gdl))
             {
 #ifndef TARGET_N64
                 { /* bring-up trace: DL nodes with a live gdl (GE_GFX_STATS) */
@@ -4453,7 +4462,7 @@ void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *nod
                     ge_dbg2++;
                 }
 #endif
-                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(rodata->DisplayListCollisions.BaseAddr));
+                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(rodata->DisplayListCollisions.BaseAddr)));
 
                 if (renderdata->cullmode)
                 {
@@ -4477,20 +4486,20 @@ void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *nod
                     modelApplyRenderModeType2(renderdata);
                 }
 
-                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_VTX, osVirtualToPhysical(rwdata->DisplayListCollisions.Vertices));
+                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_VTX, osVirtualToPhysical(PGET(rwdata->DisplayListCollisions.Vertices)));
 #ifndef TARGET_N64
                 renderdata->gdl = portPartCacheEmit(renderdata->gdl, SPSEGMENT_MODEL_VTX);
 #endif
 
-                gSPDisplayList(renderdata->gdl++, rwdata->DisplayListCollisions.gdl);
+                gSPDisplayList(renderdata->gdl++, PGET(rwdata->DisplayListCollisions.gdl));
 
-                if (rodata->DisplayListCollisions.ModelType == 3 && rodata->DisplayListCollisions.Secondary)
+                if (rodata->DisplayListCollisions.ModelType == 3 && PGET(rodata->DisplayListCollisions.Secondary))
                 {
                     modelApplyRenderModeType3(renderdata, FALSE);
 #ifndef TARGET_N64
                     renderdata->gdl = portPartCacheEmit(renderdata->gdl, SPSEGMENT_MODEL_VTX);
 #endif
-                    gSPDisplayList(renderdata->gdl++, rodata->DisplayListCollisions.Secondary);
+                    gSPDisplayList(renderdata->gdl++, PGET(rodata->DisplayListCollisions.Secondary));
                 }
             }
         }
@@ -4499,23 +4508,23 @@ void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *nod
         {
             union ModelRwData *rwdata = modelGetNodeRwData(model, node);
 
-            if (rwdata->DisplayListCollisions.gdl && rodata->DisplayListCollisions.ModelType == 4 && rodata->DisplayListCollisions.Secondary)
+            if (PGET(rwdata->DisplayListCollisions.gdl) && rodata->DisplayListCollisions.ModelType == 4 && PGET(rodata->DisplayListCollisions.Secondary))
             {
-                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(rodata->DisplayListCollisions.BaseAddr));
+                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(rodata->DisplayListCollisions.BaseAddr)));
 
                 if (renderdata->cullmode)
                 {
                     modelApplyCullMode(renderdata);
                 }
 
-                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_VTX, osVirtualToPhysical(rwdata->DisplayListCollisions.Vertices));
+                gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_VTX, osVirtualToPhysical(PGET(rwdata->DisplayListCollisions.Vertices)));
 
                 modelApplyRenderModeType4(renderdata, FALSE);
 #ifndef TARGET_N64
                 renderdata->gdl = portPartCacheEmit(renderdata->gdl, SPSEGMENT_MODEL_VTX);
 #endif
 
-                gSPDisplayList(renderdata->gdl++, rodata->DisplayListCollisions.Secondary);
+                gSPDisplayList(renderdata->gdl++, PGET(rodata->DisplayListCollisions.Secondary));
             }
         }
     }
@@ -4541,15 +4550,15 @@ void dorottex(ModelRenderData *renderdata, ModelNode *node)
     if (renderdata->unk18 == 0 && (renderdata->flags & 2))
     {
 
-        ModelRoData_DisplayListPrimaryRecord *rodata = &node->Data->DisplayListPrimary;
+        ModelRoData_DisplayListPrimaryRecord *rodata = &PGET(node->Data)->DisplayListPrimary;
         s32 i;
 
-        if (rodata->Primary)
+        if (PGET(rodata->Primary))
         {
             Vertex *src;
             Vertex *dst;
 
-            src = (Vertex *) rodata->Vertices;
+            src = (Vertex *) PGET(rodata->Vertices);
 
 #ifndef VERSION_EU
             if (vtxallocator != NULL)
@@ -4564,10 +4573,10 @@ void dorottex(ModelRenderData *renderdata, ModelNode *node)
             dst = vtxallocator(rodata->numVertices * 4);
 
             gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_VTX, osVirtualToPhysical(dst));
-            gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(rodata->BaseAddr));
+            gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(rodata->BaseAddr)));
 
             gDPSetFogColor(renderdata->gdl++, 0x00, 0x00, 0x00, 0x00);
-            gSPDisplayList(renderdata->gdl++, rodata->Primary);
+            gSPDisplayList(renderdata->gdl++, PGET(rodata->Primary));
 
             for (i = 0; i < rodata->numVertices; i++)
             {
@@ -4624,7 +4633,7 @@ void sub_GAME_7F073038(ModelRenderData *renderdata, struct sImageTableEntry *tco
 }
 
 
-void sub_GAME_7F07306C(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
+void sub_GAME_7F07306C(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
@@ -4661,19 +4670,19 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
     s32 renderpos_index2;
     s32 unused3;
 
-    rodata = &node->Data->Op07;
+    rodata = &PGET(node->Data)->Op07;
     rwdata = &modelGetNodeRwData(model, node)->Op07;
 
-    if (rodata->unk00 != NULL)
+    if (PGET(rodata->unk00) != NULL)
     {
-        node_from_07 = rodata->unk00;
+        node_from_07 = PGET(rodata->unk00);
     }
     else
     {
-        node_from_07 = rodata->unk04;
+        node_from_07 = PGET(rodata->unk04);
     }
 
-    rodata2 = &node_from_07->Data->Op07;
+    rodata2 = &PGET(node_from_07->Data)->Op07;
     rwdata2 = &modelGetNodeRwData(model, node_from_07)->Op07;
     swap_order = 1;
 
@@ -4683,9 +4692,9 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
         render_pos2 = &model->render_pos[renderpos_index2];
         rw_index = rwdata->index;
         rw_index2 = rwdata2->index;
-        c_entry = &rodata->Children[rw_index];
+        c_entry = &PGET(rodata->Children)[rw_index];
 
-        if (rodata->unk00 != NULL)
+        if (PGET(rodata->unk00) != NULL)
         {
             rw_index_sel = rw_index2;
             rw_index_sel2 = rw_index;
@@ -4695,7 +4704,7 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
         {
             rw_index_sel = rw_index;
             rw_index_sel2 = rw_index2;
-            renderpos_index = modelFindNodeMtxIndex(rodata->unk04, 0x200);
+            renderpos_index = modelFindNodeMtxIndex(PGET(rodata->unk04), 0x200);
         }
 
         render_pos = &model->render_pos[renderpos_index];
@@ -4735,9 +4744,9 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
             c_entry_index = rw_index_sel;
         }
 
-        entry_04 = c_entry->unk04;
+        entry_04 = PGET(c_entry->unk04);
 
-        gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(rodata->BaseAddr));
+        gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(rodata->BaseAddr)));
 
         for (c_entry_count = c_entry->NumEntries; c_entry_count > 0; c_entry_count--)
         {
@@ -4756,19 +4765,19 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
                         vtx1 = vtxallocator(2);
                         vtx2 = &vtx1[1];
 
-                        *vtx1 = rodata->Vertices[child_vtx->VtxIndex];
-                        *vtx2 = rodata->Vertices[child_vtx->VtxIndex+1];
+                        *vtx1 = PGET(rodata->Vertices)[child_vtx->VtxIndex];
+                        *vtx2 = PGET(rodata->Vertices)[child_vtx->VtxIndex+1];
 
-                        if (rodata->unk04 != NULL)
+                        if (PGET(rodata->unk04) != NULL)
                         {
-                            c_entry2 = &rodata->Children[c_entry_index];
-                            entry2_04 = c_entry2->unk04;
+                            c_entry2 = &PGET(rodata->Children)[c_entry_index];
+                            entry2_04 = PGET(c_entry2->unk04);
 
                             for (c_entry2_count = c_entry2->NumEntries; c_entry2_count > 0; c_entry2_count--)
                             {
                                 struct ModelRoData_Child_Vtx* entry2_04_child = ((struct ModelRoData_Child_Vtx*)entry2_04);
                                 if (entry2_04_child->Type == (u8) 1) {
-                                    vtx_10   = &rodata->Vertices[entry2_04_child->VtxIndex];
+                                    vtx_10   = &PGET(rodata->Vertices)[entry2_04_child->VtxIndex];
                                     vtx_10_2 = vtx_10+1;
 
                                     vtx1->coord.AsArray[0] = vtx_10->coord.AsArray[0];
@@ -4798,15 +4807,15 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
                         }
                         else
                         {
-                            c_entry2 = &rodata2->Children[c_entry_index];
-                            entry2_04 = c_entry2->unk04;
+                            c_entry2 = &PGET(rodata2->Children)[c_entry_index];
+                            entry2_04 = PGET(c_entry2->unk04);
 
                             for (c_entry2_count = c_entry2->NumEntries; c_entry2_count > 0; c_entry2_count--)
                             {
                                 struct ModelRoData_Child_Vtx* entry2_04_child = ((struct ModelRoData_Child_Vtx*)entry2_04);
                                 if (entry2_04_child->Type == (u8) 1)
                                 {
-                                    vtx_10   = &rodata2->Vertices[entry2_04_child->VtxIndex];
+                                    vtx_10   = &PGET(rodata2->Vertices)[entry2_04_child->VtxIndex];
                                     vtx_10_2 = vtx_10 + 1;
                                     if (swap_order != 0)
                                     {
@@ -4854,7 +4863,7 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
                         gSPMatrix(renderdata->gdl++, osVirtualToPhysical(render_pos), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                         gSPVertex(renderdata->gdl++, osVirtualToPhysical(vtx1), 2, 0);
                         gSPMatrix(renderdata->gdl++, osVirtualToPhysical(render_pos2), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                        gSPVertex(renderdata->gdl++, osVirtualToPhysical(&rodata->Vertices[child_vtx->VtxIndex] + 2), (u32)(child_vtx->unk01 - 2), 2);
+                        gSPVertex(renderdata->gdl++, osVirtualToPhysical(&PGET(rodata->Vertices)[child_vtx->VtxIndex] + 2), (u32)(child_vtx->unk01 - 2), 2);
 
                         entry_04 += sizeof(struct ModelRoData_Child_Vtx);
 
@@ -4866,7 +4875,7 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
                         struct ModelRoData_Child_Image* child_image = (struct ModelRoData_Child_Image*)entry_04;
                         if (child_image->ImageIndex != 0xFF)
                         {
-                            sub_GAME_7F073038(renderdata, &rodata->Images[child_image->ImageIndex], 1);
+                            sub_GAME_7F073038(renderdata, &PGET(rodata->Images)[child_image->ImageIndex], 1);
                             entry_04 += sizeof(struct ModelRoData_Child_Image);
                         }
                         else
@@ -4890,13 +4899,13 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
 }
 
 
-void sub_GAME_7F0737EC(s32 param_1,struct Model *param_2, struct ModelNode *param_3)
+void sub_GAME_7F0737EC(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3)
 {
     return;
 }
 
 
-void sub_GAME_7F0737FC(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
+void sub_GAME_7F0737FC(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
@@ -4907,7 +4916,7 @@ void dogfnegx(ModelRenderData *renderdata, Model *model, ModelNode *node)
 {
     u32 unused[3];
     f32 negspc0;
-    ModelRoData_GunfireRecord *rodata = &node->Data->Gunfire;
+    ModelRoData_GunfireRecord *rodata = &PGET(node->Data)->Gunfire;
     union ModelRwData *rwdata = modelGetNodeRwData(model, node);
     sImageTableEntry *tconfig;
     f32 spf0;
@@ -5021,16 +5030,16 @@ void dogfnegx(ModelRenderData *renderdata, Model *model, ModelNode *node)
         vertices[3].coord.y = sp90.f[1] - spc4;
         vertices[3].coord.z = sp90.f[2] + negspc8 + -spbc;
 
-        gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(rodata->BaseAddr));
+        gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(rodata->BaseAddr)));
 
-        if (rodata->Image)
+        if (PGET(rodata->Image))
         {
             s32 centre;
             u16 sp62;
             s32 sp5c;
             s32 sp58;
 
-            tconfig = rodata->Image;
+            tconfig = PGET(rodata->Image);
 
             sp62 = (randomGetNext() * 1024) & 0xffff;
             sp5c = (coss(sp62) * tconfig->width * 0xb5) >> 18;
@@ -5108,9 +5117,9 @@ void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node)
         return;
     }
 
-    shadow = &node->Data->Shadow;
+    shadow = &PGET(node->Data)->Shadow;
     vtxtemplate = D_800363F8;
-    rwdata = (ModelRwData_HeaderRecord *) modelGetNodeRwData(model, shadow->HeaderNode);
+    rwdata = (ModelRwData_HeaderRecord *) modelGetNodeRwData(model, PGET(shadow->HeaderNode));
     height = rwdata->pos.y - rwdata->ground;
     sizex = shadow->size.x;
     sizey = shadow->size.y;
@@ -5186,11 +5195,11 @@ void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node)
     vtx[3].v.ob[1] = y;
     vtx[3].v.ob[2] = shadow->pos.y - sizey;
 
-    gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(shadow->BaseAddr));
+    gSPSegment(renderdata->gdl++, SPSEGMENT_MODEL_COL1, osVirtualToPhysical(PGET(shadow->BaseAddr)));
 
-    if (shadow->image != NULL)
+    if (PGET(shadow->image) != NULL)
     {
-        image = shadow->image;
+        image = PGET(shadow->image);
 
 #ifndef TARGET_N64
         { /* diagnostic (GE_DUMP_BOND): logs the shadow image's actual format
@@ -5214,7 +5223,7 @@ void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node)
                 {
                     extern struct tex *texFindInPool(s32 texturenum, struct texpool *pool);
                     extern struct texpool *portModelTexPool(void);
-                    u16 texnum = ((u16 *)image->index)[-4];
+                    u16 texnum = ((u16 *) portPtr64(image->index))[-4];
                     struct tex *recglobal = texFindInPool(texnum, NULL);
                     struct tex *recmodel = texFindInPool(texnum, portModelTexPool());
                     v[0] = (f32)texnum;
@@ -5265,7 +5274,7 @@ void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node)
 }
 
 
-void sub_GAME_7F074514(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
+void sub_GAME_7F074514(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
@@ -5356,7 +5365,7 @@ void subdraw(ModelRenderData *mrData, Model *mdl)
     }
     else
     {
-        osSyncPrintf("subdraw: object not initialised! (0x%X)\n", (u32)mdl->obj);
+        osSyncPrintf("subdraw: object not initialised! (0x%X)\n", (uintptr_t)mdl->obj);
         return_null();
     }
     #endif
@@ -5366,20 +5375,20 @@ void subdraw(ModelRenderData *mrData, Model *mdl)
     {
         sub_GAME_7F074534(mrData, mdl, root);
 
-        if (root->Child)
+        if (PGET(root->Child))
         {
-            root = root->Child;
+            root = PGET(root->Child);
         }
         else
         {
             while (root)
             {
-                if (root->Next)
+                if (PGET(root->Next))
                 {
-                    root = root->Next;
+                    root = PGET(root->Next);
                     break;
                 }
-                root = root->Parent;
+                root = PGET(root->Parent);
             }
         }
     }
@@ -5391,7 +5400,7 @@ void sub_GAME_7F074790(ModelRenderData* arg0, Model* arg1)
 {
     subcalcpos(arg1);
     subcalcmatrices(arg0, arg1);
-    subdraw((s32) arg0, arg1);
+    subdraw(arg0, arg1);
 }
 
 
@@ -5615,7 +5624,7 @@ bool modelTestRayIntersectsTransformedBBox(ModelRoData_BoundingBoxRecord *bbox, 
  */
 bool modelTestRayIntersectsNodeBBox(Model *model, ModelNode *node, coord3d *pos, coord3d *dir)
 {
-    ModelRoData_BoundingBoxRecord *bbox = &node->Data->BoundingBox;
+    ModelRoData_BoundingBoxRecord *bbox = &PGET(node->Data)->BoundingBox;
 
     return modelTestRayIntersectsTransformedBBox(bbox, modelFindNodeMtx(model, node, 0), pos, dir);
 }
@@ -5639,7 +5648,7 @@ s32 sub_GAME_7F074CAC(Model *model, ModelNode *node, coord3d *raypos, coord3d *r
     u32 nodeFlags;
     f32 directionDotProduct;
 
-    hitData = (ModelRoData_Op17Record *) node->Data;
+    hitData = (ModelRoData_Op17Record *) PGET(node->Data);
     nodeMtx = modelFindNodeMtx(model, node, 0);
     rayData->data.rel = D_80036408;
     rayData->data.radiusSq = hitData->radiusSq;
@@ -5659,9 +5668,9 @@ s32 sub_GAME_7F074CAC(Model *model, ModelNode *node, coord3d *raypos, coord3d *r
     }
     else if (nodeFlags & 0x200)
     {
-        if (hitData->othernode != NULL)
+        if (PGET(hitData->othernode) != NULL)
         {
-            otherNodeMtx = modelFindNodeMtx(model, hitData->othernode, 0);
+            otherNodeMtx = modelFindNodeMtx(model, PGET(hitData->othernode), 0);
             rayData->data.rel.f[0] = ((nodeMtx->m[3][0] + otherNodeMtx->m[3][0]) * 0.5f) - (*raypos).f[0];
             rayData->data.rel.f[1] = ((nodeMtx->m[3][1] + otherNodeMtx->m[3][1]) * 0.5f) - (*raypos).f[1];
             rayData->data.rel.f[2] = ((nodeMtx->m[3][2] + otherNodeMtx->m[3][2]) * 0.5f) - (*raypos).f[2];
@@ -5792,17 +5801,17 @@ u32 modelFindNextProjectileHitCandidate(Model *model, coord3d *arg1, coord3d *ar
 
     if (node != NULL) {
         do {
-            if (descend != 0 && node->Child != NULL) {
-                node = node->Child;
+            if (descend != 0 && PGET(node->Child) != NULL) {
+                node = PGET(node->Child);
             } else {
                 if (node != NULL) {
                     do {
-                        if (node->Next != NULL) {
-                            node = node->Next;
+                        if (PGET(node->Next) != NULL) {
+                            node = PGET(node->Next);
                             break;
                         }
 
-                        node = node->Parent;
+                        node = PGET(node->Parent);
                     } while (node != NULL);
                 }
 
@@ -5823,7 +5832,7 @@ u32 modelFindNextProjectileHitCandidate(Model *model, coord3d *arg1, coord3d *ar
             case MODELNODE_OPCODE_BBOX - 1:
                 if (modelTestRayIntersectsNodeBBox(model, node, arg1, arg2) != 0) {
                     *nodeptr = node;
-                    return *(u32 *)node->Data;
+                    return *(u32 *)PGET(node->Data);
                 }
                 descend = FALSE;
                 break;
@@ -5831,7 +5840,7 @@ u32 modelFindNextProjectileHitCandidate(Model *model, coord3d *arg1, coord3d *ar
             case MODELNODE_OPCODE_OP17 - 1:
                 if (sub_GAME_7F074CAC(model, node, arg1, arg2) != 0) {
                     *nodeptr = node;
-                    return *(u32 *)node->Data;
+                    return *(u32 *)PGET(node->Data);
                 }
                 descend = FALSE;
                 break;
@@ -5862,7 +5871,7 @@ u32 modelFindNextProjectileHitCandidate(Model *model, coord3d *arg1, coord3d *ar
 /**
  * Unreferenced
  */
-u32 *sub_GAME_7F07549C(void *arg0, f32 *arg1, f32 *arg2, ModelNode **nodeptr)
+u32 sub_GAME_7F07549C(void *arg0, f32 *arg1, f32 *arg2, ModelNode **nodeptr)
 {
     *nodeptr = NULL;
     return modelFindNextProjectileHitCandidate(arg0, arg1, arg2, nodeptr);
@@ -5873,12 +5882,12 @@ u32 *sub_GAME_7F07549C(void *arg0, f32 *arg1, f32 *arg2, ModelNode **nodeptr)
  * Address 7F0754BC.
  * Copy animation from ROM to RAM
 */
-s32 loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused)
+u8 *loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused)
 {
-    s32 ret;
-    s32 source;
+    u8 *ret;
+    s32 source; /* a ROM address: a window word in 64-bit builds */
     s32 frameSize;
-    u32 dest;
+    uintptr_t dest;
     u32 size;
 
     ret = 0;
@@ -5887,13 +5896,13 @@ s32 loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused)
     if (anim->address & 0x80000000) // If animation's address is in RAM
     {
         // Load that frame from RAM
-        ret = anim->address + (frame * frameSize);
+        ret = portPtr64(anim->address + (frame * frameSize));
     }
     else if (D_80036414 != NULL) // should never be NULL after initAnimationsBuffer is called
     {
         // Get dest from this D_80036414 which points to an array. Align to 16 bytes.
-        dest = ((u32) (D_80036414->animBufferPtr2 + 15) >> 4) * 16;
-        ret = dest;
+        dest = ((uintptr_t) (D_80036414->animBufferPtr2 + 15) >> 4) * 16;
+        ret = (u8 *) dest;
 
         // Get source of this animation in ROM with the offset of the frame we'll load
         source = anim->address + (frame * frameSize);
@@ -5908,14 +5917,14 @@ s32 loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused)
         size = ((u32) (frameSize + 15) >> 4) * 16;
 
         // This copies one animation frame from ROM to the destination in RAM
-        romCopy((void* ) dest, (void* ) source, size);
+        romCopy((void* ) dest, portPtr64(source), size);
 
         // Increment this which serves nothing
         D_80036414->uselessPointer += 1;
 
         // Set this to point to the end of the copied frame
         // This allows to copy another frame after this one
-        D_80036414->animBufferPtr2 = dest + size;
+        D_80036414->animBufferPtr2 = (char *) (dest + size);
     }
     return ret;
 }
@@ -5942,15 +5951,21 @@ void modelResetAnimationsScratchBuffer(void)
 #else
 /* PORT: compiled-in model files hold real pointers except about 105 raw
  * segment-5 words the asset generator left behind, so only 0x05-tagged values
- * are rebased onto the file base (real pointers and NULL never look like that). */
-#define PROMOTE(var) \
-    if (((u32)(var) & 0xFF000000) == 0x05000000) \
-        var = (void *)((u32)(var) - 0x05000000 + (u32)vma + (u32)diff)
+ * are rebased onto the file base (real pointers and NULL never look like that).
+ * The test and the store work on the field's 32-bit word, and the new value is
+ * encoded with portPtr32, so 64-bit builds write window words into the PTR32
+ * fields (an identity in the 32-bit builds). PROMOTE_WORD takes a raw u32. */
+#define PROMOTE_WORD(w) \
+    if (((w) & 0xFF000000) == 0x05000000) \
+        (w) = portPtr32((u8 *) fileramaddr + ((w) - 0x05000000))
+#define PROMOTE(var) PROMOTE_WORD(PTRW(var))
 #endif
 
-void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr)
+void modelPromoteNodeOffsetsToPointers(ModelNode *node, intptr_t vma, uintptr_t fileramaddr)
 {
+#ifdef TARGET_N64
     s32 diff = fileramaddr - vma;
+#endif
     s32 i;
 
     while (node)
@@ -5967,28 +5982,28 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
         {
             case MODELNODE_OPCODE_HEADER:
                 {
-                    ModelRoData_HeaderRecord* rodata = &node->Data->Header;
+                    ModelRoData_HeaderRecord* rodata = &PGET(node->Data)->Header;
                     PROMOTE(rodata->FirstGroup);
                     break;
                 }
 
             case MODELNODE_OPCODE_GROUP:
                 {
-                    ModelRoData_GroupRecord* rodata = &node->Data->Group;
+                    ModelRoData_GroupRecord* rodata = &PGET(node->Data)->Group;
                     PROMOTE(rodata->ChildGroup);
                     break;
                 }
 
             case MODELNODE_OPCODE_OP03:
                 {
-                    ModelRoData_GroupRecord* rodata = &node->Data->Group;
+                    ModelRoData_GroupRecord* rodata = &PGET(node->Data)->Group;
                     PROMOTE(rodata->ChildGroup);
                     break;
                 }
 
             case MODELNODE_OPCODE_DL:
                 {
-                    ModelRoData_DisplayListRecord* rodata = &node->Data->DisplayList;
+                    ModelRoData_DisplayListRecord* rodata = &PGET(node->Data)->DisplayList;
                     PROMOTE(rodata->Vertices);
 #ifndef TARGET_N64
                     /* Models loaded from the ROM hold 0x05 segment offsets that
@@ -5997,19 +6012,20 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
                     PROMOTE(rodata->Primary);
                     PROMOTE(rodata->Secondary);
 #endif
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_DLCOLLISION:
                 {
-                    ModelRoData_DisplayList_CollisionRecord* rodata = &node->Data->DisplayListCollisions;
+                    ModelRoData_DisplayList_CollisionRecord* rodata = &PGET(node->Data)->DisplayListCollisions;
+                    Vertex *cvtx;
 #ifndef TARGET_N64
                     /* PORT: the byte-order fixups below must run exactly once
                      * per record, but on PC this walk re-runs over the same
                      * compiled-in bytes on every reload; BaseAddr (0 until set
                      * at the end of this case) marks done. */
-                    s32 raw = (rodata->BaseAddr != (void *)fileramaddr);
+                    s32 raw = (PGET(rodata->BaseAddr) != (void *)fileramaddr);
 #endif
 #ifndef TARGET_N64
                     PROMOTE(rodata->Primary);   /* ROM-loaded models (see DL case) */
@@ -6018,6 +6034,7 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
                     PROMOTE(rodata->Vertices);
                     PROMOTE(rodata->CollisionVertices);
                     PROMOTE(rodata->PointUsage);
+                    cvtx = PGET(rodata->CollisionVertices);
                     for (i = 0; i < rodata->numCollisionVertices; i++)
                     {
 #ifndef TARGET_N64
@@ -6028,42 +6045,41 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
                              * texcoords, so on little-endian its halves are
                              * swapped; unswap it (low half 0x0500) or
                              * chrCreateBloodStain crashes. */
-                            u32 w = (u32) rodata->CollisionVertices[i].LinkedTo;
+                            u32 w = PTRW(cvtx[i].LinkedTo);
 
                             if (w != 0 && (w & 0x0000FFFFu) == 0x00000500u)
                             {
-                                rodata->CollisionVertices[i].LinkedTo =
-                                    (void *)((w << 16) | (w >> 16));
+                                PTRW(cvtx[i].LinkedTo) = (w << 16) | (w >> 16);
 
                                 /* Same problem for the +0xc union: emitted as
                                  * r/g/b/a bytes, its s16 CollisionRelatedIndex
                                  * is byte-swapped on little-endian and must be
                                  * fixed. */
                                 {
-                                    u16 ri = (u16) rodata->CollisionVertices[i].CollisionRelatedIndex;
+                                    u16 ri = (u16) cvtx[i].CollisionRelatedIndex;
 
-                                    rodata->CollisionVertices[i].CollisionRelatedIndex =
+                                    cvtx[i].CollisionRelatedIndex =
                                         (s16) ((ri >> 8) | (ri << 8));
                                 }
                             }
                         }
 #endif
-                        PROMOTE(rodata->CollisionVertices[i].LinkedTo);
+                        PROMOTE(cvtx[i].LinkedTo);
                     }
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_OP20:
                 {
-                    ModelRoData_HeaderRecord* rodata = &node->Data->Header;
+                    ModelRoData_HeaderRecord* rodata = &PGET(node->Data)->Header;
                     PROMOTE(rodata->FirstGroup);
                     break;
                 }
 
             case MODELNODE_OPCODE_OP05:
                 {
-                    ModelRoData_Op05Record* rodata = &node->Data->Op05;
+                    ModelRoData_Op05Record* rodata = &PGET(node->Data)->Op05;
 
                     // shared with op07
                     PROMOTE(rodata->Children);
@@ -6071,16 +6087,16 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
                     PROMOTE(rodata->Images);
                     for (i = 0; i < rodata->NumChildren; i++)
                     {
-                        PROMOTE(rodata->Children[i].unk04);
+                        PROMOTE(PGET(rodata->Children)[i].unk04);
                     }
 
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_OP07:
                 {
-                    ModelRoData_Op07Record* rodata = &node->Data->Op07;
+                    ModelRoData_Op07Record* rodata = &PGET(node->Data)->Op07;
                     PROMOTE(rodata->unk00);
                     PROMOTE(rodata->unk04);
 
@@ -6090,38 +6106,38 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
                     PROMOTE(rodata->Images);
                     for (i = 0; i < rodata->NumChildren; i++)
                     {
-                        PROMOTE(rodata->Children[i].unk04);
+                        PROMOTE(PGET(rodata->Children)[i].unk04);
                     }
 
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_OP06:
                 {
-                    ModelRoData_Op06Record* rodata = &node->Data->Op06;
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    ModelRoData_Op06Record* rodata = &PGET(node->Data)->Op06;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_LOD:
                 {
-                    ModelRoData_LODRecord* rodata = &node->Data->LOD;
+                    ModelRoData_LODRecord* rodata = &PGET(node->Data)->LOD;
                     PROMOTE(rodata->Affects);
-                    node->Child = rodata->Affects;
+                    PSET(node->Child, PGET(rodata->Affects));
                     break;
                 }
 
             case MODELNODE_OPCODE_SWITCH:
                 {
-                    ModelRoData_SwitchRecord* rodata = &node->Data->Switch;
+                    ModelRoData_SwitchRecord* rodata = &PGET(node->Data)->Switch;
                     PROMOTE(rodata->Controls);
                     break;
                 }
 
             case MODELNODE_OPCODE_BSP:
                 {
-                    ModelRoData_BSPRecord* rodata = &node->Data->BSP;
+                    ModelRoData_BSPRecord* rodata = &PGET(node->Data)->BSP;
                     PROMOTE(rodata->leftChild);
                     PROMOTE(rodata->rightChild);
                     break;
@@ -6129,44 +6145,48 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
 
             case MODELNODE_OPCODE_OP17:
                 {
-                    ModelRoData_GroupRecord* rodata = &node->Data->Group;
+                    ModelRoData_GroupRecord* rodata = &PGET(node->Data)->Group;
                     PROMOTE(rodata->ChildGroup);
                     break;
                 }
 
             case MODELNODE_OPCODE_OP11:
                 {
-                    ModelRoData_Op11Record* rodata = &node->Data->Op11;
+                    ModelRoData_Op11Record* rodata = &PGET(node->Data)->Op11;
+#ifdef TARGET_N64
                     PROMOTE(rodata->unk0c[15]);
-                    rodata->BaseAddr = (void *)fileramaddr;
+#else
+                    PROMOTE_WORD(rodata->unk0c[15]); /* a u32, not a PTR32 field */
+#endif
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_GUNFIRE:
                 {
-                    ModelRoData_GunfireRecord* rodata = &node->Data->Gunfire;
+                    ModelRoData_GunfireRecord* rodata = &PGET(node->Data)->Gunfire;
                     PROMOTE(rodata->Image);
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_SHADOW:
                 {
-                    ModelRoData_ShadowRecord* rodata = &node->Data->Shadow;
+                    ModelRoData_ShadowRecord* rodata = &PGET(node->Data)->Shadow;
                     PROMOTE(rodata->image);
                     PROMOTE(rodata->Header);
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
             case MODELNODE_OPCODE_DLPRIMARY:
                 {
-                    ModelRoData_DisplayListPrimaryRecord* rodata = &node->Data->DisplayListPrimary;
+                    ModelRoData_DisplayListPrimaryRecord* rodata = &PGET(node->Data)->DisplayListPrimary;
                     PROMOTE(rodata->Vertices);
 #ifndef TARGET_N64
                     PROMOTE(rodata->Primary);   /* ROM-loaded models (see DL case) */
 #endif
-                    rodata->BaseAddr = (void *)fileramaddr;
+                    PSET(rodata->BaseAddr, (void *)fileramaddr);
                     break;
                 }
 
@@ -6174,21 +6194,21 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
                 break;
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -6197,8 +6217,12 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
 /**
  * Address 7F075A90.
 */
-void sub_GAME_7F075A90(ModelFileHeader *header, s32 vma, u32 addr) {
+void sub_GAME_7F075A90(ModelFileHeader *header, intptr_t vma, uintptr_t addr) {
+#ifdef TARGET_N64
     s32 diff = addr - vma;
+#else
+    uintptr_t fileramaddr = addr; /* PROMOTE's file base */
+#endif
     s32 i;
 
     for(i = 0;i < header->numSwitches;i++)
@@ -6241,15 +6265,15 @@ void portModelCollisionAudit(ModelNode *node, const char *name)
 
     while (node != NULL && steps++ < 8192)
     {
-        if ((node->Opcode & 0xff) == MODELNODE_OPCODE_DLCOLLISION && node->Data != NULL)
+        if ((node->Opcode & 0xff) == MODELNODE_OPCODE_DLCOLLISION && PGET(node->Data) != NULL)
         {
-            ModelRoData_DisplayList_CollisionRecord *rodata = &node->Data->DisplayListCollisions;
+            ModelRoData_DisplayList_CollisionRecord *rodata = &PGET(node->Data)->DisplayListCollisions;
             s32 i;
 
             for (i = 0; i < rodata->numCollisionVertices; i++)
             {
-                ModelNode  *rel = (ModelNode *) rodata->CollisionVertices[i].CollisionRelatedNode;
-                s32         idx = rodata->CollisionVertices[i].CollisionRelatedIndex;
+                ModelNode  *rel = (ModelNode *) PGET(PGET(rodata->CollisionVertices)[i].CollisionRelatedNode);
+                s32         idx = PGET(rodata->CollisionVertices)[i].CollisionRelatedIndex;
                 const char *fault = NULL;
 
                 if (rel == NULL)
@@ -6267,11 +6291,11 @@ void portModelCollisionAudit(ModelNode *node, const char *name)
                 {
                     fault = "target is not a DLCOLLISION node";
                 }
-                else if (rel->Data == NULL)
+                else if (PGET(rel->Data) == NULL)
                 {
                     fault = "target node has no rodata";
                 }
-                else if (idx < 0 || idx >= rel->Data->DisplayListCollisions.numCollisionVertices)
+                else if (idx < 0 || idx >= PGET(rel->Data)->DisplayListCollisions.numCollisionVertices)
                 {
                     fault = "related index out of range";
                 }
@@ -6289,21 +6313,21 @@ void portModelCollisionAudit(ModelNode *node, const char *name)
             }
         }
 
-        if (node->Child != NULL)
+        if (PGET(node->Child) != NULL)
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node != NULL)
             {
-                if (node->Next != NULL)
+                if (PGET(node->Next) != NULL)
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -6337,7 +6361,7 @@ s32 modelCalculateRwDataIndexes(ModelNode *basenode)
             case MODELNODE_OPCODE_HEADER:
                 if (1)
                 {
-                    ModelRoData_HeaderRecord *rodata = &node->Data->Header;
+                    ModelRoData_HeaderRecord *rodata = &PGET(node->Data)->Header;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_HeaderRecord) / 4;
                     break;
@@ -6345,7 +6369,7 @@ s32 modelCalculateRwDataIndexes(ModelNode *basenode)
             case MODELNODE_OPCODE_OP07:
                 if (1)
                 {
-                    ModelRoData_Op07Record *rodata = &node->Data->Op07;
+                    ModelRoData_Op07Record *rodata = &PGET(node->Data)->Op07;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_Op07Record) / 4;
                     break;
@@ -6353,34 +6377,34 @@ s32 modelCalculateRwDataIndexes(ModelNode *basenode)
             case MODELNODE_OPCODE_LOD:
                 if (1)
                 {
-                    ModelRoData_LODRecord *rodata = &node->Data->LOD;
+                    ModelRoData_LODRecord *rodata = &PGET(node->Data)->LOD;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_LODRecord) / 4;
-                    node->Child = rodata->Affects;
+                    PSET(node->Child, PGET(rodata->Affects));
                     break;
                 }
             case MODELNODE_OPCODE_SWITCH:
                 if (1)
                 {
-                    ModelRoData_SwitchRecord *rodata = &node->Data->Switch;
+                    ModelRoData_SwitchRecord *rodata = &PGET(node->Data)->Switch;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_SwitchRecord) / 4;
-                    node->Child = rodata->Controls;
+                    PSET(node->Child, PGET(rodata->Controls));
                     break;
                 }
             case MODELNODE_OPCODE_HEAD:
                 if (1)
                 {
-                    ModelRoData_HeadPlaceholderRecord *rodata = &node->Data->HeadPlaceholder;
+                    ModelRoData_HeadPlaceholderRecord *rodata = &PGET(node->Data)->HeadPlaceholder;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_HeadPlaceholderRecord) / 4;
-                    node->Child = NULL;
+                    PSET(node->Child, NULL);
                     break;
                 }
             case MODELNODE_OPCODE_BSP:
                 if (1)
                 {
-                    ModelRoData_BSPRecord *rodata = &node->Data->BSP;
+                    ModelRoData_BSPRecord *rodata = &PGET(node->Data)->BSP;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_BSPRecord) / 4;
                     modelApplyReorderRelationsByArg(node, FALSE);
@@ -6389,7 +6413,7 @@ s32 modelCalculateRwDataIndexes(ModelNode *basenode)
             case MODELNODE_OPCODE_OP11:
                 if (1)
                 {
-                    ModelRoData_Op11Record *rodata = &node->Data->Op11;
+                    ModelRoData_Op11Record *rodata = &PGET(node->Data)->Op11;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_Op11Record) / 4;
                     break;
@@ -6397,7 +6421,7 @@ s32 modelCalculateRwDataIndexes(ModelNode *basenode)
             case MODELNODE_OPCODE_GUNFIRE:
                 if (1)
                 {
-                    ModelRoData_GunfireRecord *rodata = &node->Data->Gunfire;
+                    ModelRoData_GunfireRecord *rodata = &PGET(node->Data)->Gunfire;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_GunfireRecord) / 4;
                     break;
@@ -6405,7 +6429,7 @@ s32 modelCalculateRwDataIndexes(ModelNode *basenode)
             case MODELNODE_OPCODE_DLCOLLISION:
                 if (1)
                 {
-                    ModelRoData_DisplayList_CollisionRecord *rodata = &node->Data->DisplayListCollisions;
+                    ModelRoData_DisplayList_CollisionRecord *rodata = &PGET(node->Data)->DisplayListCollisions;
                     rodata->RwDataIndex = len;
                     len += sizeof(struct ModelRwData_DisplayList_CollisionRecord) / 4;
                     break;
@@ -6414,27 +6438,27 @@ s32 modelCalculateRwDataIndexes(ModelNode *basenode)
                 break;
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node == basenode->Parent)
+                if (node == PGET(basenode->Parent))
                 {
                     node = NULL;
                     break;
                 }
 
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -6509,20 +6533,20 @@ void modelInitRwData(Model *model, ModelNode *startnode)
             case MODELNODE_OPCODE_LOD:
                 if (1)
                 {
-                    ModelRoData_LODRecord* rodata = &node->Data->LOD;
+                    ModelRoData_LODRecord* rodata = &PGET(node->Data)->LOD;
                     ModelRwData_LODRecord* rwdata = &modelGetNodeRwData(model, node)->LOD;
                     rwdata->visible = FALSE;
-                    node->Child = rodata->Affects;
+                    PSET(node->Child, PGET(rodata->Affects));
                     break;
                 }
 
             case MODELNODE_OPCODE_SWITCH:
                 if (1)
                 {
-                    ModelRoData_SwitchRecord* rodata = &node->Data->Switch;
+                    ModelRoData_SwitchRecord* rodata = &PGET(node->Data)->Switch;
                     ModelRwData_SwitchRecord* rwdata = &modelGetNodeRwData(model, node)->Switch;
                     rwdata->visible = TRUE;
-                    node->Child = rodata->Controls;
+                    PSET(node->Child, PGET(rodata->Controls));
                     break;
                 }
 
@@ -6530,8 +6554,8 @@ void modelInitRwData(Model *model, ModelNode *startnode)
                 if (1)
                 {
                     ModelRwData_HeadPlaceholderRecord* rwdata = &modelGetNodeRwData(model, node)->HeadPlaceholder;
-                    rwdata->ModelFileHeader = NULL;
-                    rwdata->RwDatas = NULL;
+                    PSET(rwdata->ModelFileHeader, NULL);
+                    PSET(rwdata->RwDatas, NULL);
                     break;
                 }
 
@@ -6563,10 +6587,10 @@ void modelInitRwData(Model *model, ModelNode *startnode)
             case MODELNODE_OPCODE_DLCOLLISION:
                 if (1)
                 {
-                    ModelRoData_DisplayList_CollisionRecord* rodata = &node->Data->DisplayListCollisions;
+                    ModelRoData_DisplayList_CollisionRecord* rodata = &PGET(node->Data)->DisplayListCollisions;
                     ModelRwData_DisplayList_CollisionRecord* rwdata = &modelGetNodeRwData(model, node)->DisplayListCollisions;
-                    rwdata->Vertices = rodata->Vertices;
-                    rwdata->gdl = rodata->Primary;
+                    PSET(rwdata->Vertices, PGET(rodata->Vertices));
+                    PSET(rwdata->gdl, PGET(rodata->Primary));
                     break;
                 }
 
@@ -6574,27 +6598,27 @@ void modelInitRwData(Model *model, ModelNode *startnode)
                 break;
         }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node == startnode->Parent)
+                if (node == PGET(startnode->Parent))
                 {
                     node = NULL;
                     break;
                 }
 
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -6604,7 +6628,7 @@ void modelInitRwData(Model *model, ModelNode *startnode)
 void modelInit(struct Model *objinst, struct ModelFileHeader *header, u32 *data)
 {
   objinst->obj = header;
-  objinst->datas = data;
+  objinst->datas = (ModelRwWord *) data;
   objinst->rwdatalen = -1;
   objinst->attachedto = NULL;
   objinst->attachedto_objinst = NULL;
@@ -6653,20 +6677,20 @@ void modelAttachPart(Model *pmodel, ModelFileHeader *pmodeldef, ModelNode *pnode
     ModelRwData_HeadPlaceholderRecord *rwdata = modelGetNodeRwData(pmodel, pnode);
     ModelNode *node;
 
-    rwdata->ModelFileHeader = cmodeldef;
-    rwdata->RwDatas = &pmodel->datas[pmodeldef->numRecords];
+    PSET(rwdata->ModelFileHeader, cmodeldef);
+    PSET(rwdata->RwDatas, &pmodel->datas[pmodeldef->numRecords]);
 
-    pnode->Child = cmodeldef->RootNode;
+    PSET(pnode->Child, cmodeldef->RootNode);
 
-    node = pnode->Child;
+    node = PGET(pnode->Child);
 
     while (node)
     {
-        node->Parent = pnode;
-        node = node->Next;
+        PSET(node->Parent, pnode);
+        node = PGET(node->Next);
     }
 
-    pmodeldef->numRecords += modelCalculateRwDataIndexes(pnode->Child);
+    pmodeldef->numRecords += modelCalculateRwDataIndexes(PGET(pnode->Child));
 }
 
 
@@ -6700,48 +6724,48 @@ void modelIterateDisplayLists(ModelFileHeader *fileheader, ModelNode **nodeptr, 
         switch (type)
         {
             case MODELNODE_OPCODE_DL:
-                rodata = node->Data;
+                rodata = PGET(node->Data);
 
                 if (node != *nodeptr)
                 {
-                    gdl = rodata->DisplayList.Primary;
+                    gdl = PGET(rodata->DisplayList.Primary);
                 }
-                else if (rodata->DisplayList.Secondary != *gdlptr)
+                else if (PGET(rodata->DisplayList.Secondary) != *gdlptr)
                 {
-                    gdl = rodata->DisplayList.Secondary;
+                    gdl = PGET(rodata->DisplayList.Secondary);
                 }
                 break;
 
             case MODELNODE_OPCODE_DLCOLLISION:
-                rodata = node->Data;
+                rodata = PGET(node->Data);
 
                 if (node != *nodeptr)
                 {
-                    gdl = rodata->DisplayListCollisions.Primary;
+                    gdl = PGET(rodata->DisplayListCollisions.Primary);
                 }
-                else if (rodata->DisplayListCollisions.Secondary != *gdlptr)
+                else if (PGET(rodata->DisplayListCollisions.Secondary) != *gdlptr)
                 {
-                    gdl = rodata->DisplayListCollisions.Secondary;
+                    gdl = PGET(rodata->DisplayListCollisions.Secondary);
                 }
                 break;
 
             case MODELNODE_OPCODE_DLPRIMARY:
-                rodata = node->Data;
+                rodata = PGET(node->Data);
 
                 if (node != *nodeptr)
                 {
-                    gdl = rodata->DisplayListPrimary.Primary;
+                    gdl = PGET(rodata->DisplayListPrimary.Primary);
                 }
                 break;
 
             case MODELNODE_OPCODE_LOD:
-                rodata = node->Data;
-                node->Child = rodata->LOD.Affects;
+                rodata = PGET(node->Data);
+                PSET(node->Child, PGET(rodata->LOD.Affects));
                 break;
 
             case MODELNODE_OPCODE_SWITCH:
-                rodata = node->Data;
-                node->Child = rodata->Switch.Controls;
+                rodata = PGET(node->Data);
+                PSET(node->Child, PGET(rodata->Switch.Controls));
                 break;
 
             case MODELNODE_OPCODE_BSP:
@@ -6751,21 +6775,21 @@ void modelIterateDisplayLists(ModelFileHeader *fileheader, ModelNode **nodeptr, 
 
         if (gdl) { break; }
 
-        if (node->Child)
+        if (PGET(node->Child))
         {
-            node = node->Child;
+            node = PGET(node->Child);
         }
         else
         {
             while (node)
             {
-                if (node->Next)
+                if (PGET(node->Next))
                 {
-                    node = node->Next;
+                    node = PGET(node->Next);
                     break;
                 }
 
-                node = node->Parent;
+                node = PGET(node->Parent);
             }
         }
     }
@@ -6775,50 +6799,50 @@ void modelIterateDisplayLists(ModelFileHeader *fileheader, ModelNode **nodeptr, 
 }
 
 
-void modelNodeReplaceGdl(u32 arg0, ModelNode *node, Gfx *find, Gfx *replacement)
+void modelNodeReplaceGdl(ModelFileHeader *arg0, ModelNode *node, Gfx *find, Gfx *replacement)
 {
     union ModelRoData *rodata;
     u32 type = node->Opcode & 0xff;
 
     switch (type) {
         case MODELNODE_OPCODE_DL:
-            rodata = node->Data;
+            rodata = PGET(node->Data);
 
-            if (rodata->DisplayList.Primary == find)
+            if (PGET(rodata->DisplayList.Primary) == find)
             {
-                rodata->DisplayList.Primary = replacement;
+                PSET(rodata->DisplayList.Primary, replacement);
                 return;
             }
 
-            if (rodata->DisplayList.Secondary == find)
+            if (PGET(rodata->DisplayList.Secondary) == find)
             {
-                rodata->DisplayList.Secondary = replacement;
+                PSET(rodata->DisplayList.Secondary, replacement);
                 return;
             }
             break;
 
         case MODELNODE_OPCODE_DLCOLLISION:
-            rodata = node->Data;
+            rodata = PGET(node->Data);
 
-            if (rodata->DisplayListCollisions.Primary == find)
+            if (PGET(rodata->DisplayListCollisions.Primary) == find)
             {
-                rodata->DisplayListCollisions.Primary = replacement;
+                PSET(rodata->DisplayListCollisions.Primary, replacement);
                 return;
             }
 
-            if (rodata->DisplayListCollisions.Secondary == find)
+            if (PGET(rodata->DisplayListCollisions.Secondary) == find)
             {
-                rodata->DisplayListCollisions.Secondary = replacement;
+                PSET(rodata->DisplayListCollisions.Secondary, replacement);
                 return;
             }
             break;
 
         case MODELNODE_OPCODE_DLPRIMARY:
-            rodata = node->Data;
+            rodata = PGET(node->Data);
 
-            if (rodata->DisplayListPrimary.Primary == find)
+            if (PGET(rodata->DisplayListPrimary.Primary) == find)
             {
-                rodata->DisplayListPrimary.Primary = replacement;
+                PSET(rodata->DisplayListPrimary.Primary, replacement);
                 return;
             }
             break;

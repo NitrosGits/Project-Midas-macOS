@@ -11,6 +11,7 @@
 #include "lv.h"
 #include "objective_status.h"
 #include "random.h"
+#include "othermodemicrocode.h"
 
 #define BULLET_SPARKS_MAX 20
 #define BULLET_MOVING_SPARKS_MAX 50

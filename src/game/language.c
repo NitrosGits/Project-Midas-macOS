@@ -3,6 +3,7 @@
 #include <memp.h>
 #include "language.h"
 #include "ob.h"
+#include <string.h>
 #ifndef TARGET_N64
 #include <string.h> /* memcpy: langCopyGlyph */
 #endif

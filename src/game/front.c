@@ -48,6 +48,15 @@
 #include "ob.h"
 #include "gbi_extension.h"
 #include "model.h"
+#include "bondwalk2.h"
+#include "debugmenu_handler.h"
+#include "gun.h"
+#include "gunfire.h"
+#include "options.h"
+#include "propobj.h"
+#include "ramromreplay.h"
+#include "viewport.h"
+#include <string.h>
 
 
 /**
@@ -1081,14 +1090,14 @@ Gfx *constructor_menu19_spectrum(Gfx *DL);
 void disable_all_switches(Model *arg0);
 void set_item_visibility_in_objinstance(Model* objinstance, s32 item, s32 mode);
 void set_cursor_to_stage_solo(LEVEL_SOLO_SEQUENCE level);
-Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *arg5, s32 arg6, s32 arg7);
+Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *arg5, struct fontchar *arg6, struct font *arg7);
 void setCursorPOSforMode(int mode);
 void set_cursor_pos_difficulty(int difficulty);
 
 // end forward declarations.
 
 
-Gfx *frontPrintText(Gfx *gdl, s32 *x, s32 *y, s8 *text, s32 second_font_table, s32 first_font_table, s32 arg6, s32 view_x, s32 view_y, s32 arg9, s32 arga)
+Gfx *frontPrintText(Gfx *gdl, s32 *x, s32 *y, s8 *text, struct fontchar *second_font_table, struct font *first_font_table, s32 arg6, s32 view_x, s32 view_y, s32 arg9, s32 arga)
 {
     if (j_text_trigger != 0)
     {
@@ -1470,7 +1479,7 @@ Gfx *frontDrawCursor(Gfx *DL)
         {
             fprintf(stderr,
                     "cursor: opt=%d img=%08x idx=%08x w=%d h=%d fmt=%d copyidx=%08x\n",
-                    option, (u32) image, image->index, image->width,
+                    option, (uintptr_t) image, image->index, image->width,
                     image->height, image->format,
                     (mainfolderimages + IMG_COPY)->index);
             fflush(stderr);
@@ -1595,6 +1604,8 @@ Gfx* frontAddPreviousTabText(Gfx* DL)
  * bind (R_TRIG) this frame. Absent pads return 0 from
  * joyGetButtonsPressedThisFrame, so only a live pad / the mouse can fire it. */
 extern s32 portJoyTwinStickCapable(s32 pad); /* joy_port.c: twin stick, see the style-select rules below */
+extern s32 portOptValueIni(s32 i, char *buf, s32 n); /* port_options.c */
+extern s32 portOptSetIni(s32 i, const char *text);    /* port_options.c */
 s32 portMpWaitScreenExitPressed(s32 numplayers)
 {
     s32 i;
@@ -1769,7 +1780,7 @@ void interface_menu00_legalscreen(void)
 /**
  * Render a string of standard text on the legal screen e.g. "TWYCROSS BOARD OF GAME CLASSIFICATION"
  */
-Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *text, s32 arg6, s32 arg7)
+Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *text, struct fontchar *arg6, struct font *arg7)
 {
     s32 sp4C;
     s32 sp48;
@@ -1865,7 +1876,7 @@ Gfx *constructor_menu00_legalscreen(Gfx *DL)
 
         sprintf(line, "Project Midas %s: Build %s\n", portPlatformName(), portBuildString());
         DL = display_aligned_white_text_to_screen(DL, 220, 16, CENTER_ALIGN, CENTER_ALIGN, (u8 *) line,
-                                                  (s32) ptrFontZurichBoldChars, (s32) ptrFontZurichBold);
+                                                  (intptr_t) ptrFontZurichBoldChars, (intptr_t) ptrFontZurichBold);
     }
 #endif
 
@@ -2433,7 +2444,7 @@ void disable_all_switches(Model *arg0)
 
     for (i = 0; i < arg0->obj->numSwitches; i++)
     {
-        mnode = arg0->obj->Switches[i];
+        mnode = PGET(arg0->obj->Switches[i]);
 
         if (mnode != NULL && (mnode->Opcode & 0xff) == MODELNODE_OPCODE_SWITCH)
         {
@@ -2450,9 +2461,9 @@ void disable_all_switches(Model *arg0)
 
 void set_item_visibility_in_objinstance(Model* objinstance, s32 item, s32 mode)
 {
-    if (objinstance->obj->Switches[item] != NULL)
+    if (PGET(objinstance->obj->Switches[item]) != NULL)
     {
-        ModelRwData_SwitchRecord *rwdata = &modelGetNodeRwData(objinstance, objinstance->obj->Switches[item])->Switch;
+        ModelRwData_SwitchRecord *rwdata = &modelGetNodeRwData(objinstance, PGET(objinstance->obj->Switches[item]))->Switch;
 
         rwdata->visible = mode;
     }
@@ -2518,7 +2529,7 @@ void load_walletbond(void)
             modelSetScale(walletinst[i], 1.0f);
         }
 
-        mnode = PitemZ_entries[PROP_WALLETBOND].header->Switches[GFXHIT0_PICS];
+        mnode = PGET(PitemZ_entries[PROP_WALLETBOND].header->Switches[GFXHIT0_PICS]);
 
         if (mnode != NULL)
         {
@@ -2527,7 +2538,7 @@ void load_walletbond(void)
             Gfx *arg0;
 
             b = (struct ModelNode *)mnode;
-            srecord = b->Data;
+            srecord = PGET(b->Data);
 
 #ifdef TARGET_N64
             arg0 = (s32)srecord->BaseAddr + ((s32)srecord->Primary & 0xffffff);
@@ -2537,7 +2548,7 @@ void load_walletbond(void)
              * (portConvertModelGdl/modelNodeReplaceGdl), so the N64 base+offset
              * reconstruction would mangle a real pointer and crash on the
              * file-select screen. */
-            arg0 = srecord->Primary;
+            arg0 = PGET(srecord->Primary);
             if (arg0 != NULL)
             {
                 bgApplyDynamicCCRMLUT(arg0, NULL, CCRMLUT_WALLETBOND);
@@ -2571,7 +2582,7 @@ void frontCleanUpWalletBond(void)
 void init_menu05_fileselect(void)
 {
     s32 size = 0x6e000;
-    Gfx* DL = (s32)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
+    Gfx* DL = (intptr_t)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
     int i;
 
     prev_keypresses = FALSE;
@@ -8654,19 +8665,19 @@ void interface_menu07_missionsel(void)
         mission_difficulty_highlighted = (var_s2 * 5) + var_s4;
     }
 
-    mnode = walletinst[0]->obj->Switches[0x15];
+    mnode = PGET(walletinst[0]->obj->Switches[0x15]);
 
     if (mnode != NULL)
     {
-        temp_s4 = (struct ModelRoData_DisplayList_CollisionRecord *)mnode->Data;
+        temp_s4 = (struct ModelRoData_DisplayList_CollisionRecord *)PGET(mnode->Data);
 
         temp_s1 = (struct ModelRwData_DisplayList_CollisionRecord *)modelGetNodeRwData(walletinst[0], mnode);
-        temp_s1->Vertices = dynAllocateVertices(temp_s4->numVertices);
+        PSET(temp_s1->Vertices, dynAllocateVertices(temp_s4->numVertices));
 
         for (i = 0; i < temp_s4->numVertices; i++)
         {
             // struct copy
-            temp_s1->Vertices[i] = temp_s4->Vertices[i];
+            PGET(temp_s1->Vertices)[i] = PGET(temp_s4->Vertices)[i];
 
             temp_a0 = i / 4;
 
@@ -8674,25 +8685,25 @@ void interface_menu07_missionsel(void)
             {
                 if (temp_a0 == mission_difficulty_highlighted)
                 {
-                    temp_s1->Vertices[i].r = 0xff;
-                    temp_s1->Vertices[i].g = 0xff;
-                    temp_s1->Vertices[i].b = 0xff;
-                    temp_s1->Vertices[i].a = 0xf5;
+                    PGET(temp_s1->Vertices)[i].r = 0xff;
+                    PGET(temp_s1->Vertices)[i].g = 0xff;
+                    PGET(temp_s1->Vertices)[i].b = 0xff;
+                    PGET(temp_s1->Vertices)[i].a = 0xf5;
                 }
                 else
                 {
-                    temp_s1->Vertices[i].r = 0x6e;
-                    temp_s1->Vertices[i].g = 0x6e;
-                    temp_s1->Vertices[i].b = 0x6e;
-                    temp_s1->Vertices[i].a = 0xff;
+                    PGET(temp_s1->Vertices)[i].r = 0x6e;
+                    PGET(temp_s1->Vertices)[i].g = 0x6e;
+                    PGET(temp_s1->Vertices)[i].b = 0x6e;
+                    PGET(temp_s1->Vertices)[i].a = 0xff;
                 }
             }
             else
             {
-                temp_s1->Vertices[i].r = 0xf;
-                temp_s1->Vertices[i].g = 0xf;
-                temp_s1->Vertices[i].b = 0xf;
-                temp_s1->Vertices[i].a = 0xff;
+                PGET(temp_s1->Vertices)[i].r = 0xf;
+                PGET(temp_s1->Vertices)[i].g = 0xf;
+                PGET(temp_s1->Vertices)[i].b = 0xf;
+                PGET(temp_s1->Vertices)[i].a = 0xff;
             }
         }
     }
@@ -16238,7 +16249,7 @@ void load_briefing_text_for_stage(void)
 #endif
 
     // what is this
-    temp_s0 = (s32)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
+    temp_s0 = (intptr_t)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
 
     // alright
     argg = 0x200;
@@ -17750,7 +17761,7 @@ void init_menu18_displaycast(void)
         cast_model_weapon = modelmgrInstantiateModel(weaponHeader);
         modelSetScale(cast_model_weapon, 0.1f);
         cast_model_weapon->attachedto = cast_model;
-        cast_model_weapon->attachedto_objinst = cast_model->obj->Switches[(flip != FALSE) ? (5) : (3)];
+        cast_model_weapon->attachedto_objinst = PGET(cast_model->obj->Switches[(flip != FALSE) ? (5) : (3)]);
     }
     else
     {
@@ -18052,14 +18063,14 @@ Gfx *constructor_menu18_displaycast(Gfx *DL)
     sub_GAME_7F073FC8(0);
     subcalcpos(cast_model);
  
-    if (cast_model_weapon != NULL && cast_model_weapon->obj->Switches[0] != NULL)
+    if (cast_model_weapon != NULL && PGET(cast_model_weapon->obj->Switches[0]) != NULL)
     {
-        modelGetNodeRwData( cast_model_weapon, cast_model_weapon->obj->Switches[0])->Gunfire.visible = 0;
+        modelGetNodeRwData( cast_model_weapon, PGET(cast_model_weapon->obj->Switches[0]))->Gunfire.visible = 0;
     }
  
-    if (cast_model_weapon != NULL && cast_model_weapon->obj->Switches[2] != NULL)
+    if (cast_model_weapon != NULL && PGET(cast_model_weapon->obj->Switches[2]) != NULL)
     {
-        modelGetNodeRwData(cast_model_weapon, cast_model_weapon->obj->Switches[2])->Switch.visible = 0;
+        modelGetNodeRwData(cast_model_weapon, PGET(cast_model_weapon->obj->Switches[2]))->Switch.visible = 0;
     }
  
     renderdata.mtxlist = (Mtxf *)dynAllocate(cast_model->obj->numMatrices << 6);
@@ -18165,7 +18176,7 @@ Gfx *constructor_menu18_displaycast(Gfx *DL)
     {
         renderdata.basemtx = modelFindNodeMtx(cast_model, cast_model_weapon->attachedto_objinst, 0);
  
-        if (cast_model_weapon->attachedto_objinst == cast_model->obj->Switches[5])
+        if (cast_model_weapon->attachedto_objinst == PGET(cast_model->obj->Switches[5]))
         {
             matrix_4x4_set_rotation_around_z(M_PI_F, &mtx2);
             matrix_4x4_multiply_in_place(renderdata.basemtx, &mtx2);

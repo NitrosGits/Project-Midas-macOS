@@ -3,6 +3,7 @@
 #include <PR/os.h>
 #include <PR/region.h>
 #include "rmon.h"
+#include <string.h>
 // data
 //D:8004EAC0
 s32 D_8004EAC0 = 0;
@@ -60,7 +61,7 @@ s32 indycmdSendCommand(u8 *buffer, u32 size)
     pbuffer = sp40; // var_a3
 
     // if argument isn't 8 byte aligned
-    if ((s32)(buffer) & 7)
+    if ((intptr_t)(buffer) & 7)
     {
         if (size > 0x500)
         {
@@ -68,7 +69,7 @@ s32 indycmdSendCommand(u8 *buffer, u32 size)
         }
 
         // if local buffer isn't 8 byte aligned
-        if ((s32)(pbuffer) & 7)
+        if ((intptr_t)(pbuffer) & 7)
         {
             address += 4; // var_v1 = var_a3;
             pbuffer += 4; // var_a3 = &sp44;
@@ -584,7 +585,7 @@ s32 indycmdRecieveCommand(u8 *buffer, u32 size)
     pbuffer = sp40; // var_a3
 
     // if argument isn't 8 byte aligned
-    if ((s32)(buffer) & 7)
+    if ((intptr_t)(buffer) & 7)
     {
         if (size > 0x400)
         {
@@ -592,7 +593,7 @@ s32 indycmdRecieveCommand(u8 *buffer, u32 size)
         }
 
         // if local buffer isn't 8 byte aligned
-        if ((s32)(pbuffer) & 7)
+        if ((intptr_t)(pbuffer) & 7)
         {
             pbuffer += 4; // var_a3 = &sp44;
             address += 4; // var_v1 = var_a3;

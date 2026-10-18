@@ -3,6 +3,8 @@
 #include "textrelated.h"
 #include "bondtypes.h"
 #include "game/language.h"
+#include <fr.h>
+#include <ramrom.h>
 
 #define SPACE_WIDTH 5
 

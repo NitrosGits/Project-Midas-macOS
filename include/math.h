@@ -1,3 +1,8 @@
+#if !defined(TARGET_N64) && defined(__cplusplus)
+/* PC port: this header shadows the toolchain's <math.h>; C++ TUs (fast3d)
+ * defer to the real one, which libc++'s <cmath> needs. */
+#include_next <math.h>
+#else
 
 
 #ifndef _MATH_EXT_H_
@@ -100,6 +105,26 @@ double cos(double);
 
 float  sqrtf(float);
 
+#if !defined(TARGET_N64) && !defined(__cplusplus)
+/* PC port: the IDO declarations below are compiled out, and an implicitly
+ * declared float function returns int and takes doubles. */
+extern float sinf(float);
+extern float cosf(float);
+extern float tanf(float);
+extern float asinf(float);
+extern float acosf(float);
+extern float atanf(float);
+extern float atan2f(float, float);
+extern float sqrtf(float);
+extern float fabsf(float);
+extern float powf(float, float);
+extern float floorf(float);
+extern float ceilf(float);
+extern float fmodf(float, float);
+extern float expf(float);
+extern float logf(float);
+extern float roundf(float);
+#endif
 #endif
 
 #if 0
@@ -621,3 +646,4 @@ extern float	fcbrt(float);
 #endif
 #endif /* !__MATH_H__ */
 #endif
+#endif /* C++ */

@@ -96,7 +96,8 @@ void osCreateScheduler(OSSched *s, void *stack, u8 mode, u32 numFields);
 void osScAddClient(OSSched *s, OSScClient *c, OSMesgQueue *msgQ, OSScClient *next);
 void osScRemoveClient(OSSched *s, OSScClient *c);
 OSMesgQueue *osScGetCmdQ(OSSched *s);
-
+s32 __scSchedule(OSSched *sc, OSScTask **sp, OSScTask **dp, s32 availRCP);
+s32 __scTaskComplete(OSSched *sc, OSScTask *t);
 
 #endif
 

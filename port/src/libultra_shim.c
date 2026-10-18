@@ -1016,9 +1016,9 @@ s32 osPiStartDma(OSIoMesg *mb, s32 pri, s32 direction, u32 devAddr, void *vAddr,
     (void)pri;
 
     if (direction == OS_READ) {
-        memcpy(vAddr, (const void *)devAddr, nbytes);
+        memcpy(vAddr, portPtr64(devAddr), nbytes);
     } else {
-        memcpy((void *)devAddr, vAddr, nbytes);
+        memcpy(portPtr64(devAddr), vAddr, nbytes);
     }
 
     if (mb != NULL) {
@@ -1040,9 +1040,9 @@ s32 osPiStartDma(OSIoMesg *mb, s32 pri, s32 direction, u32 devAddr, void *vAddr,
 s32 osPiRawStartDma(s32 direction, u32 devAddr, void *dramAddr, u32 size)
 {
     if (direction == OS_READ) {
-        memcpy(dramAddr, (const void *)devAddr, size);
+        memcpy(dramAddr, portPtr64(devAddr), size);
     } else {
-        memcpy((void *)devAddr, dramAddr, size);
+        memcpy(portPtr64(devAddr), dramAddr, size);
     }
     return 0;
 }
@@ -1077,10 +1077,11 @@ void osCreatePiManager(OSPri pri, OSMesgQueue *cmdQ, OSMesg *cmdBuf, s32 cmdMsgC
     osCreateMesgQueue(cmdQ, cmdBuf, cmdMsgCnt);
 }
 
-/** No TLB, no KSEG0: virtual == physical (65 call sites, hottest os symbol). */
+/** No TLB, no KSEG0: virtual == physical (65 call sites, hottest os symbol).
+ * A 64-bit build returns the address's window word (port_hostptr.h). */
 u32 osVirtualToPhysical(void *addr)
 {
-    return (u32)addr;
+    return portPtr32(addr);
 }
 
 /* ==== VI ================================================================= */

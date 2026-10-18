@@ -271,6 +271,9 @@ typedef struct {
  * can be DECLARED). The only C++ TUs are fast3d, which never touch the
  * .errno fields; C TUs keep it undefined. */
 #define errno (*__errno_location())
+#elif !defined(TARGET_N64) && defined(__APPLE__) && defined(__cplusplus)
+/* the same for macOS libc++ */
+#define errno (*__error())
 #endif
 
 /*
@@ -868,12 +871,15 @@ extern void *		 osPhysicalToVirtual(u32);
 #else
 /* PC port: no KSEG mapping - host pointers pass through unchanged, matching
  * the identity osVirtualToPhysical shim. The N64 arithmetic wrapped host
- * pointers into wild addresses (first-frame viewport crash). */
-#define	OS_K0_TO_PHYSICAL(x)	((u32)(x))
-#define	OS_K1_TO_PHYSICAL(x)	((u32)(x))
+ * pointers into wild addresses (first-frame viewport crash). A 64-bit build
+ * maps through the address window instead (port_hostptr.h); in 32-bit builds
+ * portPtr32/portPtr64 are plain casts. */
+#include "port_hostptr.h"
+#define	OS_K0_TO_PHYSICAL(x)	portPtr32((const void *) (uintptr_t) (x))
+#define	OS_K1_TO_PHYSICAL(x)	portPtr32((const void *) (uintptr_t) (x))
 
-#define	OS_PHYSICAL_TO_K0(x)	((void *)(x))
-#define	OS_PHYSICAL_TO_K1(x)	((void *)(x))
+#define	OS_PHYSICAL_TO_K0(x)	portPtr64((unsigned int) (x))
+#define	OS_PHYSICAL_TO_K1(x)	portPtr64((unsigned int) (x))
 #endif
 
 /* I/O operations */
