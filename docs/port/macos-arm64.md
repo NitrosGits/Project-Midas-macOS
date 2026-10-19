@@ -526,6 +526,54 @@ Done:
 Checked: `aliases` and `variants` are clean, and both relocation files are up
 to date. i386 against efb7f65: all 208 objects identical.
 
+### 2026-10-19: phase 3, the punning sites
+
+Error count: **228 → 0**. The GE_64BIT build compiles and links:
+`build_mac/ProjectMidas` is a native arm64 Mach-O executable. Four commits:
+
+- **Batch 1, fd9151e (228 → 98): the smaller files.** `retype_locals.py`
+  retyped 8 locals. Buffer globals and helper prototypes got their real
+  types (title.c's buffers, `z_buffer`, `ptr_menu_videobuffer`, rsp.c's
+  output buffer, `chrAllocate`, `rzipGetSomething`, `romCopyAligned`, the
+  indy commands). ROM DMA addresses are window words, `PHYS_TO_K0/K1` decode
+  with `portPtr64`, and `init()` is an empty stub on GE_64BIT.
+- **Batch 2, 647067f (98 → 63): image.c and image_bank.c.**
+  `texSetBitstring` takes `u8 *`. Buffer alignment is done in `uintptr_t`,
+  and the globalDL loads cast to `Gfx *`.
+- **Batch 3, c8f6ca9 (63 → 15): bondview2.c and gunfire.c.**
+  - `gunDrawSight` takes `Gfx **`. bondview2 passes `&gdl`, so as `s32 *` it
+    read and wrote half of the pointer. Incompatible pointer types are not an
+    error, so only a review of the uses finds these.
+  - `hand.field_A48` is the second `ALSoundState *` slot. `player.field_5C..68`
+    are `Mtx *`, and `players_cur_animation` is a `struct ModelAnimation *`.
+  - The MP body-animation code no longer reads a firing table's resolved
+    animation as an `s32`. On GE_64BIT that union is 8 bytes.
+- **Batch 4, 64cb47a (15 → 0, plus the link).**
+  - fast3d's GL counts and offsets are narrowed explicitly. env.c passes its
+    int setParam values as `(void *)(intptr_t)`.
+  - The Apple `-U` list in CMakeLists.txt missed obseg.h's text banks: their
+    declarations are indented, which left 84 undefined symbols.
+  - The last silenced truncations are fixed: port_textures.c `entry.index` and
+    gunfire.c's tinted-crosshair word are encoded with `portPtr32`, and zlib.c's
+    in-place overlap tests compare full addresses.
+
+Checked after each batch: `aliases` and `variants` are clean. The i386
+objects match the previous commit except two functions in batch 3:
+playerTick swaps the operands of one equality compare, and gunDrawSight
+differs in register allocation and code motion (a `Gfx **` cursor no longer
+aliases the `u32` GBI words). To find which function differs, compile both
+trees with `-ffunction-sections` and diff `llvm-objdump -d` per symbol. The
+5 i386 syntax errors (lv.c, spectrum.c `#pragma weak` aliases) predate the
+port. port/ and fast3d are outside the i386 compare. There, each change is a
+same-width cast on 32-bit builds or a `portPtr32`, which is a plain cast
+there.
+
+What's left in the source: a grep for `(u32|s32|int|...)(uintptr_t|intptr_t)`
+finds only resample.c's `(s32)(intptr_t) param` (libaudio's int passed as
+`void *`) and narrowings of pointer *differences*. Punning through a union or
+memcpy, or through an incompatible pointer like gunDrawSight's, is invisible to
+the compiler. Bring-up will find what remains of those.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -539,9 +587,16 @@ to date. i386 against efb7f65: all 208 objects identical.
 
 ### Next, in order
 
-1. **Phase 3: the remaining punning sites.** 228 errors, led by bondview2.c,
-   gunfire.c, image_bank.c, image.c, memp.c, title.c, ramromreplay.c and
-   init.c. Start with
-   `retype_locals.py` (add `--globals` for title.c's `s32` buffer globals). Still
-   truncating with `(u32)(uintptr_t)`: port_textures.c (`entry.index`) and
-   gunfire.c's crosshair GBI word.
+1. **Phase 4: bring-up.** Run `build_mac/ProjectMidas` with a ROM and work
+   through boot, title, menus and a level. Expect `portWindowBadPtr` aborts
+   from buffers allocated outside the window (malloc, the stack) that reach a
+   display list or a `PTR32` word. Compare against the 32-bit build with the
+   attract-demo ramrom replays.
+2. Open questions from the link:
+   - ld reduces `__DATA,__common` alignment from 0x8000 to 0x4000. Find the
+     32 KB-aligned common symbol and check that nothing depends on it.
+   - gfx_opengl.cpp's framebuffer copy restores `GL_FRAMEBUFFER` with the
+     framebuffer *index* (`current_framebuffer`), not its `fbo`. The other
+     restores use `framebuffers[current_framebuffer].fbo`. This is the same
+     on every build, so it was kept as is.
+3. **Phase 5: packaging.** `.app` bundle, bundled SDL2, ad-hoc codesign.
