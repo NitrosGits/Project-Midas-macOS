@@ -46,9 +46,12 @@ structs, the game's punned `s32`s) at 32 bits by storing a host pointer as its
 **offset into an address window**:
 
 - The window base is the executable's Mach-O header (`_mh_execute_header`). The
-  window covers the image (globals, static display lists) plus one large
-  reservation mapped right after it (`portWindowInit`, pcsched.c). The memp
-  arena, the high arena and the ROM image are carved from that reservation.
+  window covers the image (globals, static display lists), which includes a
+  1 GB zerofill reservation (`s_WindowArena`, pcsched.c), mapped lazily with
+  the executable. The memp arena, the high arena and the ROM image are carved
+  from it (`portWindowAlloc`). It can't be mapped after the image at run time:
+  macOS treats an mmap address as a hint, and dylibs and malloc's large
+  regions take the space after the image, by an amount that changes with ASLR.
 - Encoding: `portPtr32(p) = p - base + 0x10000000`. The bias keeps every
   encoded word `>= 0x10000000`, so `PORT_IS_HOST_ADDR` and the segment-word
   tests (`0x0Sxxxxxx`) keep working unchanged. Words that already fit in 32
@@ -574,6 +577,80 @@ finds only resample.c's `(s32)(intptr_t) param` (libaudio's int passed as
 memcpy, or through an incompatible pointer like gunDrawSight's, is invisible to
 the compiler. Bring-up will find what remains of those.
 
+### 2026-10-19: phase 4, bring-up through the menus
+
+`build_mac/ProjectMidas` boots with the ROM and renders all of these
+correctly:
+- the legal screen, the Nintendo and Rare logos, the gun barrel and the cast
+  intro;
+- with `GE_AUTOSTART=1`, the title, file select, mode select, mission select,
+  difficulty and briefing screens.
+
+It then loads solo Dam and ticks the level. Four commits:
+
+- **5280ab8, boot to the attract intro.**
+  - The window reservation is zerofill inside the image (see above).
+  - animdata.c declared `animation_table_ptrs1/2` as `int32_t[]` against an
+    `intptr_t[]` definition. A mismatched `extern` in another file is
+    invisible to the compiler.
+  - reverb.c negated `u32` delay offsets, which steps 8 GB forward on a
+    64-bit pointer.
+  - `ALParam` is padded so `ALStartParamAlt` (40 bytes) fits the pool
+    element, with static asserts.
+  - The three inline-texture menu models come from the ROM, and
+    romfile_model.c converts their blobs.
+  - `ModelGroupMtxBuildArg` (a view of a `ModelNode`) has PTR32 fields.
+  - struct player embeds a real `Model`.
+  - Crash aids: `portWindowBadPtr` prints a backtrace, and the arm64 crash
+    handler prints the fault pc, lr and address.
+- **c9f6968, through the menus.** texReset's pristine snapshot assumed
+  GCC's last-to-first layout of oddtextures.c. Its bounds now follow the
+  address order.
+- **aaec360, struct views.** A new `ptr32_check.py views` check (below).
+  It fixed AttachedObj (a view of ObjectRecord), `object_animation_controller`
+  (passed as a MonitorRecord) and the bond-movement locus local (the stan
+  walk writes 24 bytes through it).
+- **c9e6aaa, solo Dam loads.** Two literal sizes:
+  - player.c allocated struct player as 0x2A80 bytes; it is 0x2C60 on
+    GE_64BIT.
+  - The ModelHitEntry pool was `char[600 * 0x14]`. Its init overran 12000
+    bytes into `g_playerPointers`, so solo loads counted two players and
+    asked for the multiplayer setup.
+
+Checked after each batch: `aliases`, `variants` and `views` are clean. The
+i386 objects match except the intended functions (objecthandler_2.c's
+load_object_fill_header, image_bank.c's texReset).
+
+**How to run it** (no debugger needed):
+
+```
+cd <scratch dir>   # shots and logs land in the cwd
+GE_ROM=<repo>/baserom.u.z64 GE_FRAMES=6000 GE_NOINISAVE=1 GE_NOMSGBOX=1 \
+GE_WINDOW=640x480 GE_SHOT=200 <repo>/build_mac/ProjectMidas > out.txt 2>&1
+```
+
+- `GE_FRAMES` exits cleanly after n frames.
+- `GE_SHOT=n` writes `shot_*.bmp` every n frames.
+- `GE_AUTOSTART=1` presses START every 120 polls and screenshots the frame
+  before each press.
+- Set `fullscreen=windowed` in build_mac/midas.ini so runs don't take over
+  the display.
+- Don't use `GE_NOSLEEP` for these runs: without pacing the game submits
+  no graphics tasks.
+- Decode the crash handler's pc/lr and backtrace frames with
+  `atos -i -o build_mac/ProjectMidas -l <image> <addresses>`. The image base
+  is printed as `ge: window: image at ...`. lldb needs the developer-tools
+  authorization, so it isn't used.
+
+**The `views` check.** It lists every incompatible pointer conversion
+between two struct types whose GE_64BIT layouts put native pointers in
+different places, plus `T *`/`T **` mixups. Pairs reviewed as harmless are in
+`VIEWS_REVIEWED`.
+
+Literal sizes are not covered by any check. Those are hand allocations and
+pools sized by a literal (`mempAllocBytesInBank(0x2A80)`,
+`char pool[600 * 0x14]`) for structs that grow on GE_64BIT.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -587,11 +664,16 @@ the compiler. Bring-up will find what remains of those.
 
 ### Next, in order
 
-1. **Phase 4: bring-up.** Run `build_mac/ProjectMidas` with a ROM and work
-   through boot, title, menus and a level. Expect `portWindowBadPtr` aborts
-   from buffers allocated outside the window (malloc, the stack) that reach a
-   display list or a `PTR32` word. Compare against the 32-bit build with the
-   attract-demo ramrom replays.
+1. **Phase 4, continued: a level.** With `GE_AUTOSTART=1` the run crashes
+   right after Dam starts ticking. chrTick calls into `sub_GAME_7F06D490`
+   (model.c:1094), which calls `model->unka0` and reads floats there
+   (pc 0x417ffdb442daf908). That Model is probably allocated or embedded at
+   its 32-bit size (188 bytes; 264 on GE_64BIT).
+   - Sweep the literal sizes: grep `mempAllocBytesInBank(0x`, `[N * 0x..]`
+     pools, and `sizeof`-free strides over structs that contain pointers.
+     For example, prop.c's `beam = mempAllocBytesInBank(0x30U)`.
+   - Then compare against the 32-bit build with the attract-demo ramrom
+     replays.
 2. Open questions from the link:
    - ld reduces `__DATA,__common` alignment from 0x8000 to 0x4000. Find the
      32 KB-aligned common symbol and check that nothing depends on it.
