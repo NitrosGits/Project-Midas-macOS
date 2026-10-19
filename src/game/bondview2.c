@@ -559,7 +559,7 @@ void solo_char_load(void)
                 load_object_fill_header(headheader, (u8 *)c_item_entries[head].filename, weaponbuf0 + cursor, size0 - cursor, &pool);
                 cursor = ALIGN64_V3(get_pc_buffer_remaining_value((u8 *)c_item_entries[head].filename) + cursor + 0x3f);
                 model  = (Model *)(weaponbuf0 + cursor);
-                cursor = ALIGN64_V3(cursor + 0xfb);
+                cursor = ALIGN64_V3(cursor + sizeof(Model) + 0x3f); /* 0xfb with the 0xbc 32-bit Model */
                 modelCalculateRwDataLen(bodyheader);
                 modelCalculateRwDataLen(headheader);
 

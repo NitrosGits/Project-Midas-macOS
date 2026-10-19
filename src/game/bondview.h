@@ -214,6 +214,17 @@ struct hand
   Mtxf throw_item_pos_related_prev;
   coord3d field_B58;
   f32 field_B64;
+#ifdef GE_64BIT
+  /* The gun's Model (gunfire.c: (Model *)&hand->field_B68): only its head,
+   * the fields before anim, is used, followed by its rwdata (modeldatas). The
+   * 32-bit field list below is that head, with mtxlist as its render_pos. With
+   * 8-byte pointers the head is 64 bytes, so here it is the real one. */
+  union {
+    s32 field_B68;
+    u8 modelhead_[__builtin_offsetof(Model, anim)];
+    struct { u8 pad_mtxlist_[__builtin_offsetof(Model, render_pos)]; Mtxf *mtxlist; };
+  };
+#else
   s32 field_B68;
   s32 field_B6C;
   s32 field_B70;
@@ -222,6 +233,7 @@ struct hand
   s32 field_B7C;
   s32 field_B80;
   s32 field_B84;
+#endif
   s32 modeldatas;
   s32 field_B8C;
   s32 field_B90;

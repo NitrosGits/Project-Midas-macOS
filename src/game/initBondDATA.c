@@ -182,7 +182,8 @@ struct hand hand_data_dummy = {
     0,0,0,
  
     0, // f32 field_B64;
-    0, // s32 field_B68;
+    0, // s32 field_B68; (on GE_64BIT, the gun Model head union)
+#ifndef GE_64BIT
     0, // s32 field_B6C;
     0, // s32 field_B70;
     0, // Mtxf * mtxlist;
@@ -190,6 +191,7 @@ struct hand hand_data_dummy = {
     0, // s32 field_B7C;
     0, // s32 field_B80;
     0, // s32 field_B84;
+#endif
     0, // s32 modeldatas;
     0, // s32 field_B8C;
     0, // s32 field_B90;

@@ -167,7 +167,8 @@ struct hand g_DefaultHandStateTemplate = {
     { { {0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0} } }, /* throw_item_pos_related_prev */
     { {0,0,0} }, /* field_B58 */
     0, /* field_B64 */
-    0, /* field_B68 */
+    0, /* field_B68 (on GE_64BIT, the gun Model head union) */
+#ifndef GE_64BIT
     0, /* field_B6C */
     0, /* field_B70 */
     0, /* mtxlist */
@@ -175,6 +176,7 @@ struct hand g_DefaultHandStateTemplate = {
     0, /* field_B7C */
     0, /* field_B80 */
     0, /* field_B84 */
+#endif
     0, /* modeldatas */
     0, /* field_B8C */
     0, /* field_B90 */
