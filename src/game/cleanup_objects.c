@@ -18,7 +18,7 @@
 
 void cleanupObjects(s32 stage)
 {
-    u32 *obj = (uintptr_t)g_CurrentSetup.propDefs;
+    u32 *obj = (u32 *) g_CurrentSetup.propDefs;
 
     if (obj)
     {

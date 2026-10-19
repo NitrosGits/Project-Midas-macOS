@@ -4,7 +4,11 @@
 
 void romCreateMesgQueue(void);
 void romCopy(void *target, void *source, u32 size);
+#ifdef TARGET_N64
 s32 romCopyAligned(void *target, void *source, s32 length);
+#else
+void *romCopyAligned(void *target, void *source, s32 length);
+#endif
 void romWrite(void *source, void *target, u32 size);
 
 #endif

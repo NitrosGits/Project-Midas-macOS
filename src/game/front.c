@@ -370,7 +370,7 @@ s32 is_cheat_menu_available = FALSE;
  * docs/port/port-options-menu.md */
 
 u8 * ptr_logo_and_walletbond_DL = NULL;
-s32 ptr_menu_videobuffer = 0;
+intptr_t ptr_menu_videobuffer = 0;
 struct Model *logoinst = NULL;
 struct Model * walletinst[] = { NULL, NULL, NULL, NULL};
 
@@ -2582,7 +2582,7 @@ void frontCleanUpWalletBond(void)
 void init_menu05_fileselect(void)
 {
     s32 size = 0x6e000;
-    Gfx* DL = (intptr_t)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
+    Gfx* DL = (Gfx *) ((u8 *) ptr_logo_and_walletbond_DL + (s32)(4096*10));
     int i;
 
     prev_keypresses = FALSE;
@@ -16249,7 +16249,7 @@ void load_briefing_text_for_stage(void)
 #endif
 
     // what is this
-    temp_s0 = (intptr_t)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
+    temp_s0 = (Gfx *) ((u8 *) ptr_logo_and_walletbond_DL + (s32)(4096*10));
 
     // alright
     argg = 0x200;
@@ -17687,7 +17687,7 @@ void init_menu18_displaycast(void)
 
     bufferRemaining = bufferRemaining + allocSize; 
 
-    zbufSetBuffer(ALIGN64_V2(bufferPtr + bufferRemaining), Z_BUFFER_4_3_WIDTH, Z_BUFFER_4_3_HEIGHT);
+    zbufSetBuffer(((((intptr_t) (bufferPtr + bufferRemaining)) + 0x3f | 0x3f) ^ 0x3f), Z_BUFFER_4_3_WIDTH, Z_BUFFER_4_3_HEIGHT); /* ALIGN64_V2 without its u32 cast */
     texInitPool(&texPool, bufferPtr, allocSize);
 
     bufferRemaining -= allocSize;
@@ -17777,7 +17777,7 @@ void init_menu18_displaycast(void)
 #else
     modelSetAnimPlaySpeed(cast_model, 0.5f, 0);
 #endif
-    modelSetAnimation(cast_model, animation_table_ptrs1[intro_animation_table[randomly_selected_intro_animation].animID], flip, intro_animation_table[randomly_selected_intro_animation].startframeoffset, intro_animation_table[randomly_selected_intro_animation].playback_speed, 0.0f);
+    modelSetAnimation(cast_model, (ModelAnimation *) animation_table_ptrs1[intro_animation_table[randomly_selected_intro_animation].animID], flip, intro_animation_table[randomly_selected_intro_animation].startframeoffset, intro_animation_table[randomly_selected_intro_animation].playback_speed, 0.0f);
 
     g_MenuTimer = 0;
     cast_camera_dist_start = ((((f32) ((u32) randomGetNext())) * (1.0f / U32_MAX)) * 80.0f) + 70.0f;
@@ -19098,7 +19098,7 @@ void menu_init(void)
     {
         if (viGetFrameBuf2() == (cfb_16[1]))
         {
-            viSetFrameBuf2(ptr_menu_videobuffer);
+            viSetFrameBuf2((u8 *) ptr_menu_videobuffer);
         }
 
         viSetAspect(MENU_INIT_ASPECT_440);

@@ -14,7 +14,7 @@
  */ 
 struct GfxInfo_s {
     OSScTask task;
-    u32 cfb;
+    u8 *cfb;   /* the frame buffer this task renders to */
     u32 unk5C;
 };
 

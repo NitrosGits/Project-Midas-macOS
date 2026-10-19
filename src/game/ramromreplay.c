@@ -231,7 +231,7 @@ void finalize_ramrom_on_hw(void)
     u8 *p;
     void *a1;
 
-    p = ALIGN16_a((intptr_t)buffer);
+    p = (u8 *) ALIGN16_a((intptr_t)buffer);
     p[0] = 0;
     p[1] = 0;
 
@@ -243,7 +243,7 @@ void finalize_ramrom_on_hw(void)
 
     ptr_active_demofile = romCopyAligned(ramrom_data_target, a1, 0xf0);
     ptr_active_demofile->totaltime_ms = g_GlobalTimer - g_ClockTimer;
-    ptr_active_demofile->filesize = (intptr_t)address_demo_loaded - (intptr_t)a1;
+    ptr_active_demofile->filesize = (s32) ((intptr_t)address_demo_loaded - (intptr_t)a1);
     romWrite(ptr_active_demofile, a1, 0xf0);
 }
 
@@ -266,7 +266,12 @@ void save_ramrom_to_devtool(void)
     }
     
     sprintf(indyFileName, "replay/demo.%d", i);
+#ifdef TARGET_N64
     indycommHostSaveFile(indyFileName, INDY_RAMROM_DEMO_POINTER, ptr_active_demofile->filesize);
+#else
+    /* PORT: the arguments in the order the prototype takes them (size, data) */
+    indycommHostSaveFile(indyFileName, ptr_active_demofile->filesize, INDY_RAMROM_DEMO_POINTER);
+#endif
 }
 
 
@@ -294,7 +299,7 @@ void load_ramrom_from_devtool(void)
 // Address 0x7F0BFE5C NTSC
 void record_player_input_as_packet(struct contsample *arg0, s32 arg1, s32 arg2)
 {
-    s32 temp_t5;
+    intptr_t temp_t5;
     s32 temp_t1;
     s32 var_a0;
     s32 var_a2;
@@ -781,7 +786,7 @@ void replay_recorded_ramrom_at_address(ramromfilestructure *demofile)
 
 void replay_recorded_ramrom_from_indy(void)
 {
-    replay_recorded_ramrom_at_address(INDY_RAMROM_DEMO_ADDRESS);
+    replay_recorded_ramrom_at_address((ramromfilestructure *) INDY_RAMROM_DEMO_POINTER);
 }
 
 void ramromFadeToTitle(void)

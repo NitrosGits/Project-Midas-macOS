@@ -54,10 +54,10 @@ void dynInit(void) {
 
 void dynInitMemory(void) {
     if (tokenFind(1, "-mgfx")) {
-        g_GfxSizesByPlayerCount[getPlayerCount() - 1] = strtol(tokenFind(1, "-mgfx"), NULL, 0) * 1024;
+        g_GfxSizesByPlayerCount[getPlayerCount() - 1] = (s32) (strtol(tokenFind(1, "-mgfx"), NULL, 0) * 1024);
     }
     if (tokenFind(1, "-mvtx")) {
-        g_VtxSizesByPlayerCount[getPlayerCount() - 1] = strtol(tokenFind(1, "-mvtx"), NULL, 0) * 1024;
+        g_VtxSizesByPlayerCount[getPlayerCount() - 1] = (s32) (strtol(tokenFind(1, "-mvtx"), NULL, 0) * 1024);
     }
 
 #ifndef TARGET_N64
@@ -102,7 +102,7 @@ Gfx *dynGetMasterDisplayList(void) {
 }
 
 s32 dynGetFreeGfx2(Gfx *gdl) {
-    return (Gfx*)g_GfxBuffers[g_GfxActiveBufferIndex + 1] - gdl;
+    return (s32) ((Gfx*)g_GfxBuffers[g_GfxActiveBufferIndex + 1] - gdl);
 }
 
 /**
@@ -158,11 +158,11 @@ void dynRemovedFunc(Gfx *gdl) {
 }
 
 s32 dynGetFreeGfx(Gfx *gdl) {
-    return (Gfx*)g_GfxBuffers[g_GfxActiveBufferIndex + 1] - gdl;
+    return (s32) ((Gfx*)g_GfxBuffers[g_GfxActiveBufferIndex + 1] - gdl);
 }
 
 s32 dynGetFreeVtx(void) {
-	return g_VtxBuffers[g_GfxActiveBufferIndex + 1] - g_GfxMemPos;
+	return (s32) (g_VtxBuffers[g_GfxActiveBufferIndex + 1] - g_GfxMemPos);
 }
 
 // Address 0x7F0BD7CC NTSC
@@ -171,7 +171,7 @@ void dynCalculateMembarLength(const char* arg0, f32 arg1, f32 arg2)
     s32 len;
     f32 zero = 0;
     
-    len = strlen(arg0);
+    len = (s32) strlen(arg0);
     
     arg1 /= arg2;
     
@@ -203,9 +203,9 @@ void portDynAuditFrameEnd(Gfx *gdlEnd)
     }
 
     cap   = g_GfxSizesByPlayerCount[getPlayerCount() - 1];
-    used  = (u8 *)gdlEnd - g_GfxBuffers[g_GfxActiveBufferIndex];
+    used  = (s32) ((u8 *)gdlEnd - g_GfxBuffers[g_GfxActiveBufferIndex]);
     vcap  = g_VtxSizesByPlayerCount[getPlayerCount() - 1];
-    vused = g_GfxMemPos - g_VtxBuffers[g_GfxActiveBufferIndex];
+    vused = (s32) (g_GfxMemPos - g_VtxBuffers[g_GfxActiveBufferIndex]);
 
     frames++;
     if (used > gfxHigh) {

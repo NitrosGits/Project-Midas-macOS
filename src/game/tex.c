@@ -171,7 +171,7 @@ s32 unused_copy_byte_array(u8* src, s32 count, u8* dst)
         count--;
     }
 
-    return dst_itr - dst;
+    return (s32) (dst_itr - dst);
 }
 
 
@@ -1160,7 +1160,7 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
         lightFixtureEntryEnd(out);
     }
 
-    return ((intptr_t)out) - ((intptr_t)dst);
+    return (s32) (((intptr_t)out) - ((intptr_t)dst));
 }
 
 

@@ -189,7 +189,7 @@ s32 D_80036420 = 0;
 s32 g_bondviewForceDisarm = 0;
 
 //D:80036428
-s32 resolution = 0;
+intptr_t resolution = 0; /* the Cuba credits buffer's address, 64-aligned */
 //D:8003642C
 s32 cameraBufferToggle = 0;
 //D:80036430

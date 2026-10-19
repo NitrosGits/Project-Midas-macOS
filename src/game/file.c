@@ -182,7 +182,7 @@ void set_selected_foldernum_and_copy_demo_eeprom(struct save_data *eeprom)
   int new_var;
   long long new_var2;
   new_var2 = (long long) 0x64;
-  new_var = new_var2;
+  new_var = (int) new_var2;
   selected_folder_num_copy = (s32) selected_folder_num;
   selected_folder_num = new_var;
   fileCopyDemoSaveToRamRomSave(new_var, eeprom);

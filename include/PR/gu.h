@@ -35,7 +35,12 @@
 #define M_PI		3.14159265358979323846
 #define M_DTOR		(3.14159265358979323846/180.0)
 
+#ifdef TARGET_N64
 #define	FTOFIX32(x)	(long)((x) * (float)0x00010000)
+#else
+/* PORT: s16.16 is 32 bits; long is 64-bit on LP64 */
+#define	FTOFIX32(x)	(int)((x) * (float)0x00010000)
+#endif
 
 // original: x * (1.0f / (float)0x00010000)
 #define	FIX32TOF(x)	((float)(x) / (float)0x00010000)

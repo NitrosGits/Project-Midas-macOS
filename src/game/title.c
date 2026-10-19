@@ -35,7 +35,7 @@ extern signed short sins(unsigned short x);
 
 // bss
 //CODE.bss:80069550
-s32 barrelDisplayListPtr;
+u8 *barrelDisplayListPtr;
 //CODE.bss:80069554
 Gfx *gunbarrelgfxListPointer;
 //CODE.bss:80069558
@@ -63,11 +63,11 @@ f32 titleTransitionY;
 //CODE.bss:80069584
 s16 word_CODE_bss_80069584;
 //CODE.bss:80069588
-s32 dword_CODE_bss_80069588;
+u8 *dword_CODE_bss_80069588;
 //CODE.bss:8006958C
-s32 dword_CODE_bss_8006958C;
+u8 *dword_CODE_bss_8006958C;
 //CODE.bss:80069590
-s32 virtualaddress;
+u8 *virtualaddress;
 
 /**
  * Address 80069594
@@ -155,7 +155,7 @@ Gfx *titleRenderFolderMenuBackground(Gfx *gdl, s32 xOffset, struct FolderSelectC
     gDPSetTextureFilter(gdl++, G_TF_POINT);
     gDPPipeSync(gdl++);
 
-    return titleRenderFolderMenuBackgroundLines(gdl, OS_K0_TO_PHYSICAL(dword_CODE_bss_8006958C), xOffset, topColour, bottomColour);
+    return titleRenderFolderMenuBackgroundLines(gdl, PORT_PHYS(dword_CODE_bss_8006958C), xOffset, topColour, bottomColour);
 }
 
 
@@ -414,7 +414,7 @@ Gfx *load_display_rare_logo(Gfx *gdl, s32 arg1, s32 arg2, s32 arg3, s32 arg4) {
 extern void *_rarewarelogoSegmentRomStart;
 extern void *_rarewarelogoSegmentStart;
 extern void *_rarewarelogoSegmentEnd; 
-void setupRarewareLogoData(s32 address, s32 size) {
+void setupRarewareLogoData(u8 *address, s32 size) {
     gunbarrel_mode = 0;
     g_TitleX = 880.0f;
     D_8002A89C = -40.0f;

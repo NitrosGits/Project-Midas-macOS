@@ -208,7 +208,7 @@ void bossInitMainthreadData(void)
     OSMesg bossmsg;
     OSTimer bosstimer;
     OSMesgQueue bossmq;
-    u32 start;
+    void *start;
     u32 unused;
     s32 i;
 
@@ -390,7 +390,7 @@ void bossMainloop(void)
     u32 pendingGfx = 0;
     s32 freeGfx;
     s32 mainTickElapsed;
-    s32 rspReplyMsg;
+    s32 *rspReplyMsg;
 
     u32 unused_stackpadding_[56];
 
@@ -865,8 +865,8 @@ void bossMainloop(void)
                                 indycommHostSendDump(taskGrabBuffer, (u8*)0x80000000, 0x400000);
                             }
 
-                            rspReplyMsg = (intptr_t)(&localGfxDoneMsg);
-                            rspGfxTaskStart(firstGdl, gdl, 0, (s32*)rspReplyMsg);
+                            rspReplyMsg = (s32 *)(&localGfxDoneMsg);
+                            rspGfxTaskStart(firstGdl, gdl, 0, rspReplyMsg);
 
                             pendingGfx++;
                             memaSingleDefragPass();

@@ -81,8 +81,9 @@
 #define	K0_TO_PHYS(x)	portPtr32((const void *) (uintptr_t) (x))
 #define	K1_TO_PHYS(x)	portPtr32((const void *) (uintptr_t) (x))
 #define	KDM_TO_PHYS(x)	portPtr32((const void *) (uintptr_t) (x))
-#define	PHYS_TO_K0(x)	((u32)(x))
-#define	PHYS_TO_K1(x)	((u32)(x))
+/* a 32-bit word back to the host pointer it stands for */
+#define	PHYS_TO_K0(x)	portPtr64((unsigned int) (x))
+#define	PHYS_TO_K1(x)	portPtr64((unsigned int) (x))
 
 #endif /* TARGET_N64 */
 

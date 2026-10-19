@@ -11,7 +11,7 @@ void set_mt_tex_alloc(void)
 
     if (tokenFind(1, "-mt"))
     {
-        bytes = strtol(tokenFind(1, "-mt"), 0x0, 0) * 1024; //get KB
+        bytes = (u32) (strtol(tokenFind(1, "-mt"), 0x0, 0) * 1024); //get KB
     }
 
 #ifndef TARGET_N64

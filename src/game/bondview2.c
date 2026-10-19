@@ -12024,7 +12024,7 @@ void mp_respawn_handler(void)
 {
     coord3d start_pos = ZeroCoordSpawnPos;
     f32 start_look_angle;
-    s32 start_stan;
+    struct StandTile *start_stan;
     s32 pad;
     f32 stan_height;
     s32 var_v0;

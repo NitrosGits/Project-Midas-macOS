@@ -81,7 +81,7 @@ s32 tokenReadIo(void)
 // the same token appears multiple times. Note that the index is 1-based.
 const char *tokenFind(s32 index, const char *token)
 {
-    s32 length = strlen(token);
+    s32 length = (s32) strlen(token);
     s32 i = 1;
     for (; i < g_TokenCount; i++) {
         if (strncmp(token, g_Tokens[i], length) == 0) {

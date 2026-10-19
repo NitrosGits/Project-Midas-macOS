@@ -282,7 +282,7 @@ void lvInit(void)
     s32 size;
 
     debTryAdd(&lvl_c_debug_notice_list, "lv_c_debug");
-    size = (intptr_t)&_fontdlSegmentRomEnd - (intptr_t)&_fontdlSegmentRomStart;
+    size = (s32) ((u8 *)&_fontdlSegmentRomEnd - (u8 *)&_fontdlSegmentRomStart);
     lvl_c_debug_notice_list = 1;
     ptr_font_DL = mempAllocBytesInBank(size, MEMPOOL_PERMANENT);
     romCopy(ptr_font_DL, &_fontdlSegmentRomStart, size);

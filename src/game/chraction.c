@@ -294,7 +294,7 @@ void expand_09_characters(s32 stageid, GuardRecord *arg1, s32 arg2)
         if (sp38 != 0)
         {
             sp3C = atan2f(pad->look.f[0], pad->look.f[2]);
-            temp_v0_4 = chrAllocate(sp38, &sp48, sp3C, sp54, ailistFindById(arg1->AIListID));
+            temp_v0_4 = chrAllocate(sp38, &sp48, sp3C, sp54, (struct AIListRecord *) ailistFindById(arg1->AIListID));
 
             if (temp_v0_4 != 0)
             {
@@ -5130,7 +5130,7 @@ bool chrGoToPad(ChrRecord *self, s32 padid, SPEED speed)
 /**
  * Address 0x7F02AD54.
 */
-bool if_actor_able_set_on_path(ChrRecord *self, s32 pathid)
+bool if_actor_able_set_on_path(ChrRecord *self, struct patrol_path *pathid)
 {
     if (pathid && chrIsNotDeadOrShot(self))
     {

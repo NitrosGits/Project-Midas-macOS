@@ -230,7 +230,7 @@ s32 waygroupFindRoute(waygroup* from, waygroup* to, waygroup** arr, s32 arrlen)
     *arrptr = NULL;
     arrptr++;
 
-    return arrptr - arr;
+    return (s32) (arrptr - arr);
 }
 
 
@@ -372,7 +372,7 @@ s32 waypointFindRouteInGroup(waypoint *from, waypoint *to, waypoint **arr, s32 a
     *arrptr = NULL;
     arrptr++;
 
-    return arrptr - arr;
+    return (s32) (arrptr - arr);
 }
 
 
@@ -456,7 +456,7 @@ s32 waypointFindRoute(waypoint *frompoint, waypoint *topoint, waypoint **arr, s3
     *arrptr = NULL;
     arrptr++;
 
-    return arrptr - arr;
+    return (s32) (arrptr - arr);
 }
 
 

@@ -94,6 +94,13 @@ void mainproc(void *args);
  * Then starts the main thread
  */
 void init(void)
+#if defined(GE_64BIT)
+{
+    /* PORT: the N64 boot entry (boot.s): it unpacks the code segment and copies
+     * the TLB miss handler to K0BASE. The PC build starts in port/src/main.c and
+     * never calls it. */
+}
+#else
 {
     u32 inflateromSize;
     u8 *csegmentSegmentVaddrStart;
@@ -174,6 +181,7 @@ void init(void)
     osCreateThread(&mainThread, MAIN_THREAD_ID, &mainproc, NULL, stack_pointer, MAIN_THREAD_PRIORITY);
     osStartThread(&mainThread);
 }
+#endif
 
 
 

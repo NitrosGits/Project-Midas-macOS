@@ -293,7 +293,7 @@ void post_typeA_indyrescmd_app_command_recieved(s32 readsize,s32 writesize,u32 d
 }
 
 
-void indyrescmdRamRomLoad(u32 rsize,u32 wsize,char *name,u32 filesize,u32 ptarget)
+void indyrescmdRamRomLoad(u32 rsize,u32 wsize,char *name,u32 filesize,u8 *ptarget)
 {
   indy_resource_entry_typeF cmd;
   
@@ -498,7 +498,7 @@ s32 post_indyrescmd_recv_capture_data_success(u32 data)
 }
 
 
-s32 indycmdSendRamRomLoad(char *strptr,u32 ptarget,u32 filesize)
+s32 indycmdSendRamRomLoad(char *strptr,u8 *ptarget,u32 filesize)
 {
     indyrescmdStartCmdSeq(sizeof(indy_resource_entry_typeF),sizeof(indy_resource_entry_typeF));
     indyrescmdRamRomLoad(sizeof(s_indyResCmd02End),sizeof(s_indyResCmd02End),strptr,filesize,ptarget);
@@ -998,7 +998,7 @@ s32 indycmdAckHostCheckFileExists(u8 *response1,u8 *response2)
 }
 
 
-s32 indycmdReceiveFile(u8 *response1,u8 *response2,u32 childsize,u8 *child)
+s32 indycmdReceiveFile(u8 *response1,u8 *response2,u32 *childsize,u8 *child)
 {
     indyrescmdResponseSize(0,0x20);
     indyrescmdResponseRecieveFile(0x14,0x14,response1,response2,childsize,child);

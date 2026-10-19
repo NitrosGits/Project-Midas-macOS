@@ -2372,7 +2372,7 @@ struct move_bond_temp_struct {
 //D:80036424
 extern s32 g_bondviewForceDisarm;
 //D:80036428
-extern s32 resolution;
+extern intptr_t resolution;
 //D:8003642C
 extern s32 cameraBufferToggle;
 //D:80036430

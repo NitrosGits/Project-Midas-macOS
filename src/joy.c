@@ -952,5 +952,5 @@ void joySetContDataIndex(s32 index)
 
 s32 joyGetContDataIndex(void)
 {
-    return (g_ContDataPtr - g_ContData);
+    return (s32) (g_ContDataPtr - g_ContData);
 }

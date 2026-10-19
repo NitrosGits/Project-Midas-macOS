@@ -134,14 +134,14 @@ s32 indycmdSendInitPacket(void);
 s32 indycmdSendHostCheckFileExists(char *strptr);
 s32 indycmdSendLoadFile(u8 *filename,u32 size);
 s32 indycmdSendDump(char *string, u32 size, struct indy_resource_entry_header *data);
-s32 indycmdSendRamRomLoad(char *strptr,u32 ptarget,u32 filesize);
+s32 indycmdSendRamRomLoad(char *strptr,u8 *ptarget,u32 filesize);
 s32 indycmdSendHostExportFile(char *strptr,u8 *phwaddr,u32 size);
 s32 indycmdSendHostCmdPacket(char *strptr);
 
 s32 indycmdRecieveCommand(u8 *buffer, u32 size);
 
 s32 indycmdAckHostCheckFileExists(u8 *response1,u8 *response2);
-s32 indycmdReceiveFile(u8 *response1,u8 *response2,u32 childsize,u8 *child);
+s32 indycmdReceiveFile(u8 *response1,u8 *response2,u32 *childsize,u8 *child);
 s32 indycmdAckSendDump(u8 *param_1);
 s32 indycmdReceiveRamRom(u32 *param_1,u32 *param_2,u32 *param_3);
 s32 indycmdAckHostExportFile(u8 *response);

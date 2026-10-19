@@ -2924,7 +2924,7 @@ void gunTickHandState(enum GUNHAND hand, s32 triggerOn)
     struct PropRecord *temp_v0_8;
     Weapon1PTransformKeyframe *sp74;
     f32 temp_f0_2;
-    u32 var_a0_2;
+    u32 *var_a0_2;
     f32 temp_v1_9;
     struct hand *temp_v1_5;
     f32 un_f32_num = 0.0f;

@@ -246,7 +246,7 @@ void obLoadBGFileBytesAtOffset(u8 *bgname, u8 *target, s32 offset, s32 len)
       /* The room binaries are u32 arrays of big-endian words, but the 1172/zlib
        * decompressors read bytes, so swap32-copy to rebuild the N64 byte image
        * (len is 16-aligned at every call site). */
-      u32 *s = (u32 *) cand;
+      u32 *s = (u32 *) portPtr64(cand);
       u8 *d = target;
       s32 n = len >> 2;
 

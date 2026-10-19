@@ -1810,7 +1810,7 @@ PropRecord *init_GUARDdata_with_set_values(PropRecord *arg0, Model *arg1, struct
 /**
  * Address 0x7F0203B8.
  */
-PropRecord * chrAllocate( Model * arg0, coord3d * arg1, f32 arg2,  StandTile * arg3, s32 arg4)
+PropRecord * chrAllocate( Model * arg0, coord3d * arg1, f32 arg2,  StandTile * arg3, struct AIListRecord * arg4)
 {
     PropRecord * ret;
     s32 phi_a0;

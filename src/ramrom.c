@@ -31,7 +31,7 @@ void romCreateMesgQueue(void)
 void doRomCopy(void *target, void *source, u32 size)
 {
     osInvalDCache(target, size);
-    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_READ, source, target, size, &memoryMesgQueue);
+    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_READ, portPtr32(source), target, size, &memoryMesgQueue); /* the ROM side is a word */
 }
 
 /**
@@ -62,9 +62,10 @@ void romCopy(void *target, void *source, u32 size)
  * romCopyAligned
  * aligns data, does a romCopy(), then returns aligned pointer to target
  */
+#ifdef TARGET_N64
 s32 romCopyAligned(void *target, void *source, s32 length)
 {
-    s32 target_offset;
+    s32 *target_offset;
     s32 *target_aligned;
     s32 *source_aligned;
     s32 *source_offset;
@@ -76,6 +77,18 @@ s32 romCopyAligned(void *target, void *source, s32 length)
     romCopy(target_aligned, source_aligned, ALIGN16_a((intptr_t)source_offset + length));
     return ((intptr_t)target_aligned + target_offset);
 }
+#else
+/* PORT: the same arithmetic in uintptr_t; it returns the copy's address */
+void *romCopyAligned(void *target, void *source, s32 length)
+{
+    uintptr_t source_aligned = align_addr_even((uintptr_t) source);
+    uintptr_t source_offset = (uintptr_t) source - source_aligned;
+    uintptr_t target_aligned = ALIGN16_a((uintptr_t) target);
+
+    romCopy((void *) target_aligned, (void *) source_aligned, (u32) ALIGN16_a(source_offset + length));
+    return (void *) (target_aligned + source_offset);
+}
+#endif
 
 /**
  * 68A8	70005CA8
@@ -85,7 +98,7 @@ s32 romCopyAligned(void *target, void *source, s32 length)
 void doRomWrite(void *source, void *target, u32 size)
 {
     osWritebackDCache(source, size);
-    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_WRITE, target, source, size, &memoryMesgQueue);
+    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_WRITE, portPtr32(target), source, size, &memoryMesgQueue);
 }
 
 /**

@@ -136,8 +136,9 @@ long int strtol(const char *str, char **endptr, int base) {
         before = ptr;
         overflow = 0;
         accum = 0;
-        cutoff = ULONG_MAX / base;
-        cutlim = ULONG_MAX % base;
+        /* PORT: the 32-bit ULONG_MAX this was written for (long is 64-bit on LP64) */
+        cutoff = 0xFFFFFFFFu / base;
+        cutlim = 0xFFFFFFFFu % base;
         for (; (int)(c = *ptr); ptr++) {
             if (isdigit(c)) {
                 c -= '0';

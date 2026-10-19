@@ -3135,7 +3135,7 @@ void roomGetProps(s32 *rooms)
 
     *writeptr = -1;
     writeptr++;
-    num_obj_position_data_entries = writeptr - ptr_list_object_lookup_indices;
+    num_obj_position_data_entries = (u32) (writeptr - ptr_list_object_lookup_indices);
     #ifdef DEBUG
     assert(roomspropnum<ROOMLISTMAX-1); //num_obj_position_data_entries
     #endif

@@ -37,7 +37,7 @@ void mempInit(void)
 
 const char *tokenFind(s32 arg0, const char *arg1);
 long int strtol(const char *str, char **endptr, int base);
-void mempCheckMemflagTokens(s32 poolAreaStart, s32 poolAreaSize)
+void mempCheckMemflagTokens(u8 *poolAreaStart, s32 poolAreaSize)
 {
     s_mempMVALS poolSizes;
 
@@ -50,15 +50,15 @@ void mempCheckMemflagTokens(s32 poolAreaStart, s32 poolAreaSize)
 
     if (tokenFind(1, "-mf"))
     {
-        poolSizes.mf = strtol(tokenFind(1, "-mf"), NULL, 0);
+        poolSizes.mf = (u32) strtol(tokenFind(1, "-mf"), NULL, 0);
     }
     if (tokenFind(1, "-ml"))
     {
-        poolSizes.ml = strtol(tokenFind(1, "-ml"), NULL, 0);
+        poolSizes.ml = (u32) strtol(tokenFind(1, "-ml"), NULL, 0);
     }
     if (tokenFind(1, "-me"))
     {
-        poolSizes.me = strtol(tokenFind(1, "-me"), NULL, 0);
+        poolSizes.me = (u32) strtol(tokenFind(1, "-me"), NULL, 0);
     }
     if (poolSizes.me == 0)
     {
@@ -76,7 +76,7 @@ void mempSetBankStarts(s32 poolSizes[MEMPOOL_COUNT+1])
     s32 bankstarts[MEMPOOL_COUNT] = {0};
     s32 mempLen;
     s32 mempRequested;
-    s32 mempStart;
+    u8 *mempStart;
 
     //set MF, ML, ME first
     i = 0;
@@ -98,13 +98,13 @@ void mempSetBankStarts(s32 poolSizes[MEMPOOL_COUNT+1])
 
 
     mempRequested = bankstarts[MEMPOOL_COUNT - 1]; //total accumulated size of banks = poolAreaSize
-    mempLen  = (g_mempPools[MEMPOOL_TOTAL].end - g_mempPools[MEMPOOL_TOTAL].start);
+    mempLen  = (s32) (g_mempPools[MEMPOOL_TOTAL].end - g_mempPools[MEMPOOL_TOTAL].start);
 
     //for each bankstart, multiply by total pool size, then divide by size of banks 1-7
     //spread each bank evenly
     for (i = MEMPOOL_TOTAL; i < MEMPOOL_COUNT; i++)
     {
-        bankstarts[i] = ((s64)bankstarts[i] * mempLen) / mempRequested;
+        bankstarts[i] = (s32) (((s64)bankstarts[i] * mempLen) / mempRequested);
     }
     // {0,0,0,0,poolAreaSize - 303104, poolAreaSize - 303104, poolAreaSize}
 
@@ -225,7 +225,7 @@ MEMP_ADD_ENTRY_RESULT mempAddEntryOfSizeToBank(void *allocation, s32 newsize, u8
         return MEMP_ADD_ENTRY_NOT_LAST_ALLOCATION;
     }
 
-    origsize = pool->pos - pool->prevpos;
+    origsize = (s32) (pool->pos - pool->prevpos);
     growsize = newsize - origsize;
 
     if (growsize <= 0)
@@ -267,11 +267,11 @@ s32 mempGetBankSizeLeft(u8 bank) {
         bank = MEMPOOL_PERMANENT;
     }
 
-    return g_mempPools[bank].end - g_mempPools[bank].pos;
+    return (s32) (g_mempPools[bank].end - g_mempPools[bank].pos);
 }
 
 // Last three bits contains the bank, the rest contains the size.
-u32 mempAllocPackedBytesInBank(u32 sizeandbank) {
+void *mempAllocPackedBytesInBank(u32 sizeandbank) {
     return mempAllocBytesInBank((sizeandbank >> 3), (sizeandbank & 7));
 }
 
