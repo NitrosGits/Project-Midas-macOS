@@ -407,6 +407,24 @@ s32 romfileModelConvert(u8 *data, u32 size, s32 numSwitches, s32 numtextures, co
     }
     walk(&c, rootoff);
 
+    /* Inline textures (TextureID 0x05xxxxxx, the three menu models): the
+     * compiled copies hold each blob as u32 words, which
+     * objecthandler_2.c portSwapInlineTextures expects, so swap every word
+     * from the blob's start up to the next converted byte (the texels, then
+     * any palette and padding). */
+    for (i = 0; i < (u32) numtextures; i++) {
+        const u8 *t = data + (u32) numSwitches * 4 + i * 12;
+        u32 id = (u32) t[0] | ((u32) t[1] << 8) | ((u32) t[2] << 16) | ((u32) t[3] << 24); /* swapped above */
+        u32 o;
+
+        if ((id >> 24) != 0x05) {
+            continue;
+        }
+        for (o = (id & 0x00FFFFFFu) & ~3u; o + 4 <= size && mark(&c, o, 4); o += 4) {
+            swap4run(data + o, 1);
+        }
+    }
+
     free(c.done);
 
     if (compiled != NULL) {

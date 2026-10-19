@@ -19,11 +19,13 @@
 #include <stdio.h>
 
 
+/* A view of the group's ModelNode (process_02_position passes the node):
+ * Opcode, Data and Parent, so the pointers are PTR32 words like ModelNode's. */
 typedef struct ModelGroupMtxBuildArg {
     u16 flags;
     u16 pad;
-    ModelRoData_GroupRecord *group;
-    ModelNode *parentnode;
+    PTR32(ModelRoData_GroupRecord) group;
+    PTR32(ModelNode) parentnode;
 } ModelGroupMtxBuildArg;
 
 // forward declarations
@@ -1226,7 +1228,7 @@ void modelBuildGroupMatrices(Mtxf **parentMtx, Model *model, ModelGroupMtxBuildA
     Mtxf **parentMtxPtr;
 
     flags = mgm->flags;
-    group = mgm->group;
+    group = PGET(mgm->group);
     matrix0 = group->MatrixID0;
     matrix1 = group->MatrixID1;
     parentMtxPtr = parentMtx;
@@ -1234,9 +1236,9 @@ void modelBuildGroupMatrices(Mtxf **parentMtx, Model *model, ModelGroupMtxBuildA
     matrix2 = group->MatrixID2;
     render_pos = model->render_pos;
 
-    if (((Mtxf *) mgm->parentnode) != NULL)
+    if (((Mtxf *) PGET(mgm->parentnode)) != NULL)
     {
-        parentNodeMtx = modelFindNodeMtx(model, (ModelNode *) ((Mtxf *) mgm->parentnode), 0);
+        parentNodeMtx = modelFindNodeMtx(model, (ModelNode *) ((Mtxf *) PGET(mgm->parentnode)), 0);
         parent = parentNodeMtx;
     }
     else
@@ -1245,7 +1247,7 @@ void modelBuildGroupMatrices(Mtxf **parentMtx, Model *model, ModelGroupMtxBuildA
     }
 
     has_matrix2 = flags & MODELGROUP_MTX_HAS_MATRIX2;
-    matrix0_mtx = (Mtxf *) mgm->parentnode;
+    matrix0_mtx = (Mtxf *) PGET(mgm->parentnode);
 
     if (parent != NULL)
     {

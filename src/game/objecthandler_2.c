@@ -197,18 +197,20 @@ void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct tex
  * inside the model file, referenced by raw gsDPSetTextureImage(0x05xxxxxx), and
  * on PC those big-endian u32 words come out byte-reversed. Swap each texture
  * back to the N64 byte image ONCE per file (a registry stops a double swap on
- * repeat menu visits); length = W*H*(4<<RenderDepth)/8. */
+ * repeat menu visits); length = W*H*(4<<RenderDepth)/8. A file served from the
+ * ROM is a fresh copy every load, often at the same address, so it is always
+ * swapped and never registered (shared == 0). */
 
 #define INLINE_TEX_SWAP_MAX 16
 
 static void *s_InlineTexSwapped[INLINE_TEX_SWAP_MAX];
 
-static void portSwapInlineTextures(struct ModelFileHeader *objheader, u8 *filedata)
+static void portSwapInlineTextures(struct ModelFileHeader *objheader, u8 *filedata, s32 shared)
 {
     s32 i;
     s32 slot;
 
-    for (slot = 0; slot < INLINE_TEX_SWAP_MAX; slot++)
+    for (slot = 0; shared && slot < INLINE_TEX_SWAP_MAX; slot++)
     {
         if (s_InlineTexSwapped[slot] == filedata)
         {
@@ -259,7 +261,7 @@ static void portSwapInlineTextures(struct ModelFileHeader *objheader, u8 *fileda
         }
     }
 
-    if (slot < INLINE_TEX_SWAP_MAX)
+    if (shared && slot < INLINE_TEX_SWAP_MAX)
     {
         s_InlineTexSwapped[slot] = filedata;
     }
@@ -372,7 +374,11 @@ void load_object_fill_header(struct ModelFileHeader *objheader, u8 *name, u8* ds
             sub_GAME_7F075A90(objheader, (intptr_t) filedata, (uintptr_t) filedata);
         }
     }
-    portSwapInlineTextures(objheader, filedata);
+    {
+        extern s32 romdataFileServed(s32 index);
+
+        portSwapInlineTextures(objheader, filedata, !romdataFileServed(fileGetIndex(name)));
+    }
     /* PORT: GE_COLAUDIT=1 proves the collision-vertex byte-order fixups
      * stayed exact across reloads of this shared compiled-in blob. */
     portModelCollisionAudit(objheader->RootNode, (const char *) name);

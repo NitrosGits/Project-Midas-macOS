@@ -855,6 +855,17 @@ struct player
 
   // offset 0x594
   s32 standcnt;
+#ifdef GE_64BIT
+  /* The player's own Model is embedded here (&player->model is the Model).
+   * The 32-bit field list below spans its 188 bytes; here it is the real
+   * struct (264 bytes), and the two fields the code names are its gunhand
+   * and animframe1. */
+  union {
+    Model model;
+    struct { u8 pad_animflip_[__builtin_offsetof(Model, gunhand)]; s8 animFlipFlag; };
+    struct { u8 pad_5c0_[__builtin_offsetof(Model, animframe1)]; f32 field_5C0; };
+  };
+#else
   Model *model;
   s32 field_59C;
   s32 field_5A0;
@@ -907,6 +918,7 @@ struct player
   s32 field_648;
   s32 field_64C;
   s32 field_650;
+#endif
   s32 field_654;
   s32 field_658;
   s32 field_65C;

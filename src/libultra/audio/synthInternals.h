@@ -104,6 +104,12 @@ typedef struct ALParam_s {
         f32             f;
         s32             i;
     } yetstillmoredata;
+#ifdef GE_64BIT
+    /* The records below are cast over ALParam pool elements and carry
+     * pointers: ALStartParamAlt's wave lands at 32, past a 32-byte ALParam
+     * (asserted after them). */
+    void                *pad64_;
+#endif
 } ALParam;
 
 typedef struct {
@@ -133,6 +139,12 @@ typedef struct {
     s16                 type;
     struct PVoice_s     *pvoice;
 } ALFreeParam;
+
+#ifdef GE_64BIT
+_Static_assert(sizeof(ALStartParamAlt) <= sizeof(ALParam), "ALStartParamAlt overflows an ALParam pool element");
+_Static_assert(sizeof(ALStartParam) <= sizeof(ALParam), "ALStartParam overflows an ALParam pool element");
+_Static_assert(sizeof(ALFreeParam) <= sizeof(ALParam), "ALFreeParam overflows an ALParam pool element");
+#endif
 
 typedef Acmd *(*ALCmdHandler)(void *, s16 *, s32, s32, Acmd *);
 typedef s32   (*ALSetParam)(void *, s32, void *);

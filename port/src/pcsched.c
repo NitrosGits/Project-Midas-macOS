@@ -71,49 +71,29 @@ extern void portConLogf(const char *fmt, ...);
 #ifdef GE_64BIT
 /*
  * The 64-bit address window (port_hostptr.h, docs/port/macos-arm64.md): the
- * executable image plus one reservation mapped right after it. Every 32-bit
+ * executable image, which includes the reservation below. Every 32-bit
  * pointer word is an offset from the image's Mach-O header, so everything a
  * display list or a layout-bound struct can point at must come from here.
  */
 #include <mach-o/getsect.h>
 #include <mach-o/ldsyms.h>
+#include <execinfo.h>
 
 /* 1 GB covers the memp arena, the high arena and the ROM image with room to
- * spare; anonymous memory is only committed when touched. */
+ * spare. */
 #define PORT_WINDOW_RESERVE (1024ull * 1024ull * 1024ull)
+
+/* The reservation is zerofill in the image itself, so it is mapped with the
+ * executable and committed only when touched. Mapping it at run time after
+ * the image doesn't work: an mmap address is only a hint on macOS, and dylibs
+ * and malloc's large regions already fill the space after the image, by an
+ * amount that changes with ASLR. Segments align to 16 KB at most, so the
+ * 64 KB alignment is done by hand. */
+static u8 s_WindowArena[PORT_WINDOW_RESERVE + 0x10000u];
 
 uintptr_t g_PortWindowBase;
 static u8 *s_WindowHeap;
 static size_t s_WindowHeapUsed;
-
-/* end of the image's last segment, slid */
-static uintptr_t portWindowImageEnd(void)
-{
-    const struct mach_header_64 *mh = &_mh_execute_header;
-    const struct load_command *lc = (const struct load_command *) (mh + 1);
-    uintptr_t slide = 0;
-    uintptr_t end = 0;
-    u32 i;
-
-    for (i = 0; i < mh->ncmds; i++, lc = (const struct load_command *) ((const u8 *) lc + lc->cmdsize))
-    {
-        const struct segment_command_64 *seg = (const struct segment_command_64 *) lc;
-
-        if (lc->cmd != LC_SEGMENT_64 || seg->vmsize == 0 || seg->initprot == 0)
-        {
-            continue; /* __PAGEZERO has no access rights and is not part of the image */
-        }
-        if (seg->fileoff == 0)
-        {
-            slide = (uintptr_t) mh - seg->vmaddr; /* __TEXT maps the header */
-        }
-        if (seg->vmaddr + seg->vmsize > end)
-        {
-            end = seg->vmaddr + seg->vmsize;
-        }
-    }
-    return end + slide;
-}
 
 /* Patch every PORT_STATIC_PTR32 slot now that the base is known. */
 static void portWindowApplyStaticPtrs(void)
@@ -130,7 +110,6 @@ static void portWindowApplyStaticPtrs(void)
 
 void portWindowInit(void)
 {
-    uintptr_t hint;
     void *p;
 
     if (g_PortWindowBase != 0)
@@ -138,12 +117,11 @@ void portWindowInit(void)
         return;
     }
     g_PortWindowBase = (uintptr_t) &_mh_execute_header;
-    hint = (portWindowImageEnd() + 0xFFFFFu) & ~(uintptr_t) 0xFFFFFu;
-    p = mmap((void *) hint, PORT_WINDOW_RESERVE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (p == MAP_FAILED || (uintptr_t) p + PORT_WINDOW_RESERVE - g_PortWindowBase > PORT_WINDOW_SIZE)
+    p = (void *) (((uintptr_t) s_WindowArena + 0xFFFFu) & ~(uintptr_t) 0xFFFFu);
+    if ((uintptr_t) p + PORT_WINDOW_RESERVE - g_PortWindowBase > PORT_WINDOW_SIZE)
     {
-        portConLogf("ge: window: no %u MB reservation within 3.5 GB of the image at %p (got %p)\n",
-                (u32) (PORT_WINDOW_RESERVE >> 20), (void *) g_PortWindowBase, p);
+        portConLogf("ge: window: the %u MB reservation at %p ends past 3.5 GB of the image at %p\n",
+                (u32) (PORT_WINDOW_RESERVE >> 20), p, (void *) g_PortWindowBase);
         exit(1);
     }
     s_WindowHeap = (u8 *) p;
@@ -172,8 +150,17 @@ void *portWindowAlloc(size_t size)
 
 void portWindowBadPtr(const void *p)
 {
+    void *frames[32];
+    int n = backtrace(frames, 32);
+    int i;
+
     portConLogf("ge: window: %p is outside the address window (base %p) and can't be stored in a 32-bit word\n",
             p, (void *) g_PortWindowBase);
+    /* symbolize: atos -o ProjectMidas -l <base> <addresses> */
+    for (i = 0; i < n; i++)
+    {
+        portConLogf("ge: window:   #%d %p\n", i, frames[i]);
+    }
     abort();
 }
 #endif

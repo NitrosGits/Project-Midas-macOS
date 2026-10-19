@@ -531,6 +531,40 @@ static void portCrashHandler(int sig)
     fflush(NULL);
     _exit(128 + sig);
 }
+
+#if defined(__APPLE__) && defined(__aarch64__)
+#include <sys/ucontext.h>
+#include <mach-o/ldsyms.h>
+
+/* The backtrace above starts at the caller of a leaf function that faults
+ * (it keeps no frame record), so also print the faulting pc, lr and address.
+ * Decode them with: atos -o ProjectMidas -l <image> <pc> <lr> */
+static void portCrashHandlerInfo(int sig, siginfo_t *si, void *ucv)
+{
+    ucontext_t *uc = (ucontext_t *) ucv;
+
+    fprintf(stderr, "\nge: fatal signal %d at address %p: pc %p lr %p (image %p)\n", sig, si->si_addr,
+            (void *) uc->uc_mcontext->__ss.__pc, (void *) uc->uc_mcontext->__ss.__lr,
+            (void *) &_mh_execute_header);
+    portCrashHandler(sig);
+}
+
+static void portArmCrashInfo(void)
+{
+    static const int sigs[] = { SIGSEGV, SIGBUS, SIGFPE, SIGILL };
+    struct sigaction sa;
+    unsigned i;
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = portCrashHandlerInfo;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    for (i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
+    {
+        sigaction(sigs[i], &sa, NULL);
+    }
+}
+#endif
 #endif
 
 /* init.c's mainproc: thread/scheduler setup then bossEntry (the game).
@@ -809,6 +843,9 @@ int main(int argc, char **argv)
 #endif
     signal(SIGFPE, portCrashHandler);
     signal(SIGILL, portCrashHandler);
+#if defined(__APPLE__) && defined(__aarch64__)
+    portArmCrashInfo();
+#endif
 #ifdef _WIN32
     /* GE_STALLTEST=1: park the main thread here forever so the stall
      * watchdog's boot-grace path + loader-lock-free module naming can be
