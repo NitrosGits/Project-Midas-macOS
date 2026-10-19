@@ -91,7 +91,7 @@ struct sImageTableEntry *mpstageselimages;
 extern u8* _GlobalimagetableSegmentRomStart;
 
 
-void texSetBitstring(s32 pos) {
+void texSetBitstring(u8 *pos) {
     img_curpos = pos;
     img_curdatatable = 0;
     img_bitcount = 0;
@@ -209,9 +209,9 @@ void texReset(void)
     }
 #endif
 
-    size = (uintptr_t)&_GlobalimagetableSegmentEnd - (uintptr_t)&_GlobalimagetableSegmentStart;
+    size = (u32) ((uintptr_t)&_GlobalimagetableSegmentEnd - (uintptr_t)&_GlobalimagetableSegmentStart);
     pGlobalimagetable = mempAllocBytesInBank(size + 0x1000, MEMPOOL_STAGE);
-    pGlobalimagetable = ((uintptr_t)pGlobalimagetable + 0xFFFU) & 0xFFFFF000;
+    pGlobalimagetable = (s32 *) (((uintptr_t)pGlobalimagetable + 0xFFFU) & ~(uintptr_t)0xFFF);
 
     romCopy(pGlobalimagetable, &_GlobalimagetableSegmentRomStart, size);
 
@@ -255,23 +255,23 @@ void texReset(void)
     mpcharselimages = (void *) (globalbank_rdram_offset + (uintptr_t)&s_mpcharselimages);
     mpstageselimages = (void *) (globalbank_rdram_offset + (uintptr_t)&s_mpstageselimages);
 
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x000, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x078, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x120, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x1c8, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x270, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x318, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x3c0, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x468, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x510, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x5b8, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x660, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x708, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x7b0, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x858, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x900, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0x9a8, 0);
-    texLoadFromDisplayList(globalbank_rdram_offset + (uintptr_t)&globalDL_0xa50, 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x000), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x078), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x120), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x1c8), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x270), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x318), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x3c0), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x468), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x510), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x5b8), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x660), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x708), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x7b0), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x858), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x900), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0x9a8), 0);
+    texLoadFromDisplayList((Gfx *) (globalbank_rdram_offset + (uintptr_t)&globalDL_0xa50), 0);
 
     texLoad(genericimage, 0);
 
