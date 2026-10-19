@@ -2481,7 +2481,13 @@ Gfx *explosionRenderBulletImpactOnProp(Gfx *gdl, PropRecord *arg1, s32 arg2)
                         {
                             if (var_s5 != g_BulletImpactBuffer[i].model_render_pos_index)
                             {
+                                #ifdef GE_64BIT
+                                /* sp4C is the prop's ObjectRecord seen as a Scorch, whose model
+                                 * only lines up at 0x14 with 4-byte pointers */
+                                render_pos = &PGET(arg1->obj->model)->render_pos[g_BulletImpactBuffer[i].model_render_pos_index];
+#else
                                 render_pos = &sp4C->model->render_pos[g_BulletImpactBuffer[i].model_render_pos_index];
+#endif
                                 var_s5 = g_BulletImpactBuffer[i].model_render_pos_index;
                                 gSPMatrix(gdl++, osVirtualToPhysical(render_pos), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                             }
