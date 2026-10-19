@@ -2401,7 +2401,7 @@ void gunUpdateAttachedRocket(s32 handIndex)
         return;
     }
 
-    attachmentChild = attachedRocket->child;
+    attachmentChild = PGET(attachedRocket->child);
 
     if (attachmentChild == NULL)
     {
@@ -2409,7 +2409,7 @@ void gunUpdateAttachedRocket(s32 handIndex)
     }
 
     prop = getCurrentPlayerProp();
-    rocketModel = attachedRocket->model;
+    rocketModel = PGET(attachedRocket->model);
 
     matrix_4x4_copy(&entry->throw_item_pos_related, &worldMtx);
 
@@ -2417,7 +2417,7 @@ void gunUpdateAttachedRocket(s32 handIndex)
     worldMtx.m[3][1] = 0.0f;
     worldMtx.m[3][2] = 0.0f;
 
-    matrix_scalar_multiply(attachedRocket->model->scale, (f32 *)&worldMtx);
+    matrix_scalar_multiply(PGET(attachedRocket->model)->scale, (f32 *)&worldMtx);
 
     objChangeShading(attachedRocket, &entry->field_B58, &worldMtx, prop->stan);
     chrobjCollisionRelated(attachedRocket);

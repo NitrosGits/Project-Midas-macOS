@@ -1720,7 +1720,7 @@ void gunRenderFirstPersonGunModels(Gfx **gdlptr)
 
         if (item == ITEM_ROCKETLAUNCH && handptr->rocket != NULL)
         {
-            model = handptr->rocket->model;
+            model = PGET(handptr->rocket->model);
 
             subdraw(&renderdata, model);
             bondviewTransformManyPosToViewMatrix(model->render_pos, model->obj->numMatrices);

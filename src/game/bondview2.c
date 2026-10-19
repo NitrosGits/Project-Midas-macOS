@@ -10179,7 +10179,11 @@ void MoveBond(s8 stick_x, s8 stick_y, u16 buttons, u16 oldbuttons)
         f32 nd; // canonical name
         f32 ftemp_7;
         f32 sp240;
+#ifdef TARGET_N64
         struct move_bond_temp_struct curLocus;
+#else
+        struct StandTileLocusCallbackRecord curLocus; /* what the stan locus walk writes (24 bytes on GE_64BIT) */
+#endif
         struct move_bond_collision bondCollision;
         f32 shorten; // canonical name
         f32 headpos_x;

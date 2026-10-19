@@ -14,9 +14,16 @@ ptr32_check.py - the checks to run after converting a struct family to PTR32
             the tree from before the change), also compile both at -O2 and
             compare the object code, so the 32-bit builds provably stay the same.
             No i386 libc is needed; scripts/port/i386inc has minimal stubs.
+  views     Every incompatible pointer conversion between two different struct
+            types, as one struct used as a view of another (a ModelNode read
+            through a struct with native pointers, an embedded record smaller
+            than what is written through it). The pairs whose GE_64BIT layouts
+            disagree on where the native pointers are, within their common
+            prefix, are listed with their sites, as are T * / T ** mixups.
+            VIEWS_REVIEWED holds the pairs checked and found harmless.
 
 Usage (from the repository root):
-  python3 scripts/port/ptr32_check.py build_mac aliases|variants|i386 [--orig DIR]
+  python3 scripts/port/ptr32_check.py build_mac aliases|variants|i386|views [--orig DIR]
 
 Make the --orig copy before the change, for example:
   mkdir /tmp/orig && git ls-files -z src include port assets/embedded | \\
@@ -113,6 +120,90 @@ def check_variants(db, jobs):
     return not res
 
 
+# struct pairs reviewed and harmless: the pointer only passes through, or the
+# layouts agree where they are actually used (docs/port/macos-arm64.md)
+VIEWS_REVIEWED = {
+    ('struct ALSoundState_s *', 'struct sfxRecord *'): 'the sfxRecord is the handle slot (state, a native pointer, at 0)',
+    ('struct ItemModelFileRecord *', 'struct ModelFileHeader *'): 'prop_header is always cast back to ModelFileHeader *',
+    ('struct ChrRecord *', 'struct PropRecord *'): 'g_LastOnScreenProp list arithmetic; pointers pass through',
+    ('struct Model *', 'struct Model **'): 'struct player embeds a Model at &player->model (real Model on GE_64BIT)',
+    ('struct ALSoundState_s *', 'struct ALSoundState_s **'): 'sound handle slots (snd.c sndSlotGet/Set)',
+    ('struct ALSoundState **', 'struct ALSoundState_s *'): 'sound handle slots (snd.c sndSlotGet/Set)',
+    ('struct PropRecord *', 'struct PropRecord **'): 'g_LastOnScreenProp points into g_OnScreenPropList',
+    ('struct damage_display_parent[23]', 'struct damage_display_val *'): 'pointer-free records',
+    ('struct StanPrefixRecord *', 'struct StanPrefixRecord **'): 'stanLoadFile: the PC branch stores into stan_prefix directly',
+}
+TYPE_RE = re.compile(r"'([^']*)'(?: \(aka '([^']*)'\))?")
+LAYOUT_HEAD = re.compile(r'^\s*0 \| (struct|union) (\S+)')
+LAYOUT_FIELD = re.compile(r'^\s*(\d+)(?::\d+-\d+)? \|   (\S.*)$')  # depth-1 fields only
+LAYOUT_SIZE = re.compile(r'\[sizeof=(\d+)')
+
+
+def check_views(db, jobs):
+    def one(e):
+        a, src = strip(e['command'])
+        r = run(a + ['-fsyntax-only', '-Wincompatible-pointer-types', '-Wno-error',
+                     '-Xclang', '-fdump-record-layouts-complete', src], e['directory'])
+        pairs = []
+        lines = r.stderr.splitlines()
+        for i, l in enumerate(lines):
+            if 'warning: incompatible pointer types' not in l:
+                continue
+            tys = [re.sub(r'\b(const|volatile)\b\s*', '', b or a).strip()
+                   for a, b in TYPE_RE.findall(l.split('warning:', 1)[1])][:2]
+            if len(tys) == 2 and tys[0] != tys[1] and all(re.search(r'\b(struct|union)\b', t) and '(*)' not in t for t in tys):
+                site = '%s\n      %s' % (l.split(' warning:')[0].replace(ROOT + '/', ''), lines[i + 1].strip() if i + 1 < len(lines) else '')
+                pairs.append((tuple(sorted(tys)), site))
+        recs, cur = {}, None
+        for l in r.stdout.splitlines():
+            m = LAYOUT_HEAD.match(l)
+            if m:
+                cur = (m.group(1) + ' ' + m.group(2), [])
+                continue
+            if cur is None:
+                continue
+            m = LAYOUT_SIZE.search(l)
+            if m:
+                recs.setdefault(cur[0], (cur[1], int(m.group(1))))
+                cur = None
+                continue
+            m = LAYOUT_FIELD.match(l)
+            if m:
+                decl = m.group(2)
+                if '(*' in decl or (re.search(r'\*\s*\w+$', decl) and '[' not in decl.split()[-1]):
+                    cur[1].append(int(m.group(1)))  # a native (or function) pointer
+        return pairs, recs
+    sites, recs = {}, {}
+    with concurrent.futures.ThreadPoolExecutor(jobs) as ex:
+        for pairs, r in ex.map(one, [e for e in db if e['file'].endswith('.c')]):
+            for k, s in pairs:
+                sites.setdefault(k, set()).add(s)
+            for k, v in r.items():
+                recs.setdefault(k, v)
+    found = 0
+    for (ta, tb), s in sorted(sites.items()):
+        if (ta, tb) in VIEWS_REVIEWED:
+            continue
+        if ta.count('*') != tb.count('*'):
+            why = 'pointer level differs'
+        else:
+            A, B = recs.get(ta.rstrip('* ')), recs.get(tb.rstrip('* '))
+            if A is None or B is None:
+                continue  # an incomplete (opaque) type: nothing is read through it
+            lim = min(A[1], B[1])
+            pa = sorted(o for o in A[0] if o < lim)
+            pb = sorted(o for o in B[0] if o < lim)
+            if pa == pb:
+                continue
+            why = 'native pointers at %s vs %s' % (pa, pb)
+        found += 1
+        print('%s <-> %s: %s' % (ta, tb, why))
+        for x in sorted(s)[:6]:
+            print('    ' + x)
+    print('%d struct view(s) to review' % found)
+    return found == 0
+
+
 def i386_args(e, root, src_root):
     a, src = strip(e['command'])
     a = [x for x in a[1:] if x not in ('-g', '-DGE_64BIT=1')]
@@ -196,7 +287,7 @@ def check_i386(db, jobs, orig, tmp):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('build_dir')
-    ap.add_argument('check', choices=('aliases', 'variants', 'i386'))
+    ap.add_argument('check', choices=('aliases', 'variants', 'i386', 'views'))
     ap.add_argument('--orig', help='pre-change tree for the i386 object compare')
     ap.add_argument('-j', type=int, default=os.cpu_count() or 4)
     args = ap.parse_args()
@@ -205,6 +296,8 @@ def main():
         ok = check_aliases(db, args.j)
     elif args.check == 'variants':
         ok = check_variants(db, args.j)
+    elif args.check == 'views':
+        ok = check_views(db, args.j)
     else:
         tmp = os.path.abspath(os.path.join(args.build_dir, 'ptr32_check_obj'))
         shutil.rmtree(tmp, ignore_errors=True)

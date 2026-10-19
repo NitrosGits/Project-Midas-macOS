@@ -2370,15 +2370,11 @@ typedef struct Weapon1PTransformKeyframe {
 } Weapon1PTransformKeyframe;
 
 // placeholder while matching
+/* N64 only: the stan locus walk writes a full StandTileLocusCallbackRecord
+ * through it, so PC builds declare the local as that record (bondview2.c). */
 struct move_bond_temp_struct {
     s32 unk00;
     s32 unk04;
-#ifndef TARGET_N64
-    /* Padded to 16 bytes because the stan locus walk writes a full
-     * StandTileLocusCallbackRecord through this; N64 keeps the 8-byte layout. */
-    s32 pad08;
-    s32 pad0C;
-#endif
 };
 
 //D:80036424

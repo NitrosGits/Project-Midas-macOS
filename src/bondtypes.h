@@ -628,9 +628,11 @@ typedef union
         s32 unk3c; // end frame
     } ModelAnimation;
 
+    /* Passed where a MonitorRecord is expected (gunfire.c's crosshair and
+     * taser screens), so it keeps that record's layout: a PTR32 word first. */
     struct object_animation_controller
     {
-        void *ptranimation;        // 0x00
+        PTR32(void) ptranimation;  // 0x00
         u16   offsettocurcmd;      // 0x04
         u16   waitcounter;         // 0x06
         u32   imagenum;            // 0x08
@@ -2628,10 +2630,12 @@ typedef union
     } AttachmentChild;
 
     // Not exactly sure where this belongs or if it may even already have an existing struct
+    /* A view of an ObjectRecord (hand rockets), so its pointers are the
+     * record's PTR32 words: child is ObjectRecord.prop, model its model. */
     typedef struct AttachedObj {
         u8 pad00[0x10];
-        AttachmentChild *child;   // 0x10
-        Model *model;             // 0x14
+        PTR32(AttachmentChild) child; // 0x10
+        PTR32(Model) model;           // 0x14
         Mtxf transform;           // 0x18
         coord3d position;         // 0x58
     } AttachedObj;

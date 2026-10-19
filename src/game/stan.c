@@ -3806,7 +3806,7 @@ s32 sub_GAME_7F0B3138(StandTile *tile, StandTile **pTile, f32 p_x, f32 p_z, f32 
 }
 
 
-void sub_GAME_7F0B31A4(s32 arg0, StandTile *arg1, f32 arg2, f32 arg3, f32 arg4, s32 arg5, f32 arg6, f32 arg7) {
+void sub_GAME_7F0B31A4(s32 arg0, StandTile **arg1, f32 arg2, f32 arg3, f32 arg4, s32 arg5, f32 arg6, f32 arg7) {
     stanTestVolume(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 }
 

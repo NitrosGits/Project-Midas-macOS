@@ -11718,7 +11718,7 @@ PropRecord *hatApplyToChr(HatRecord *hat, ChrRecord *chr, ModelFileHeader *filed
 }
 
 
-void hatLoadAndApplyToChr(HatRecord *hat, PropRecord *arg1)
+void hatLoadAndApplyToChr(HatRecord *hat, ChrRecord *arg1)
 {
     s32 unused;
     s32 obj_idx;
