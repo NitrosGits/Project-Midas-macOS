@@ -1650,6 +1650,19 @@ void gunRenderFirstPersonGunModels(Gfx **gdlptr)
     /* The 64-byte template is split across two adjacent globals: word 0 is
      * D_80035CC0 (basemtx NULL), words 1..15 are D_80035CC4[]
      * (zbufferenabled=1, flags=3, rest zero). */
+#ifdef GE_64BIT
+    { /* the words are the 32-bit layout: copy field by field */
+        u32 w[16];
+        s32 wi;
+
+        w[0] = D_80035CC0;
+        for (wi = 0; wi < 15; wi++)
+        {
+            w[1 + wi] = D_80035CC4[wi];
+        }
+        portRenderDataFromWords(&renderdata, w);
+    }
+#else
     {
         u32 *w = (u32 *) &renderdata;
         s32 wi;
@@ -1660,6 +1673,7 @@ void gunRenderFirstPersonGunModels(Gfx **gdlptr)
             w[1 + wi] = D_80035CC4[wi];
         }
     }
+#endif
 #endif
  
     for (handnum = 0; handnum != 2; handnum++) 

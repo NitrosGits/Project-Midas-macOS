@@ -215,13 +215,15 @@ struct hand
   coord3d field_B58;
   f32 field_B64;
 #ifdef GE_64BIT
-  /* The gun's Model (gunfire.c: (Model *)&hand->field_B68): only its head,
-   * the fields before anim, is used, followed by its rwdata (modeldatas). The
-   * 32-bit field list below is that head, with mtxlist as its render_pos. With
-   * 8-byte pointers the head is 64 bytes, so here it is the real one. */
+  /* The gun's Model (gunfire.c: (Model *)&hand->field_B68): the 32-bit field
+   * list below is its head (the fields before anim), with mtxlist as its
+   * render_pos, followed by its rwdata (modeldatas). The code also reads
+   * fields past the head (anim, unk84, ...), which on N64 alias benign rwdata
+   * words. With 8-byte pointers they alias different, non-zero ones, so here
+   * it is a whole Model whose tail stays zero (like gunfire.c's ModelHead). */
   union {
     s32 field_B68;
-    u8 modelhead_[__builtin_offsetof(Model, anim)];
+    u8 model_[sizeof(Model)];
     struct { u8 pad_mtxlist_[__builtin_offsetof(Model, render_pos)]; Mtxf *mtxlist; };
   };
 #else
