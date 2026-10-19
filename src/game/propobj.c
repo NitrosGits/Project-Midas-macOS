@@ -8931,7 +8931,7 @@ bool bgTestHitOnObj(coord3d *arg0, coord3d *arg1, coord3d *arg2, Gfx *gdl, Gfx *
 
                         if (timg >= 0x10000000u && (timg >> 16) != 0xABCDu)
                         {
-                            texnum = *((u16 *) (uintptr_t) (timg - 8));
+                            texnum = *((u16 *) ((u8 *) portPtr64(timg) - 8)); /* w1 is a window word on GE_64BIT */
                         }
                         else
                         {
@@ -9115,7 +9115,7 @@ bool bgTestHitOnObj(coord3d *arg0, coord3d *arg1, coord3d *arg2, Gfx *gdl, Gfx *
 
                             if (timg >= 0x10000000u && (timg >> 16) != 0xABCDu)
                             {
-                                texnum = *((u16 *) (uintptr_t) (timg - 8));
+                                texnum = *((u16 *) ((u8 *) portPtr64(timg) - 8)); /* w1 is a window word on GE_64BIT */
                             }
                             else
                             {

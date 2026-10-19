@@ -4485,7 +4485,7 @@ bool bgTestRayIntersectionInRoom(coord3d *from, coord3d *to, coord3d *dir, RoomV
 
                             if (timg >= 0x10000000u && (timg >> 16) != 0xABCDu)
                             {
-                                texnum = *((u16 *) (uintptr_t) (timg - 8));
+                                texnum = *((u16 *) ((u8 *) portPtr64(timg) - 8)); /* w1 is a window word on GE_64BIT */
                             }
                             else
                             {
@@ -4686,7 +4686,7 @@ bool bgTestRayIntersectionInRoom(coord3d *from, coord3d *to, coord3d *dir, RoomV
 
                                     if (timg >= 0x10000000u && (timg >> 16) != 0xABCDu)
                                     {
-                                        texnum = *((u16 *) (uintptr_t) (timg - 8));
+                                        texnum = *((u16 *) ((u8 *) portPtr64(timg) - 8)); /* w1 is a window word on GE_64BIT */
                                     }
                                     else
                                     {
