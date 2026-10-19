@@ -998,7 +998,7 @@ static void roc_record_tri(struct ShaderProgram* prg, const ColorCombiner* comb,
                            bool dec_pull, float dec_pull_b, float dec_pull_k,
                            struct LoadedVertex* const v_arr[3], bool xlu) {
     RocRoom& r = *roc_capturing;
-    const uint32_t nf = buf_vbo_len - vstart;
+    const uint32_t nf = (uint32_t) (buf_vbo_len - vstart);
     const uint32_t stride = nf / 3;
     if (nf == 0 || nf % 3 != 0) {
         roc_capture_bad = true;

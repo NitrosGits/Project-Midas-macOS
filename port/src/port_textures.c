@@ -343,7 +343,7 @@ static s32 texLoadSlot(struct portExtTex *t)
     free(rgba);
 
     memset(&t->entry, 0, sizeof(t->entry));
-    t->entry.index  = (u32) (uintptr_t) px;
+    t->entry.index  = portPtr32(px);   /* the SETTIMG word: px is in the high arena */
     t->entry.width  = (u8) w;
     t->entry.height = (u8) h;
     t->entry.level  = 0;

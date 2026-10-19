@@ -155,7 +155,7 @@ static void gfx_opengl_vertex_array_set_attribs(struct ShaderProgram* prg) {
         if (prg->attrib_locations[i] >= 0) {
             glEnableVertexAttribArray(prg->attrib_locations[i]);
             glVertexAttribPointer(prg->attrib_locations[i], prg->attrib_sizes[i], GL_FLOAT, GL_FALSE,
-                                num_floats * sizeof(float), (void*)(pos * sizeof(float)));
+                                (GLsizei)(num_floats * sizeof(float)), (void*)(pos * sizeof(float)));
         }
         pos += prg->attrib_sizes[i];
     }
@@ -1296,7 +1296,7 @@ static void gfx_opengl_draw_triangles(float buf_vbo[], size_t buf_vbo_len, size_
     gl_ret_restore(); /* after a retained draw: the stream VBO + this program's arrays again */
     if (!clip || !ge_dec_draw || gfx_ge_dec_b >= 0.0f || buf_vbo_num_tris == 0) {
         glBufferData(GL_ARRAY_BUFFER, sizeof(float) * buf_vbo_len, buf_vbo, GL_STREAM_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, 3 * buf_vbo_num_tris);
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei)(3 * buf_vbo_num_tris));
         return;
     }
 
@@ -1327,21 +1327,21 @@ static void gfx_opengl_draw_triangles(float buf_vbo[], size_t buf_vbo_len, size_
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * buf_vbo_len, pushed.data(), GL_STREAM_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, nv);
+    glDrawArrays(GL_TRIANGLES, 0, (GLsizei) nv);
     /* 2. draw */
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     gfx_opengl_set_depth_mode(ge_dm_args[0], ge_dm_args[1], ge_dm_args[2], ge_dm_args[3], ge_dm_zmode);
     glStencilFunc(GL_EQUAL, 1, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * buf_vbo_len, buf_vbo, GL_STREAM_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, nv);
+    glDrawArrays(GL_TRIANGLES, 0, (GLsizei) nv);
     /* 3. clear */
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
     glDepthMask(GL_FALSE);
     glDepthFunc(GL_ALWAYS);
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
     glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-    glDrawArrays(GL_TRIANGLES, 0, nv);
+    glDrawArrays(GL_TRIANGLES, 0, (GLsizei) nv);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glDisable(GL_STENCIL_TEST);
     gfx_opengl_set_depth_mode(ge_dm_args[0], ge_dm_args[1], ge_dm_args[2], ge_dm_args[3], ge_dm_zmode);
@@ -1605,7 +1605,7 @@ static int gfx_opengl_create_framebuffer() {
     framebuffers[i].msaa_is_texture = false;
 
     if (!gfx_framebuffers_enabled) {
-        return i;
+        return (int) i;
     }
 
     GLuint clrbuf_msaa;
@@ -1623,7 +1623,7 @@ static int gfx_opengl_create_framebuffer() {
     glGenFramebuffers(1, &fbo);
     framebuffers[i].fbo = fbo;
 
-    return i;
+    return (int) i;
 }
 
 static void gfx_opengl_update_framebuffer_parameters(int fb_id, uint32_t width, uint32_t height, uint32_t msaa_level,
@@ -1760,7 +1760,7 @@ void gfx_opengl_resolve_msaa_color_buffer(int fb_id_target, int fb_id_source) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fb_src.fbo);
     glBlitFramebuffer(0, 0, fb_src.width, fb_src.height, dx0, 0, dx1, fb_dst.height, GL_COLOR_BUFFER_BIT,
                       GL_NEAREST);
-    glBindFramebuffer(GL_FRAMEBUFFER, current_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint) current_framebuffer);
     glEnable(GL_SCISSOR_TEST);
 }
 

@@ -479,13 +479,14 @@ target_link_libraries(ge m)
 
 # Mach-O has no weak undefined symbols at static link time: let the dropped
 # asset file symbols (assets/obseg/obseg.h) stay undefined so they resolve to
-# NULL at load, as they do on ELF and PE.
+# NULL at load, as they do on ELF and PE. The text banks' declarations are
+# indented (some sit under #ifdef VERSION_EU), hence the leading whitespace.
 if(APPLE)
     file(STRINGS ${CMAKE_SOURCE_DIR}/assets/obseg/obseg.h PORT_WEAK_ASSET_LINES
-         REGEX "^extern u8 __attribute__\\(\\(weak\\)\\) [A-Za-z0-9_]+\\[\\];")
+         REGEX "^[ \t]*extern u8 __attribute__\\(\\(weak\\)\\) [A-Za-z0-9_]+\\[\\];")
     set(PORT_WEAK_ASSET_LINK)
     foreach(line ${PORT_WEAK_ASSET_LINES})
-        string(REGEX REPLACE "^extern u8 __attribute__\\(\\(weak\\)\\) ([A-Za-z0-9_]+)\\[\\];.*" "\\1" sym "${line}")
+        string(REGEX REPLACE "^[ \t]*extern u8 __attribute__\\(\\(weak\\)\\) ([A-Za-z0-9_]+)\\[\\];.*" "\\1" sym "${line}")
         list(APPEND PORT_WEAK_ASSET_LINK "LINKER:-U,_${sym}")
     endforeach()
     target_link_options(ge PRIVATE ${PORT_WEAK_ASSET_LINK})

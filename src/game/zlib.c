@@ -345,7 +345,7 @@ s32 zlib_inflate_codes(struct huft *tl, struct huft *td, s32 bl, s32 bd)
 
         if (e == 16)                /* then it's a literal */
         {
-            if ((u32)(intptr_t)&rz_outbuf[w] >= (u32)(intptr_t)&rz_inbuf[rz_inptr])
+            if ((uintptr_t)&rz_outbuf[w] >= (uintptr_t)&rz_inbuf[rz_inptr])
             {
                 if ((u32)((intptr_t)&rz_outbuf[w] - (intptr_t)&rz_inbuf[rz_inptr]) < WSIZE)
                 {
@@ -395,7 +395,7 @@ s32 zlib_inflate_codes(struct huft *tl, struct huft *td, s32 bl, s32 bd)
                 
                 if (w - d >= e)         /* (this test assumes unsigned comparison) */
                 {
-                    if ((u32)(intptr_t)&rz_outbuf[w+e-1] >= (u32)(intptr_t)&rz_inbuf[rz_inptr])
+                    if ((uintptr_t)&rz_outbuf[w+e-1] >= (uintptr_t)&rz_inbuf[rz_inptr])
                     {
                         if ((u32)((intptr_t)&rz_outbuf[w+e-1] - (intptr_t)&rz_inbuf[rz_inptr]) < WSIZE)
                         {
@@ -411,7 +411,7 @@ s32 zlib_inflate_codes(struct huft *tl, struct huft *td, s32 bl, s32 bd)
                 {
                     do
                     {
-                        if ((u32)(intptr_t)&rz_outbuf[w] >= (u32)(intptr_t)&rz_inbuf[rz_inptr])
+                        if ((uintptr_t)&rz_outbuf[w] >= (uintptr_t)&rz_inbuf[rz_inptr])
                         {
                             if ((u32)((intptr_t)&rz_outbuf[w] - (intptr_t)&rz_inbuf[rz_inptr]) < WSIZE)
                             {
@@ -472,7 +472,7 @@ s32 zlib_inflate_stored(void)
     {
 		NEEDBITS(8)
         
-        if ((u32)(intptr_t)&rz_outbuf[w] >= (u32)(intptr_t)&rz_inbuf[rz_inptr])
+        if ((uintptr_t)&rz_outbuf[w] >= (uintptr_t)&rz_inbuf[rz_inptr])
         {
             if ((u32)((intptr_t)&rz_outbuf[w] - (intptr_t)&rz_inbuf[rz_inptr]) < WSIZE)
             {

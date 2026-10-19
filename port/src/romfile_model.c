@@ -416,7 +416,7 @@ s32 romfileModelConvert(u8 *data, u32 size, s32 numSwitches, s32 numtextures, co
          * matching (compiled - base), or identical in both, is not a
          * difference. Any other mismatch is a real difference (a mod);
          * model_probe.py is the byte-exact regression test. */
-        u32 base = (u32) (uintptr_t) compiled;
+        u32 base = portPtr32(compiled); /* the compiled copy's relocated words */
         /* The decompressed ROM file has trailing zero padding the compiled copy
          * lacks, so trim trailing all-zero words before comparing to avoid
          * reading past the compiled blob. They are never model content (an

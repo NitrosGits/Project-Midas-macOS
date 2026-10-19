@@ -1528,7 +1528,7 @@ static void gfx_generate_cc(struct ColorCombiner* comb, const ColorCombinerKey& 
 
     uint8_t c[2][2][4] = { { { 0 } } };
     uint64_t shader_id0 = 0;
-    uint32_t shader_id1 = key.options;
+    uint32_t shader_id1 = (uint32_t) key.options; /* the options live in bits 0-31 (gfx_cc.h) */
     uint8_t shader_input_mapping[2][7] = { { 0 } };
     bool used_textures[2] = { false, false };
     for (int i = 0; i < 2 && (i == 0 || is_2cyc); i++) {
@@ -4463,7 +4463,7 @@ ndcprobe_done:;
     const bool dxlu_capture = gfx_dxlu_enabled() && !dxlu_closed
         && use_alpha && depth_test && depth_compare && !depth_update
         && dxlu_num_tris < DXLU_MAX_TRIS && dxlu_num_states < DXLU_MAX_STATES;
-    const uint32_t dxlu_start = buf_vbo_len;
+    const uint32_t dxlu_start = (uint32_t) buf_vbo_len;
 
     /* GE_DEC_TRACE=<frame> (diag): at that frame print every ZMODE_DEC
      * triangle's clip verts (NDC x,y, window z, w) and remember their NDC
@@ -4510,7 +4510,7 @@ ndcprobe_done:;
             }
         }
     }
-    const uint32_t roc_vstart = buf_vbo_len;
+    const uint32_t roc_vstart = (uint32_t) buf_vbo_len;
     int roc_fog_ofs = -1, roc_pixfog_ofs = -1;
     /* Everything constant for the triangle (tile parameters, fog / grayscale /
      * combiner constants, float divides) is derived once here instead of per
@@ -4809,7 +4809,7 @@ ndcprobe_done:;
     }
 
     if (dxlu_capture) {
-        const uint32_t nf = buf_vbo_len - dxlu_start;
+        const uint32_t nf = (uint32_t) (buf_vbo_len - dxlu_start);
         if (nf <= 3 * DXLU_MAX_VERT_FLOATS && dxlu_vbo_len + nf <= DXLU_MAX_FLOATS) {
             const uint32_t stride = nf / 3;
             struct DXluState s;

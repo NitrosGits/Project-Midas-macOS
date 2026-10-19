@@ -7273,7 +7273,7 @@ Gfx *process_monitor_animation_microcode(Model *model, ModelNode *node, MonitorR
 
         if ((uintptr_t)PGET(screen->tconfig) < 100) 
         {
-            tconfig = &monitorimages[(s32)(uintptr_t)PGET(screen->tconfig)];
+            tconfig = &monitorimages[(s32) PTRW(screen->tconfig)]; /* a word below 100 is an index */
         } 
         else 
         {
@@ -14354,7 +14354,7 @@ static void portFadeNote(PropRecord *prop, s32 state, s32 alpha, f32 foga)
     static const char *const names[] = { "?", "farfog", "cull", "fogsat", "faded", "fading", "solid" };
     static PropRecord *keys[512];
     static u8 vals[512];
-    u32 h = ((u32) (uintptr_t) prop >> 4) & 511;
+    u32 h = (u32) (((uintptr_t) prop >> 4) & 511);
     s32 k;
     f32 depth;
 
