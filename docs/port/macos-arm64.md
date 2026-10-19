@@ -651,6 +651,31 @@ Literal sizes are not covered by any check. Those are hand allocations and
 pools sized by a literal (`mempAllocBytesInBank(0x2A80)`,
 `char pool[600 * 0x14]`) for structs that grow on GE_64BIT.
 
+### 2026-10-19: phase 4, into Dam
+
+Solo Dam loads, renders and plays on arm64. Firing works. A
+`GE_STAGE=dam GE_SKIPINTRO=1 GE_DRIVE=3` run (stand still and fire)
+completes 3600 frames.
+
+- **e58d71d, literal sizes.** I swept the 32-bit sizes of growing structs
+  (from `layout_audit.py --json`) against allocation sizes, ALIGN strides,
+  byte pools and `(u8 *)p + offset` accesses. Fixed:
+  - bondview2.c carved the body Model with a 0xfb stride, so the rwdata
+    after it overwrote `unka0` (the in-level crash).
+  - InvItem allocation sizes.
+  - struct hand's embedded gun Model head (`field_B68`, `mtxlist` as its
+    `render_pos`), now a real head on GE_64BIT.
+
+  Everything else the sweep found was byte buffers or structs that keep
+  their layout (listed in the commit).
+- **96e15b5, bullet hits.** Four copies of the texture-under-the-hit
+  lookup read the SETTIMG word as a raw pointer. They now decode it with
+  `portPtr64`.
+
+Run recipes: `GE_STAGE=dam` launches the mission directly. `GE_SKIPINTRO=1`
+taps through the intro cameras. `GE_DRIVE=1` wanders, `GE_DRIVE=3` stands
+and fires.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
@@ -664,16 +689,14 @@ pools sized by a literal (`mempAllocBytesInBank(0x2A80)`,
 
 ### Next, in order
 
-1. **Phase 4, continued: a level.** With `GE_AUTOSTART=1` the run crashes
-   right after Dam starts ticking. chrTick calls into `sub_GAME_7F06D490`
-   (model.c:1094), which calls `model->unka0` and reads floats there
-   (pc 0x417ffdb442daf908). That Model is probably allocated or embedded at
-   its 32-bit size (188 bytes; 264 on GE_64BIT).
-   - Sweep the literal sizes: grep `mempAllocBytesInBank(0x`, `[N * 0x..]`
-     pools, and `sizeof`-free strides over structs that contain pointers.
-     For example, prop.c's `beam = mempAllocBytesInBank(0x30U)`.
-   - Then compare against the 32-bit build with the attract-demo ramrom
-     replays.
+1. **Phase 4, continued: gameplay.**
+   - The first-person gun draws at a huge scale: the barrel and muzzle flash
+     fill the screen. Suspects are the gun's render path in gunfire.c
+     (`subdraw` on `(Model *)&hand->field_B68`, the render data built by
+     `portRenderDataFromWords`, the gun matrix scaling) and any code that
+     reaches the hand's Model head by 32-bit offsets.
+   - Then play further (`GE_STAGE`, `GE_DRIVE`, `GE_AUTOFIRE`) and compare
+     against the 32-bit build with the attract-demo ramrom replays.
 2. Open questions from the link:
    - ld reduces `__DATA,__common` alignment from 0x8000 to 0x4000. Find the
      32 KB-aligned common symbol and check that nothing depends on it.
