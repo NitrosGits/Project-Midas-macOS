@@ -113,7 +113,7 @@ struct hand hand_data_dummy = {
     0, // f32 field_A3C;
     1000.0f, // f32 field_A40;
     NULL, // ALSoundState * audioHandle;
-    0, // s32 field_A48;
+    NULL, // ALSoundState * field_A48;
     0, // s32 field_A4C;
     0, // s32 field_A50;
  

@@ -2014,14 +2014,14 @@ earlyreturn:
 }
 
 
-void sub_GAME_7F0634D8(s32 arg0, s32 arg1, s32 arg2, s32 arg3)
+void sub_GAME_7F0634D8(Gfx *arg0, ITEM_IDS arg1, Mtxf *arg2, s32 arg3)
 {
     set_enviro_fog_for_items_in_solo_watch_menu(arg0, arg1, arg2, arg3, -256);
 }
 
 
 // Unreferenced
-void sub_GAME_7F0634FC(s32 arg0, s32 arg1, s32 arg2)
+void sub_GAME_7F0634FC(Gfx *arg0, ITEM_IDS arg1, Mtxf *arg2)
 {
     sub_GAME_7F0634D8(arg0, arg1, arg2, 0xFF);
 }
@@ -6631,7 +6631,7 @@ Gfx *gunDrawHudInteger(Gfx *gdl, s32 value, s32 x, s32 halign, s32 y, s32 valign
  * (12-byte stride from the 9mm slot at 0x02000C84) that N64 rebased onto the
  * copied segment; on PC map the slot index onto the compiled-in entries
  * (image_bank.c order) instead of dereferencing the raw address. */
-u32 portAmmoIconPtr(u32 icon)
+uintptr_t portAmmoIconPtr(u32 icon)
 {
     extern struct sImageTableEntry *ammo9mmimage, *rifleammoimage,
         *shotgunammoimage, *knifeammoimage, *glaunchammoimage,
@@ -6835,9 +6835,9 @@ Gfx *generate_ammo_total_microcode(Gfx *gdl)
     s32 rightx;
     s32 reserveammo;
     s32 magammo;
-    u32 imageoffset_r;
+    uintptr_t imageoffset_r;
     s32 textwidth_r;
-    u32 imageoffset_l;
+    uintptr_t imageoffset_l;
     s32 textwidth_l = 0; /* read at the mission-timer call even with no left icon */
 
     if (g_CurrentPlayer->gunammooff == 0)
@@ -6885,7 +6885,7 @@ Gfx *generate_ammo_total_microcode(Gfx *gdl)
                 {
                     imageoffset_r = ammo_related[ammotype].IconImage;
 #ifndef TARGET_N64
-                    imageoffset_r = portAmmoIconPtr(imageoffset_r);
+                    imageoffset_r = portAmmoIconPtr(ammo_related[ammotype].IconImage);
 #endif
                     textwidth_r = 5;
 #ifndef TARGET_N64
@@ -6972,7 +6972,7 @@ Gfx *generate_ammo_total_microcode(Gfx *gdl)
                 {
                     imageoffset_l = ammo_related[ammotype].IconImage;
 #ifndef TARGET_N64
-                    imageoffset_l = portAmmoIconPtr(imageoffset_l);
+                    imageoffset_l = portAmmoIconPtr(ammo_related[ammotype].IconImage);
 #endif
                     textwidth_l = 5;
 #ifndef TARGET_N64
@@ -7140,7 +7140,7 @@ Gfx *gunDrawWatchAmmoDisplay(Gfx *gdl)
     s32 ammotype;
     s32 reserveammo;
     s32 magammo;
-    u32 imageoffset;
+    uintptr_t imageoffset;
     s32 textwidth;
     s32 pad;
 
@@ -7158,7 +7158,7 @@ Gfx *gunDrawWatchAmmoDisplay(Gfx *gdl)
         {
             imageoffset = ammo_related[ammotype].IconImage;
 #ifndef TARGET_N64
-            imageoffset = portAmmoIconPtr(imageoffset);
+            imageoffset = portAmmoIconPtr(ammo_related[ammotype].IconImage);
 #endif
             textwidth = 5;
 
@@ -7334,11 +7334,11 @@ static Gfx *portTargetRectQ(Gfx *g, s32 x1q, s32 y1q, s32 x2q, s32 y2q)
     return g + 1;
 }
 
-static void portDrawTargetPlus(s32 *gdl)
+static void portDrawTargetPlus(Gfx **gdl)
 {
     extern f32 portAimReachX(void);
     extern f32 g_bondviewSceneWideFactor;
-    Gfx *g = (Gfx *) *gdl;
+    Gfx *g = *gdl;
     f32 reachx = portAimReachX();
     f32 fx = g_CurrentPlayer->crosshair_angle.f[0];
     f32 fy = g_CurrentPlayer->crosshair_angle.f[1];
@@ -7416,13 +7416,13 @@ static void portDrawTargetPlus(s32 *gdl)
     {
         PORT_HUD_ANCHOR_OFF(g);
     }
-    *gdl = (intptr_t) g;
+    *gdl = g;
 }
 #endif
 
-void gunDrawSight(s32 *gdl) {
+void gunDrawSight(Gfx **gdl) {
 
-    s32 sp54;
+    Gfx *sp54;
     f32 xypos[2];
     f32 halfedxy[2];
 
@@ -7465,7 +7465,7 @@ void gunDrawSight(s32 *gdl) {
              * repointing the sight's SETTIMG at that copy. */
             extern s32 portPlayerCrosshairColor(s32 player);
             extern const void *portTexCrosshairCopyFor(s32 rgb);
-            Gfx *from = (Gfx *) sp54;
+            Gfx *from = sp54;
             const s32 want = portPlayerCrosshairColor(get_cur_playernum());
 
             texSelect(&sp54, crosshairimage, 4, 0, 0);
@@ -7474,12 +7474,12 @@ void gunDrawSight(s32 *gdl) {
                 const void *copy = portTexCrosshairCopyFor(want);
                 Gfx *g;
 
-                for (g = from; copy != NULL && g < (Gfx *) sp54; g++)
+                for (g = from; copy != NULL && g < sp54; g++)
                 {
                     if ((g->words.w0 >> 24) == (u32) (u8) G_SETTIMG
-                        && g->words.w1 == (u32) (uintptr_t) crosshairimage->index)
+                        && g->words.w1 == crosshairimage->index)
                     {
-                        g->words.w1 = (u32) (uintptr_t) copy;
+                        g->words.w1 = portPtr32(copy);
                     }
                 }
             }
@@ -7512,21 +7512,21 @@ void gunDrawSight(s32 *gdl) {
 
             if (reachx > 1.001f)
             {
-                Gfx *agdl = (Gfx *) sp54;
+                Gfx *agdl = sp54;
                 PORT_HUD_ANCHOR(agdl, PORT_HUD_ANCHOR_SPAN);
-                sp54 = (s32) agdl;
+                sp54 = agdl;
                 xypos[0] = bondviewAimUnpinX(xypos[0]);
                 halfedxy[0] = halfedxy[0] / g_bondviewSceneWideFactor;
             }
             /* CROSSHAIR COLOUR: bondwalk2.c owns the tint-or-vanilla
              * decision for every crosshair sprite in the game. */
-            portDisplayCrosshairImage((Gfx **) &sp54, xypos, halfedxy, 0x20, 0x20, 0x6E,
+            portDisplayCrosshairImage(&sp54, xypos, halfedxy, 0x20, 0x20, 0x6E,
                                       (crosshairimage->level > 0));
             if (reachx > 1.001f)
             {
-                Gfx *agdl = (Gfx *) sp54;
+                Gfx *agdl = sp54;
                 PORT_HUD_ANCHOR_OFF(agdl);
-                sp54 = (intptr_t) agdl;
+                sp54 = agdl;
             }
         }
 #else

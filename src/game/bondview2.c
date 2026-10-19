@@ -374,7 +374,7 @@ void solo_char_load(void)
     s32                         cursor;
     s32                         size0;
     s32                         size1;
-    s32                         helddst;
+    intptr_t                    helddst;
     WeaponObjRecord             weapon;
     struct player             **pp;
     s32                         prop;
@@ -1224,7 +1224,7 @@ void bondviewCalcIntroSwirlCamera(s32 index, f32 time, coord3d *pos, coord3d *lo
 
         base = swirl;
         scale = base->scale.fval;
-        base = (void *)(index << 5);
+        base = (void *)(intptr_t)(index << 5);
 
         coord3dCubicSplineInterp((coord3d *) &pointbuf[0], (coord3d *) &pointbuf[3], (coord3d *) &pointbuf[6], (coord3d *) &pointbuf[9], frac, scale, pos);
 
@@ -11861,11 +11861,11 @@ Gfx *bondviewRenderGaugeBars(Gfx *gdl)
 
     //Set up armor bars.
     hudMakeDamageSegments(&g_CurrentPlayer->armor_display_values[0].items[0], 0x2e, 1, g_CurrentPlayer->apparentarmour);
-    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_body_armor_bar_gdl, PORT_K0(&g_CurrentPlayer->armor_display_values[0].items[0]), 0x2e);
+    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_body_armor_bar_gdl, (uintptr_t) PORT_K0(&g_CurrentPlayer->armor_display_values[0].items[0]), 0x2e);
 
     // Set up health bars.
     hudMakeDamageSegments(&g_CurrentPlayer->health_display_values[0].items[0], 0x2e, -1, g_CurrentPlayer->apparenthealth);
-    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_health_bar_gdl, PORT_K0(&g_CurrentPlayer->health_display_values[0].items[0]), 0x2e);
+    buildGaugeBarDL((Gfx *)&g_CurrentPlayer->watch_health_bar_gdl, (uintptr_t) PORT_K0(&g_CurrentPlayer->health_display_values[0].items[0]), 0x2e);
 
     // Create an orthographic render state for the gauge.
     lookatmtx = dynAllocateMatrix();
@@ -13666,7 +13666,7 @@ Gfx* hudmsgBottomRender(Gfx* arg0)
                 PORT_HUD_ANCHOR(arg0, PORT_HUD_ANCHOR_LEFT);
             }
 #endif
-            arg0 = draw_blackbox_to_screen(arg0, (intptr_t) &view_left, (intptr_t) &view_vert, (intptr_t) &view_horiz, (intptr_t) &view_top);
+            arg0 = draw_blackbox_to_screen(arg0, &view_left, &view_vert, &view_horiz, &view_top);
             arg0 = combiner_bayer_lod_perspective(textRenderOutlined(arg0, &view_left, &view_vert, stringbuffer_lowerleft[status_bar_text_buffer_index], BONDVIEW_2ND_FONTTABLE(status_bar_text_buffer_index), BONDVIEW_1ST_FONTTABLE(status_bar_text_buffer_index), -1, 0x646464FFU, (s16) (s32) viGetX(), (s16) viGetY(), 0, 0));
 #ifndef TARGET_N64
             if (portMsgAnchor)
@@ -13986,7 +13986,7 @@ s32 playerTick(PropRecord *prop)
      * are read) */
     f32 mtx[16];
     s32 tailret;
-    s32 anim;
+    intptr_t anim;
     f32 angle;
     f32 frame;
     f32 local90;
@@ -13998,7 +13998,7 @@ s32 playerTick(PropRecord *prop)
     coord3d off;
     s32 i;
     s32 found;
-    s32 cur;
+    intptr_t cur;
     PropRecord *rightprop;
     struct WeaponObjRecord *leftobj;
     struct WeaponObjRecord *rightobj;
@@ -14108,7 +14108,7 @@ s32 playerTick(PropRecord *prop)
  
             for (i = 0; i < g_bondviewBondDeathAnimationsCount; i++)
             {
-                cur = ppointers[index]->players_cur_animation;
+                cur = (intptr_t) ppointers[index]->players_cur_animation;
  
                 if (cur == (g_bondviewBondDeathAnimations[i] + ((intptr_t) ptr_animation_table)))
                 {
@@ -14118,7 +14118,7 @@ s32 playerTick(PropRecord *prop)
  
             if (found)
             {
-                anim = ppointers[index]->players_cur_animation;
+                anim = (intptr_t) ppointers[index]->players_cur_animation;
                 angle = 0.5f;
             }
             else
@@ -14127,7 +14127,7 @@ s32 playerTick(PropRecord *prop)
                 angle = 0.5f;
             }
  
-            cur = ppointers[index]->players_cur_animation;
+            cur = (intptr_t) ppointers[index]->players_cur_animation;
             local8c = 0.0f;
             local88 = 0.0f;
             goto join_768;
@@ -14313,12 +14313,12 @@ lean_return_to_centre:
             frame = fa->y;
         }
  
-        cur = ppointers[index]->players_cur_animation;
+        cur = (intptr_t) ppointers[index]->players_cur_animation;
  
 join_768:
         if ((firingtable != NULL) && (anim == 0))
         {
-            anim = *((s32 *) firingtable);
+            anim = (intptr_t) firingtable->anim.anim;
         }
  
         if (anim != cur)
@@ -14348,7 +14348,7 @@ join_768:
             {
                 startframe = (0.0f <= frame) ? (frame) : (0.0f);
                 modelSetAnimation(ppointers[index]->bodyModel, (ModelAnimation *) anim, 0, startframe, angle, 16.0f);
-                ppointers[index]->players_cur_animation = anim;
+                ppointers[index]->players_cur_animation = (struct ModelAnimation *) anim;
                 ppointers[index]->field_1288 = angle;
  
                 if (0.0f <= frame)
@@ -14362,7 +14362,7 @@ join_768:
                 }
             }
  
-            cur = ppointers[index]->players_cur_animation;
+            cur = (intptr_t) ppointers[index]->players_cur_animation;
         }
         else
         {
@@ -14372,7 +14372,7 @@ join_768:
                 ppointers[index]->field_1288 = angle;
             }
  
-            cur = ppointers[index]->players_cur_animation;
+            cur = (intptr_t) ppointers[index]->players_cur_animation;
         }
  
         if (anim == cur)

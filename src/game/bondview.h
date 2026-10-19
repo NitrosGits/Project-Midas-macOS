@@ -197,7 +197,7 @@ struct hand
   f32 field_A3C;
   f32 field_A40;
   ALSoundState * audioHandle;
-  s32 field_A48;
+  ALSoundState * field_A48; /* a second sound slot, like audioHandle */
   s32 field_A4C;
   s32 field_A50;
   BeamRecord weapon_beam;
@@ -343,11 +343,11 @@ struct player
    * Used as parameter to gbi macro.
    * Offset 0x005c.
    */
-  s32 field_5C;
+  Mtx *field_5C;
 
-  /* 0x0060 */ s32 field_60;
-  /* 0x0064 */ s32 field_64;
-  /* 0x0068 */ s32 field_68;
+  /* 0x0060 */ Mtx *field_60;
+  /* 0x0064 */ Mtx *field_64;
+  /* 0x0068 */ Mtx *field_68;
 
   /**
    * Collision / clipping related.
@@ -1169,7 +1169,7 @@ struct player
   f32 swayoffset0;
   f32 swayoffset2;
   f32 field_1280;
-  s32 players_cur_animation;
+  struct ModelAnimation *players_cur_animation;
   f32 field_1288;
 
   /**
