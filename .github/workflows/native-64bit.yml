@@ -1,0 +1,173 @@
+name: Native-64bit-Build
+
+# The native 64-bit builds (GE_64BIT, docs/port/macos-arm64.md). macOS arm64
+# is the supported one. Linux x64 and Windows x64 are experiments: GE_64BIT's
+# address window still uses Mach-O APIs, so those jobs are expected to fail,
+# and they report how far they got in the job summary. The 32-bit builds are
+# in main.yml.
+
+on:
+  push:
+    paths-ignore:
+    - 'tools/**'
+    - '*.md'
+    - '.gitignore'
+    - 'CppProperties.json'
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SDL2_VERSION: 2.30.11
+  SDL2_MINGW_SHA1: a44b17a6521b40e04d7beaae90b4b3ce19e62e7b
+  BASEROM_US_SHA1: abe01e4aeb033b6c0836819f549c791b26cfde83
+
+jobs:
+  build-macos-arm64:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Get US File
+        env:
+          ROM_URL: ${{ secrets.ROM_URL }}
+        run: curl -fsSL -A "Mozilla/5.0" -o baserom.u.z64 "$ROM_URL"
+
+      - name: Verify US File checksum
+        run: echo "${BASEROM_US_SHA1}  baserom.u.z64" | shasum -a 1 -c -
+
+      - name: Extract US Assets
+        run: TERM=dumb ./scripts/extract_baserom.u.sh
+
+      - name: Convert model binaries and combine images
+        run: make convert_props convert_chrs convert_guns combine_images
+
+      - name: Install build dependencies
+        run: brew install ninja sdl2
+
+      - name: Configure and build for macOS (arm64)
+        run: |
+          cmake -S . -B build_mac -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGE_VIDEO=ON
+          ninja -C build_mac
+          file build_mac/ProjectMidas
+
+      - name: Pack macOS executable
+        run: tar -cf ProjectMidas-macos-arm64.tar -C build_mac ProjectMidas
+
+      - name: Upload macOS executable
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ProjectMidas-macos-arm64
+          path: ProjectMidas-macos-arm64.tar
+          retention-days: 3
+
+  # Experimental: GE_64BIT on Linux x86-64 with clang (the strict pointer-width
+  # flags are clang's). Expected to fail until the address window is ported.
+  build-linux-x64:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Get US File
+        env:
+          ROM_URL: ${{ secrets.ROM_URL }}
+        run: wget -U "Mozilla/5.0" -O baserom.u.z64 "$ROM_URL"
+
+      - name: Verify US File checksum
+        run: echo "${BASEROM_US_SHA1}  baserom.u.z64" | sha1sum -c -
+
+      - name: Extract US Assets
+        run: ./scripts/extract_baserom.u.sh
+
+      - name: Convert model binaries and combine images
+        run: make convert_props convert_chrs convert_guns combine_images
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang libsdl2-dev libgl-dev
+
+      - name: Configure and build for Linux (x64, GE_64BIT)
+        run: |
+          set -o pipefail
+          cmake -S . -B build_x64 -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGE_VIDEO=ON -DGE_64BIT=ON \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          ninja -C build_x64 -k 0 2>&1 | tee build.log
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### Linux x64 (GE_64BIT, experimental)"
+            echo "Compile errors: $(grep -c ' error:' build.log 2>/dev/null || echo 0)"
+            echo '```'
+            grep ' error:' build.log 2>/dev/null | sed 's/:[0-9]*:[0-9]*: error:/: error:/' | sort | uniq -c | sort -rn | head -25
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Experimental: GE_64BIT on Windows x64, cross-built with clang for mingw.
+  build-windows-x64:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Get US File
+        env:
+          ROM_URL: ${{ secrets.ROM_URL }}
+        run: wget -U "Mozilla/5.0" -O baserom.u.z64 "$ROM_URL"
+
+      - name: Verify US File checksum
+        run: echo "${BASEROM_US_SHA1}  baserom.u.z64" | sha1sum -c -
+
+      - name: Extract US Assets
+        run: ./scripts/extract_baserom.u.sh
+
+      - name: Convert model binaries and combine images
+        run: make convert_props convert_chrs convert_guns combine_images
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 binutils-mingw-w64-x86-64
+
+      - name: Get SDL2 mingw devel package
+        run: |
+          wget -O sdl2-mingw.tar.gz "https://github.com/libsdl-org/SDL/releases/download/release-${SDL2_VERSION}/SDL2-devel-${SDL2_VERSION}-mingw.tar.gz"
+          echo "${SDL2_MINGW_SHA1}  sdl2-mingw.tar.gz" | sha1sum -c -
+          mkdir -p third_party
+          tar -xzf sdl2-mingw.tar.gz -C third_party
+
+      - name: Configure and build for Windows (x64, GE_64BIT)
+        run: |
+          set -o pipefail
+          cmake -S . -B build_win64 -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGE_VIDEO=ON -DGE_64BIT=ON \
+            -DCMAKE_SYSTEM_NAME=Windows \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER_TARGET=x86_64-w64-mingw32 -DCMAKE_CXX_COMPILER_TARGET=x86_64-w64-mingw32 \
+            -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres \
+            -DSDL2_MINGW_ROOT="$PWD/third_party/SDL2-${SDL2_VERSION}/x86_64-w64-mingw32"
+          ninja -C build_win64 -k 0 2>&1 | tee build.log
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### Windows x64 (GE_64BIT, experimental)"
+            echo "Compile errors: $(grep -c ' error:' build.log 2>/dev/null || echo 0)"
+            echo '```'
+            grep ' error:' build.log 2>/dev/null | sed 's/:[0-9]*:[0-9]*: error:/: error:/' | sort | uniq -c | sort -rn | head -25
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

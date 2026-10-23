@@ -34,7 +34,8 @@ if(APPLE)
     add_compile_definitions(_FORTIFY_SOURCE=0)
 else()
     add_compile_options(
-        -m32
+        # 32-bit unless GE_64BIT (the native 64-bit build, experimental off macOS)
+        $<$<NOT:$<BOOL:${GE_64BIT}>>:-m32>
         # Use SSE scalar floats so every operation rounds to single precision like
         # the N64 FPU; x87's 80-bit excess precision flips borderline comparisons
         # (it broke the stan.c tile-walk edge test and room visibility in Egypt).
@@ -83,7 +84,7 @@ if(WIN32)
     # image base above the N64 segment range so gfx_pc.cpp seg_addr can tell
     # addresses from segment refs, and use a 16MB stack (recursive room/portal
     # walks overflow 1MB).
-    add_link_options(-m32 -static-libgcc -static-libstdc++
+    add_link_options($<$<NOT:$<BOOL:${GE_64BIT}>>:-m32> -static-libgcc -static-libstdc++
                      -Wl,--image-base=0x10000000 -Wl,--disable-dynamicbase
                      -Wl,--stack,16777216)
     link_libraries(dbghelp)
@@ -91,7 +92,7 @@ elseif(APPLE)
     # macOS executables are always PIE. 16MB main-thread stack, as on Windows.
     add_link_options(-Wl,-stack_size,0x1000000)
 else()
-    add_link_options(-m32 -no-pie)
+    add_link_options($<$<NOT:$<BOOL:${GE_64BIT}>>:-m32> -no-pie)
 endif()
 
 add_compile_definitions(
