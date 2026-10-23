@@ -6070,7 +6070,13 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
 
         rand = ((f32) ((u32) randomGetNext())) * 2.3283064e-10f;
         casing->vel.y = ((rand * 2.5f) * 0.0625f) + 2.5f;
+#ifdef TARGET_N64
         casing->vel.z = frac * 0.0f;
+#else
+        /* frac is still unset here; garbage * 0 is NaN when the garbage is,
+         * which on arm64 sent the casing (drawn huge, brass yellow) to NaN */
+        casing->vel.z = 0.0f;
+#endif
 
         mtx4RotateVecInPlace(THROWMTX, &casing->vel);
 
@@ -6443,7 +6449,13 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
 
         rand = ((f32) ((u32) randomGetNext())) * 2.3283064e-10f;
         casing->vel.y = ((rand * 2.5f) * 0.0625f) + 2.5f;
+#ifdef TARGET_N64
         casing->vel.z = frac * 0.0f;
+#else
+        /* frac is still unset here; garbage * 0 is NaN when the garbage is,
+         * which on arm64 sent the casing (drawn huge, brass yellow) to NaN */
+        casing->vel.z = 0.0f;
+#endif
 
         mtx4RotateVecInPlace(THROWMTX, &casing->vel);
 
