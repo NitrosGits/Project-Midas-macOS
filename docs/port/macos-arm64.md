@@ -676,6 +676,25 @@ Run recipes: `GE_STAGE=dam` launches the mission directly. `GE_SKIPINTRO=1`
 taps through the intro cameras. `GE_DRIVE=1` wanders, `GE_DRIVE=3` stands
 and fires.
 
+### 2026-10-24: merged 1.0.2b, first full mission
+
+The user's fork (NitrosGits/Project-Midas-macOS, upstream 1.0.2b) is merged
+(0f87b13). Two fixes since:
+
+- Shell casings drew huge after firing, because their velocity was NaN from
+  an uninitialized `frac * 0.0f` (446c5bc).
+- Mouse look, firing and multiplayer spawn all work.
+
+The user played Dam start to finish by hand on arm64, with sound, and
+reported it looks right.
+
+Still open:
+
+- `get_ptr_item_statistics: item id -72 / -51 out of range`. It's
+  consistent between runs. 0xCD hints at uninitialized memory. Not yet
+  checked against a 32-bit build.
+- Frame-rate dips to about 40 fps. The time goes to the buffer swap.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).
