@@ -345,9 +345,15 @@ u32 weaponIsOneHanded(PropRecord *arg0)
 {
     if (arg0 != NULL)
     {
+#ifdef TARGET_N64
         ChrRecord *v = (ChrRecord*)arg0->voidp;
 
         return bondwalkItemCheckBitflags(v->act_bytes.padding[84], WEAPONSTATBITFLAG_ONLY_1_HANDED);
+#else
+        /* arg0 is a weapon prop: that byte is WeaponObjRecord.weaponnum (0x80),
+         * which only lines up through ChrRecord with 4-byte pointers */
+        return bondwalkItemCheckBitflags(((WeaponObjRecord *) arg0->voidp)->weaponnum, WEAPONSTATBITFLAG_ONLY_1_HANDED);
+#endif
     }
 
     return 0U;
