@@ -1630,9 +1630,33 @@ static void gfx_opengl_update_framebuffer_parameters(int fb_id, uint32_t width, 
                                                      bool opengl_invert_y, bool render_target, bool has_depth_buffer,
                                                      bool can_extract_depth) {
     Framebuffer& fb = framebuffers[fb_id];
+    /* The GPU's sample limit, lowered when a driver rejects a level, so an MSAA
+     * pick it cannot do falls back instead of leaving a black screen. */
+    static GLint msaa_cap = -1;
+    static bool msaa_tex_ok = true; /* cleared when N64 AA's multisample texture is rejected */
+    bool realloc = false;
 
     width = max(width, 1U);
     height = max(height, 1U);
+
+    if (gfx_framebuffers_enabled && fb_id != 0 && msaa_level > 1) {
+        if (msaa_cap < 0) {
+            GLint s = 0;
+            glGetIntegerv(GL_MAX_SAMPLES, &s);
+            if (glTexImage2DMultisample != NULL) {
+                GLint t = 0;
+                glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &t);
+                if (t > 0 && t < s) {
+                    s = t;
+                }
+            }
+            msaa_cap = max(s, 1);
+            sysLogPrintf(LOG_NOTE, "GL: up to %dx MSAA", (int)msaa_cap);
+        }
+        while (msaa_level > 1 && msaa_level > (uint32_t)msaa_cap) {
+            msaa_level >>= 1;
+        }
+    }
 
     if (gfx_framebuffers_enabled) {
         glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
@@ -1640,8 +1664,9 @@ static void gfx_opengl_update_framebuffer_parameters(int fb_id, uint32_t width, 
         if (fb_id != 0) {
             /* GE N64 AA: the VI resolve reads samples, so the multisampled colour
              * target is a texture while gfx_n64_aa is set (a renderbuffer otherwise) */
-            const bool want_tex = msaa_level > 1 && gfx_n64_aa != 0 && glTexImage2DMultisample != NULL;
+            const bool want_tex = msaa_level > 1 && gfx_n64_aa != 0 && glTexImage2DMultisample != NULL && msaa_tex_ok;
             if (fb.width != width || fb.height != height || fb.msaa_level != msaa_level || fb.msaa_is_texture != want_tex) {
+                realloc = true;
                 if (msaa_level <= 1) {
                     glBindTexture(GL_TEXTURE_2D, fb.clrbuf);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -1666,6 +1691,7 @@ static void gfx_opengl_update_framebuffer_parameters(int fb_id, uint32_t width, 
 
             if (has_depth_buffer &&
                 (fb.width != width || fb.height != height || fb.msaa_level != msaa_level || !fb.has_depth_buffer)) {
+                realloc = true;
                 glBindRenderbuffer(GL_RENDERBUFFER, fb.rbo);
                 if (msaa_level <= 1) {
                     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
@@ -1679,6 +1705,34 @@ static void gfx_opengl_update_framebuffer_parameters(int fb_id, uint32_t width, 
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fb.rbo);
             } else if (fb.has_depth_buffer && !has_depth_buffer) {
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+            }
+
+            if (realloc && msaa_level > 1) {
+                const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+                if (status != GL_FRAMEBUFFER_COMPLETE) {
+                    /* record what is attached now, so the retry reallocates everything */
+                    fb.width = width;
+                    fb.height = height;
+                    fb.has_depth_buffer = has_depth_buffer;
+                    fb.msaa_level = msaa_level;
+                    if (fb.msaa_is_texture) {
+                        /* N64 AA's multisample texture next to the multisample depth
+                         * renderbuffer: keep the level with a renderbuffer instead
+                         * (N64 AA then uses the plain resolve) */
+                        sysLogPrintf(LOG_WARNING, "GL: %ux MSAA texture framebuffer rejected (0x%x), "
+                                     "N64 AA falls back to the plain resolve", msaa_level, (unsigned)status);
+                        msaa_tex_ok = false;
+                        gfx_opengl_update_framebuffer_parameters(fb_id, width, height, msaa_level, opengl_invert_y,
+                                                                 render_target, has_depth_buffer, can_extract_depth);
+                        return;
+                    }
+                    sysLogPrintf(LOG_WARNING, "GL: %ux MSAA framebuffer rejected (0x%x), trying %ux", msaa_level,
+                                 (unsigned)status, msaa_level >> 1);
+                    msaa_cap = (GLint)(msaa_level >> 1);
+                    gfx_opengl_update_framebuffer_parameters(fb_id, width, height, msaa_level >> 1, opengl_invert_y,
+                                                             render_target, has_depth_buffer, can_extract_depth);
+                    return;
+                }
             }
         }
     } else {
@@ -1745,6 +1799,56 @@ static void gfx_opengl_present_x(int fb_id, GLint full_w, GLint* x0, GLint* x1) 
     }
 }
 
+/* Blit the bound READ framebuffer's (0,0)-(sw,sh) to the rect (dx0,dy0)-(dx1,dy1)
+ * of draw framebuffer `dst_fbo`. A driver's "override" antialiasing makes the
+ * window multisampled, and GL refuses a scaled blit into it, which left Classic
+ * Mode and Low Res black. Into such a window a scaled blit goes through a plain
+ * texture of the rect's size first, so the last step is a same-size copy. */
+static void gl_blit_to(GLuint dst_fbo, GLint sw, GLint sh, GLint dx0, GLint dy0, GLint dx1, GLint dy1, GLenum filter) {
+    static int win_ms = -1;
+    static GLuint ws_fbo = 0, ws_tex = 0;
+    static GLint ws_w = 0, ws_h = 0;
+    const GLint rw = dx1 - dx0, rh = dy1 - dy0;
+
+    if (win_ms < 0) {
+        GLint read_fbo = 0, sb = 0, samples = 0;
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glGetIntegerv(GL_SAMPLE_BUFFERS, &sb);
+        glGetIntegerv(GL_SAMPLES, &samples);
+        win_ms = (sb > 0) ? 1 : 0;
+        if (win_ms) {
+            sysLogPrintf(LOG_WARNING, "GL: the window is multisampled (%d samples, a driver antialiasing override?); "
+                         "scaled frames reach it through a plain texture", (int)samples);
+        }
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)read_fbo);
+    }
+    if (dst_fbo != 0 || !win_ms || (rw == sw && rh == sh) || rw <= 0 || rh <= 0) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst_fbo);
+        glBlitFramebuffer(0, 0, sw, sh, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, filter);
+        return;
+    }
+    if (ws_fbo == 0) {
+        glGenFramebuffers(1, &ws_fbo);
+        glGenTextures(1, &ws_tex);
+    }
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ws_fbo);
+    if (ws_w != rw || ws_h != rh) {
+        GLint had_tex = 0;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &had_tex);
+        glBindTexture(GL_TEXTURE_2D, ws_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, rw, rh, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glBindTexture(GL_TEXTURE_2D, (GLuint)had_tex);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ws_tex, 0);
+        ws_w = rw;
+        ws_h = rh;
+    }
+    glBlitFramebuffer(0, 0, sw, sh, 0, 0, rw, rh, GL_COLOR_BUFFER_BIT, filter);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, ws_fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, rw, rh, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+}
+
 void gfx_opengl_resolve_msaa_color_buffer(int fb_id_target, int fb_id_source) {
     if (!gfx_framebuffers_enabled) {
         return;
@@ -1756,10 +1860,36 @@ void gfx_opengl_resolve_msaa_color_buffer(int fb_id_target, int fb_id_source) {
 
     gfx_opengl_present_x(fb_id_target, (GLint) fb_dst.width, &dx0, &dx1);
     glDisable(GL_SCISSOR_TEST);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb_dst.fbo);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, fb_src.fbo);
-    glBlitFramebuffer(0, 0, fb_src.width, fb_src.height, dx0, 0, dx1, fb_dst.height, GL_COLOR_BUFFER_BIT,
-                      GL_NEAREST);
+    if (fb_src.msaa_level > 1 && (fb_id_target == 0 || fb_src.width != fb_dst.width || fb_src.height != fb_dst.height)) {
+        /* A multisample blit needs identical rects (and, on strict drivers, formats),
+         * so the window (RGBA, maybe pillarboxed) went black on AMD/Intel. Resolve at
+         * the source size into a plain RGB8 texture first, then blit that. */
+        static GLuint rs_fbo = 0, rs_tex = 0;
+        static uint32_t rs_w = 0, rs_h = 0;
+        if (rs_fbo == 0) {
+            glGenFramebuffers(1, &rs_fbo);
+            glGenTextures(1, &rs_tex);
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, rs_fbo);
+        if (rs_w != fb_src.width || rs_h != fb_src.height) {
+            GLint had_tex = 0;
+            glGetIntegerv(GL_TEXTURE_BINDING_2D, &had_tex);
+            glBindTexture(GL_TEXTURE_2D, rs_tex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, fb_src.width, fb_src.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glBindTexture(GL_TEXTURE_2D, (GLuint)had_tex);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rs_tex, 0);
+            rs_w = fb_src.width;
+            rs_h = fb_src.height;
+        }
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fb_src.fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rs_fbo);
+        glBlitFramebuffer(0, 0, fb_src.width, fb_src.height, 0, 0, fb_src.width, fb_src.height, GL_COLOR_BUFFER_BIT,
+                          GL_NEAREST);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, rs_fbo);
+    } else {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fb_src.fbo);
+    }
+    gl_blit_to(fb_dst.fbo, fb_src.width, fb_src.height, dx0, 0, dx1, fb_dst.height, GL_NEAREST);
     glBindFramebuffer(GL_FRAMEBUFFER, (GLuint) current_framebuffer);
     glEnable(GL_SCISSOR_TEST);
 }
@@ -2594,6 +2724,7 @@ static void gl_ret_clear_programs(void) {
 extern "C" uint32_t gfx_n64_aa; /* gfx_pc.cpp, set by video.c */
 extern "C" uint32_t gfx_line_mode; /* gfx_pc.cpp: the Line Mode cheat is on this frame */
 extern "C" uint32_t gfx_composite; /* video.c: [display] composite */
+extern "C" uint32_t gfx_vi_blend; /* video.c: Classic Mode's N64 AA part; 0 = pass 2 copies */
 static GLuint vi_prog[4] = { 0, 0, 0, 0 };
 static GLint vi_u_src[4] = { -1, -1, -1, -1 }, vi_u_samples = -1, vi_u_size = -1, vi_u_strength = -1, vi_u_gain = -1;
 static GLint vi_u_csize = -1, vi_u_cscale = -1, vi_u_cfreq = -1, vi_u_cframe = -1;   /* the composite pass */
@@ -2826,13 +2957,11 @@ static void gfx_opengl_resolve_n64_aa(int fb_dst, int fb_src) {
             glBlitFramebuffer(0, 0, (GLint)src.width, (GLint)src.height, 0, 0, (GLint)src.width, (GLint)src.height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
             glBindFramebuffer(GL_READ_FRAMEBUFFER, fb_fbo);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst.fbo);
             {
                 GLint dx0, dx1;
 
                 gfx_opengl_present_x(fb_dst, (GLint) dst.width, &dx0, &dx1);
-                glBlitFramebuffer(0, 0, (GLint)src.width, (GLint)src.height, dx0, 0, dx1, (GLint)dst.height,
-                                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+                gl_blit_to(dst.fbo, (GLint)src.width, (GLint)src.height, dx0, 0, dx1, (GLint)dst.height, GL_NEAREST);
             }
             glBindFramebuffer(GL_FRAMEBUFFER, current_framebuffer < (int)framebuffers.size() ? framebuffers[current_framebuffer].fbo : 0);
             glEnable(GL_SCISSOR_TEST);
@@ -2881,7 +3010,7 @@ static void gfx_opengl_resolve_n64_aa(int fb_dst, int fb_src) {
         glUseProgram(vi_prog[1]);
         glUniform1i(vi_u_src[1], 0);
         glUniform2i(vi_u_size, (GLint)src.width, (GLint)src.height);
-        glUniform1f(vi_u_strength, vi_strength());
+        glUniform1f(vi_u_strength, gfx_vi_blend ? vi_strength() : 0.0f);
     }
     glDrawArrays(GL_TRIANGLES, 0, 3);
     /* pass 3 (optional): the NTSC composite signal (fs4 in vi_init) */
@@ -2915,7 +3044,6 @@ static void gfx_opengl_resolve_n64_aa(int fb_dst, int fb_src) {
     }
     /* present: the soft resample to the destination */
     glBindFramebuffer(GL_READ_FRAMEBUFFER, present_fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst.fbo);
     {
         /* GE_N64AA_SOFT=0 keeps the nearest present (chunky pixels, blended
          * edges); default = the VI's soft resample (bilinear) */
@@ -2924,8 +3052,8 @@ static void gfx_opengl_resolve_n64_aa(int fb_dst, int fb_src) {
 
         if (soft < 0) { const char* e = getenv("GE_N64AA_SOFT"); soft = (e && e[0] == '0') ? 0 : 1; }
         gfx_opengl_present_x(fb_dst, (GLint) dst.width, &dx0, &dx1);   /* PILLARBOX: the centred rect */
-        glBlitFramebuffer(0, 0, (GLint)src.width, (GLint)src.height, dx0, 0, dx1, (GLint)dst.height,
-                          GL_COLOR_BUFFER_BIT, soft ? GL_LINEAR : GL_NEAREST);
+        gl_blit_to(dst.fbo, (GLint)src.width, (GLint)src.height, dx0, 0, dx1, (GLint)dst.height,
+                   soft ? GL_LINEAR : GL_NEAREST);
     }
     /* back to the interpreter's world */
     glBindFramebuffer(GL_FRAMEBUFFER, current_framebuffer < (int)framebuffers.size() ? framebuffers[current_framebuffer].fbo : 0);

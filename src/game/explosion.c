@@ -1937,6 +1937,14 @@ Gfx *explosionRenderFlyingParticles(Gfx *gdl)
     s32 i;
     Mtx *temp_v0_2;
     struct FlyingParticles *particles;
+#ifndef TARGET_N64
+    /* Debris steps once per 60Hz field; at higher tick rates draw each piece
+     * `phase` of the way to its next step (render only). */
+    extern f32 portRenderFieldPhase(void); /* frametiming.c */
+    f32 ph = portRenderFieldPhase();
+    struct coord3d drawpos;
+    struct coord3d drawrot;
+#endif
 
     gSPClearGeometryMode(gdl++, G_CULL_BOTH);
     gSPSegment(gdl++, SPSEGMENT_GETITLE, osVirtualToPhysical((void*)pGlobalimagetable));
@@ -1952,7 +1960,17 @@ Gfx *explosionRenderFlyingParticles(Gfx *gdl)
 
         if (particles->unk00 > 0)
         {
+#ifndef TARGET_N64
+            drawpos.f[0] = particles->position.f[0] + particles->position_drift.f[0] * ph;
+            drawpos.f[1] = particles->position.f[1] + particles->position_drift.f[1] * ph;
+            drawpos.f[2] = particles->position.f[2] + particles->position_drift.f[2] * ph;
+            drawrot.f[0] = particles->rotation.f[0] + particles->rotation_drift.f[0] * ph;
+            drawrot.f[1] = particles->rotation.f[1] + particles->rotation_drift.f[1] * ph;
+            drawrot.f[2] = particles->rotation.f[2] + particles->rotation_drift.f[2] * ph;
+            matrix_4x4_set_position_and_rotation_around_xyz(&drawpos, &drawrot, &sp80);
+#else
             matrix_4x4_set_position_and_rotation_around_xyz(&particles->position, &particles->rotation, &sp80);
+#endif
             matrix_4x4_multiply_homogeneous_in_place(camGetWorldToScreenMtxf(), &sp80);
 
             if ((sp80.m[3][0] < 20000.0f)
@@ -2234,8 +2252,17 @@ void explosionCreateBulletImpact(struct coord3d *pos, struct coord3d *arg1, s16 
     u8 var_s0;
     u8 sp62;
     u8 sp61;
+#ifndef TARGET_N64
+    s16 pass_type;
+#endif
 
     spE0 = g_BulletImpactDefaultVertex;
+
+#ifndef TARGET_N64
+    /* PORT: paintball swaps the image but keeps the surface's own draw pass,
+     * so a splat on glass draws after the glass like the crack it replaces. */
+    pass_type = impact_type;
+#endif
 
     if (cheatIsActive(CHEAT_PAINTBALL))
     {
@@ -2301,7 +2328,11 @@ void explosionCreateBulletImpact(struct coord3d *pos, struct coord3d *arg1, s16 
         sp9C /= sp88;
         sp98 /= temp_f6;
 
+#ifndef TARGET_N64
+        if ((g_ImpactTypes[pass_type].unk2 < 2) && (g_ImpactTypes[pass_type].unk1 == 2))
+#else
         if ((sp50->unk2 < 2) && (sp50->unk1 == 2))
+#endif
         {
             temp_s0->state |= PROPSTATE_2;
         }
@@ -2325,6 +2356,9 @@ void explosionCreateBulletImpact(struct coord3d *pos, struct coord3d *arg1, s16 
     g_BulletImpactBuffer[g_NumImpactEntries].room_clear_flag = room_clear_flag;
     g_BulletImpactBuffer[g_NumImpactEntries].room = room;
     g_BulletImpactBuffer[g_NumImpactEntries].impact_type = impact_type;
+#ifndef TARGET_N64
+    g_BulletImpactBuffer[g_NumImpactEntries].unk4E = pass_type;
+#endif
 
     g_BulletImpactBuffer[g_NumImpactEntries].vertex_list[0] = spE0;
     g_BulletImpactBuffer[g_NumImpactEntries].vertex_list[1] = spE0;
@@ -2439,6 +2473,7 @@ Gfx *explosionRenderBulletImpactOnProp(Gfx *gdl, PropRecord *arg1, s32 arg2)
 
     s16 var_s5;
     s32 impact_type;
+    s32 pass_type;
     s32 var_v0;
 
     var_s5 = -1;
@@ -2463,14 +2498,21 @@ Gfx *explosionRenderBulletImpactOnProp(Gfx *gdl, PropRecord *arg1, s32 arg2)
                 if (arg1 || getROOMID_isRendered(g_BulletImpactBuffer[i].room))
                 {
                     impact_type = g_BulletImpactBuffer[i].impact_type;
+#ifndef TARGET_N64
+                    /* PORT: the pass and depth mode follow the hit surface's type
+                     * (unk4E), the image follows impact_type (see the create). */
+                    pass_type = g_BulletImpactBuffer[i].unk4E;
+#else
+                    pass_type = impact_type;
+#endif
 
                     if (arg2)
                     {
-                        var_v0 = g_ImpactTypes[impact_type].unk2 < 2 && g_ImpactTypes[impact_type].unk1 == 2;
+                        var_v0 = g_ImpactTypes[pass_type].unk2 < 2 && g_ImpactTypes[pass_type].unk1 == 2;
                     }
                     else
                     {
-                        var_v0 = (g_ImpactTypes[impact_type].unk2 >= 2) || g_ImpactTypes[impact_type].unk1 != 2;
+                        var_v0 = (g_ImpactTypes[pass_type].unk2 >= 2) || g_ImpactTypes[pass_type].unk1 != 2;
                     }
 
                     if (var_v0)
@@ -2503,7 +2545,7 @@ Gfx *explosionRenderBulletImpactOnProp(Gfx *gdl, PropRecord *arg1, s32 arg2)
 
                         if (sp48 != impact_type)
                         {
-                            texSelect(&gdl, &impactimages[impact_type], g_ImpactTypes[impact_type].unk1, g_ImpactTypes[impact_type].unk2, 2U);
+                            texSelect(&gdl, &impactimages[impact_type], g_ImpactTypes[pass_type].unk1, g_ImpactTypes[pass_type].unk2, 2U);
                             sp48 = impact_type;
                         }
 

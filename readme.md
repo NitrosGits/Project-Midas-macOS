@@ -6,6 +6,10 @@ This is a video game about Jimothy's presumed-dead best friend Jarvis turns out 
 
 Project Midas is a work-in-progress PC port of GE, built from the N64 decompilation. It runs on Windows and Linux and reads its game data from your own copy of the US cart.
 
+## AI Disclaimer
+
+Claude was used in the making of this project. If you don't agree with this, please do not download either the executables or the source.
+
 ## Playing
 
 1. Put your GE (USA) cart image in the `Data` folder next to the executable. See `Data/README.txt` for the accepted formats and other ways to point the game at it.
@@ -113,20 +117,35 @@ The Project Midas port code is MIT licensed; see [LICENSE](LICENSE). The license
 
 Project Midas builds on the work of many people and projects.
 
+### Projects and references
+
 - [GoldenEye decompilation](https://github.com/n64decomp/007) by KholdFuzion and contributors
-- [GoldenEye docs](https://github.com/kholdfuzion/goldeneye_docs)
+- [GoldenEye docs](https://github.com/kholdfuzion/goldeneye_docs) by KholdFuzion and contributors
 - [Perfect Dark decompilation](https://github.com/n64decomp/perfect_dark) by Ryan Dwyer and contributors
-- [Perfect Dark PC port](https://github.com/fgsfdsfgs/perfect_dark) by fgsfds
-- [Perfect Dark netplay](https://github.com/murkantor/perfect_dark_netplay) (fork of fgsfds' `port-net`)
+- [Perfect Dark PC port](https://github.com/fgsfdsfgs/perfect_dark) by fgsfds and contributors
+- [Perfect Dark netplay](https://github.com/murkantor/perfect_dark_netplay) by murkantor, a fork of fgsfds' `port-net`
 - [GE Plus](https://github.com/Joshua-1248/GoldenEye-007-Plus) by Joshua
-- *The DOOM III Network Architecture* by J.M.P. van Waveren (id Software, 2006)
-- Fast3D renderer by Emill and MaikelChan (MIT)
-- [SDL2](https://github.com/libsdl-org/SDL) and [glad](https://github.com/Dav1dde/glad)
-- [SDL_GameControllerDB](https://github.com/mdqinc/SDL_GameControllerDB)
-- [ENet](https://github.com/lsalzman/enet)
-- [xdelta3](https://github.com/jmacd/xdelta)
-- [ido-static-recomp](https://github.com/decompals/ido-static-recomp), [rabbitizer](https://github.com/Decompollaboration/rabbitizer), [qemu-irix](https://github.com/n64decomp/qemu-irix) and [armips](https://github.com/Kingcom/armips)
-- The 1964 emulator and its GE/Perfect Dark mouse injector
+- [The DOOM III Network Architecture](https://mrelusive.com/publications/papers/The-DOOM-III-Network-Architecture.pdf) by J.M.P. van Waveren (id Software, 2006)
+- [ENet](https://github.com/lsalzman/enet) by Lee Salzman
+- [xdelta3](https://github.com/jmacd/xdelta) by Josh MacDonald
+- [qemu-irix](https://github.com/n64decomp/qemu-irix) by the n64decomp contributors
 - [pj64raphnetraw](https://github.com/raphnet/pj64raphnetraw) by Raphael Assenat ([raphnet-tech](https://www.raphnet-tech.com)), the reference for the raphnet adapter protocol
+- The 1964 emulator and its GE/Perfect Dark mouse injector
+
+### Bundled third-party code
+
+Each keeps its own license. The full license texts are in [`tools/THIRD_PARTY_NOTICES.txt`](tools/THIRD_PARTY_NOTICES.txt).
+
+- [Fast3D renderer](https://github.com/Emill/n64-fast3d-engine) by Emill and MaikelChan (MIT), in `port/fast3d`
+- [glad](https://github.com/Dav1dde/glad) by David Herberth, with the Khronos platform header by The Khronos Group (MIT-style), in `port/fast3d/glad`
+- [SDL2](https://github.com/libsdl-org/SDL) by Sam Lantinga and contributors (zlib), linked at runtime
+- [SDL_GameControllerDB](https://github.com/mdqinc/SDL_GameControllerDB) by Gabriel Jacobo and contributors (zlib), in `tools/gamecontrollerdb.txt`
+- [SpectNetIDE](https://github.com/Dotneteer/spectnetide) by Istvan Novak (MIT), Z80 opcode comments in `src/game/spectrum_hw.h`
+- [inflate.c](https://www.gnu.org/software/gzip/) by Mark Adler (public domain), in `src/inflate` and `src/game/zlib.c`
+- [gzip 1.2.4](https://www.gnu.org/software/gzip/) by Jean-loup Gailly (GPL-2.0+), build tool in `tools/gzipsrc`
+- [puff](https://github.com/madler/zlib/tree/develop/contrib/puff) by Mark Adler (zlib), build tool in `tools/extractor`
+- [armips](https://github.com/Kingcom/armips) by Kingcom (MIT), build tool in `tools/armips.cpp`
+- [rabbitizer](https://github.com/Decompollaborate/rabbitizer) by Decompollaborate (MIT), build tool in `tools/ido5.3_recomp/rabbitizer`
+- [ido-static-recomp](https://github.com/decompals/ido-static-recomp) by Emill and decompals (no license published), build tool in `tools/ido5.3_recomp`
 
 GE is owned by Rare, Nintendo and the Bond rights holders. This project contains no game assets.
