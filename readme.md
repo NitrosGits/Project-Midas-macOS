@@ -13,7 +13,7 @@ Claude was used in the making of this project. If you don't agree with this, ple
 ## Playing
 
 1. Put your GE (USA) cart image in the `Data` folder next to the executable. See `Data/README.txt` for the accepted formats and other ways to point the game at it.
-2. Run `ProjectMidas.exe` (Windows) or `ProjectMidas` (Linux).
+2. Run `ProjectMidas.exe` (Windows) or `ProjectMidas` (Linux and macOS).
 
 Files next to the executable:
 
@@ -97,6 +97,43 @@ sudo dpkg --add-architecture i386
 sudo apt update
 sudo apt install libsdl2-2.0-0:i386 libgl1:i386
 ```
+
+### On macOS (Apple Silicon, native)
+
+macOS can't run 32-bit programs, so the Mac build is a native 64-bit arm64
+build (`GE_64BIT`, on by default on macOS). The 32-bit builds above are
+unaffected. Details are in `docs/port/macos-arm64.md`.
+
+1. Install the Xcode command line tools and the Homebrew packages:
+   ```
+   xcode-select --install
+   brew install cmake ninja sdl2
+   ```
+2. Put your cart in the repository root as `baserom.u.z64`, then extract the
+   assets once with the Docker steps above (steps 1 to 3). Docker Desktop for
+   Mac works.
+3. Configure and build:
+   ```
+   cmake -S . -B build_mac -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGE_VIDEO=ON
+   ninja -C build_mac
+   ```
+4. Run it from the build folder. It finds `../baserom.u.z64`, or put a copy
+   in `build_mac/Data/`:
+   ```
+   cd build_mac
+   ./ProjectMidas
+   ```
+   To start windowed, set `fullscreen=windowed` under `[display]` in
+   `build_mac/midas.ini`. To keep a log, run
+   `./ProjectMidas 2>&1 | tee midas.log`.
+
+| Build | Game | Next to it |
+| --- | --- | --- |
+| macOS | `build_mac/ProjectMidas` | the controller files, `Data/` |
+
+The Mac build is new. It plays through the intro, menus and the Dam
+mission, but other levels are less tested. Please report problems with the
+log attached.
 
 ## Known issues
 
