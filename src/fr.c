@@ -12,7 +12,9 @@
 #include "game/viewport.h"
 #include "game/dyn.h"
 #include "bondview.h"
+#ifdef GE_64BIT
 #include <stdlib.h>
+#endif
 #ifdef ENABLE_USB
 #include "usb.h"
 #endif

@@ -8,7 +8,9 @@
 #include "bgfog.h"
 #include <limits.h>
 #include "player.h"
+#ifdef GE_64BIT /* the 32-bit builds take these from the game's own headers */
 #include <stdlib.h>
+#endif
 
 /**
  * Address 0x800825C0.

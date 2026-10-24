@@ -47,7 +47,9 @@
 #include "gunfire.h"
 #include "language.h"
 #include "propobj.h"
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 
 
 #ifdef REFRESH_PAL

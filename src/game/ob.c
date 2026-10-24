@@ -8,8 +8,12 @@
 #include "indy_comms.h"
 #include "assets/obseg/file_resource_id_enums.h"
 #include <ramrom.h>
+#ifdef GE_64BIT
 #include <stdio.h>
+#endif
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 #ifndef TARGET_N64
 #include "romdata.h" /* ROM loader: romdataFilesApply / romdataFileServed / romdataFilePreprocess */
 void portHwNoteFile(s32 index); /* frametiming.c: records load hitches for tickhz=hw */

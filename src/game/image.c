@@ -6,7 +6,9 @@
 #include <PR/R4300.h>
 #include "ramrom.h"
 #include "decompress.h"
+#ifdef GE_64BIT /* the 32-bit builds take these from the game's own headers */
 #include <stdio.h>
+#endif
 #ifndef TARGET_N64
 #include "frametiming.h" /* tickhz=hw texture decode price */
 #endif

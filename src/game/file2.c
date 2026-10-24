@@ -9,7 +9,9 @@
 #include "front.h"
 #include "cheat.h"
 #include "crc.h"
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 #ifndef TARGET_N64
 #include <stdio.h> /* stderr - save-write diagnostics (see file.c portMissionEndLog) */
 #endif

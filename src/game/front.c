@@ -56,7 +56,9 @@
 #include "propobj.h"
 #include "ramromreplay.h"
 #include "viewport.h"
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 
 
 /**

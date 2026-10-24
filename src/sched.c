@@ -1,6 +1,8 @@
 #include <ultra64.h>
 #include <PR/os.h>
+#ifdef GE_64BIT
 #include <assert.h>
+#endif
 #include "init.h"
 #include "sched.h"
 #include <bondgame.h>

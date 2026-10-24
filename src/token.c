@@ -4,7 +4,9 @@
 #include "game/language.h"
 #include "rmon.h" /*<PR/rmon.h>*/
 #include "str.h"
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 
 /**
  * EU .data, offset from start of data_seg : 0x36b0

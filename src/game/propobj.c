@@ -64,7 +64,9 @@
 #include "loadobjectmodel.h"
 #include "objective_status2.h"
 #include "othermodemicrocode.h"
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 #ifndef TARGET_N64
 #include "frametiming.h"   /* portAnimTicks / portLagStep: sub-field smoothing */
 #include "cheat.h"         /* cheatIsActive(CHEAT_PORT_UNLOCK_DOORS) - propdoorInteract */

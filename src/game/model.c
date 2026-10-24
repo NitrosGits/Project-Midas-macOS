@@ -16,7 +16,9 @@
 #include "random.h"
 #include "othermodemicrocode.h"
 #include <ramrom.h>
+#ifdef GE_64BIT
 #include <stdio.h>
+#endif
 
 
 /* A view of the group's ModelNode (process_02_position passes the node):

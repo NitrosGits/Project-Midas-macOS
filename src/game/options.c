@@ -28,7 +28,9 @@
 #include "lv.h"
 #include "mp_music.h"
 #include "objective_status.h"
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 #ifndef TARGET_N64
 #include "port_watchpages.h" /* the port watch pages */
 /* Defined further down, next to the vanilla page drawer they replace; the

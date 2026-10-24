@@ -11,7 +11,9 @@
 #include "stanintersection.h"
 #include "assert.h"
 #include "dyn.h"
+#ifdef GE_64BIT
 #include <stdio.h>
+#endif
 #include <token.h>
 
 #ifndef TARGET_N64

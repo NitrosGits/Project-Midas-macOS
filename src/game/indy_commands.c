@@ -3,7 +3,9 @@
 #include <PR/os.h>
 #include <PR/region.h>
 #include "rmon.h"
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 // data
 //D:8004EAC0
 s32 D_8004EAC0 = 0;

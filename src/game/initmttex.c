@@ -2,7 +2,9 @@
 #include <memp.h>
 #include "image.h"
 #include "initmttex.h"
+#ifdef GE_64BIT
 #include <stdlib.h>
+#endif
 #include <token.h>
 
 void set_mt_tex_alloc(void)

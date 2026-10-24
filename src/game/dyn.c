@@ -6,7 +6,9 @@
 #include <macro.h>
 #include "player.h"
 #include <deb.h>
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 
 #ifndef TARGET_N64
 #include <stdio.h> /* GE_ROOM_AUDIT dyn-pool watch (see bg.c) */
