@@ -228,8 +228,8 @@ s32 g_DebugPortalsInputBuffer2 = 0;
 s32 g_DebugPortalsInputBuffer3 = 0;
 s32 g_DebugPortalsInputBuffer4 = 0;
 
-#ifdef __APPLE__
-/* Mach-O has no symbol aliases: name the alias targets directly */
+#if defined(__APPLE__) || defined(__clang__)
+/* Mach-O has no symbol aliases, and clang rejects GCC's alias pragma: name the alias targets directly */
 #define g_DebugPortalsInputBufferSource1 g_DebugPortalsInputBuffer1
 #define g_DebugPortalsInputBufferSource2 g_DebugPortalsInputBuffer2
 #define g_DebugPortalsInputBufferSource3 g_DebugPortalsInputBuffer3

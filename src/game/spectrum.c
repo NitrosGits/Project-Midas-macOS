@@ -48,8 +48,8 @@ s32 sub_GAME_7F0D37DC(u32 cycles, u8 specA, u8 port, u8 value);
 
 // data
 s8 D_8004EC30 = 0x0;
-#ifdef __APPLE__
-/* Mach-O has no symbol aliases: the alias names the buffer's first byte */
+#if defined(__APPLE__) || defined(__clang__)
+/* Mach-O has no symbol aliases, and clang rejects GCC's alias pragma: the alias names the buffer's first byte */
 #define spec_keyboard_row_caps_z_x_c_v (spec_keyboard_buffer[0])
 #else
 extern u8 spec_keyboard_row_caps_z_x_c_v;

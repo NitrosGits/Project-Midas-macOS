@@ -93,7 +93,7 @@ static inline void *portPtr64(unsigned int w)
 /*
  * PORT_STATIC_PTR32(slot, target): a static initializer can't encode an
  * address (clang won't fold &sym - &base), so the slot is left 0 and this
- * records {&slot, target} in __DATA,__ge_ptr32; portWindowInit writes
+ * records {&slot, target} in a ge_ptr32 section; portWindowInit writes
  * portPtr32(target) into every slot at boot. PORT_SPTR(x) is the initializer
  * placeholder: the pointer itself in 32-bit builds, 0 here.
  */
@@ -104,10 +104,20 @@ struct PortStaticPtr32
 };
 #define PORT_SP32_CAT2(a, b) a##b
 #define PORT_SP32_CAT(a, b) PORT_SP32_CAT2(a, b)
+/* The records' section: Mach-O reads it with getsectiondata, ELF through the
+ * linker's __start_/__stop_ symbols, and PE through $a/$z marker records
+ * that the linker sorts around the $m ones (pcsched.c). */
+#if defined(__APPLE__)
+#define PORT_SP32_SECTION "__DATA,__ge_ptr32"
+#elif defined(_WIN32)
+#define PORT_SP32_SECTION ".ge_ptr32$m"
+#else
+#define PORT_SP32_SECTION "ge_ptr32"
+#endif
 #define PORT_STATIC_PTR32(slot, target)                                              \
     static struct PortStaticPtr32 PORT_SP32_CAT(s_PortStaticPtr32_, __COUNTER__)     \
-        __attribute__((used, section("__DATA,__ge_ptr32"))) = { (unsigned int *) &(slot), \
-                                                               (const void *) (target) }
+        __attribute__((used, section(PORT_SP32_SECTION))) = { (unsigned int *) &(slot), \
+                                                             (const void *) (target) }
 #define PORT_SPTR(x) 0
 
 #elif defined(GE_XBOX)

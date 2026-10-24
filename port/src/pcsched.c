@@ -72,12 +72,29 @@ extern void portConLogf(const char *fmt, ...);
 /*
  * The 64-bit address window (port_hostptr.h, docs/port/macos-arm64.md): the
  * executable image, which includes the reservation below. Every 32-bit
- * pointer word is an offset from the image's Mach-O header, so everything a
+ * pointer word is an offset from the image's start (its Mach-O, ELF or PE header), so everything a
  * display list or a layout-bound struct can point at must come from here.
  */
+#if defined(__APPLE__)
 #include <mach-o/getsect.h>
 #include <mach-o/ldsyms.h>
 #include <execinfo.h>
+#define PORT_IMAGE_START ((uintptr_t) &_mh_execute_header)
+#elif defined(_WIN32)
+extern char __ImageBase[]; /* the PE image's DOS header, from the linker */
+#define PORT_IMAGE_START ((uintptr_t) __ImageBase)
+/* $a and $z sort before and after the $m records (port_hostptr.h) */
+static struct PortStaticPtr32 s_PortStaticPtr32Begin __attribute__((used, section(".ge_ptr32$a"))) = { 0, 0 };
+static struct PortStaticPtr32 s_PortStaticPtr32End __attribute__((used, section(".ge_ptr32$z"))) = { 0, 0 };
+#else
+#include <execinfo.h>
+extern char __executable_start[]; /* the ELF image's start, from the linker */
+#define PORT_IMAGE_START ((uintptr_t) __executable_start)
+/* the linker defines these around a section named like a C identifier; the
+ * weak declarations keep an image with no records linking */
+extern struct PortStaticPtr32 __start_ge_ptr32[] __attribute__((weak));
+extern struct PortStaticPtr32 __stop_ge_ptr32[] __attribute__((weak));
+#endif
 
 /* 1 GB covers the memp arena, the high arena and the ROM image with room to
  * spare. */
@@ -98,13 +115,26 @@ static size_t s_WindowHeapUsed;
 /* Patch every PORT_STATIC_PTR32 slot now that the base is known. */
 static void portWindowApplyStaticPtrs(void)
 {
+    struct PortStaticPtr32 *r, *end;
+#if defined(__APPLE__)
     unsigned long size = 0;
-    struct PortStaticPtr32 *r = (struct PortStaticPtr32 *) getsectiondata(&_mh_execute_header, "__DATA", "__ge_ptr32", &size);
-    unsigned long i;
 
-    for (i = 0; r != NULL && i < size / sizeof(*r); i++)
+    r = (struct PortStaticPtr32 *) getsectiondata(&_mh_execute_header, "__DATA", "__ge_ptr32", &size);
+    end = (r != NULL) ? r + size / sizeof(*r) : NULL;
+#elif defined(_WIN32)
+    r = &s_PortStaticPtr32Begin + 1;
+    end = &s_PortStaticPtr32End;
+#else
+    r = __start_ge_ptr32;
+    end = __stop_ge_ptr32;
+#endif
+
+    for (; r != NULL && r < end; r++)
     {
-        *r[i].slot = portPtr32(r[i].target);
+        if (r->slot != NULL) /* PE pads between grouped records with zeros */
+        {
+            *r->slot = portPtr32(r->target);
+        }
     }
 }
 
@@ -116,7 +146,7 @@ void portWindowInit(void)
     {
         return;
     }
-    g_PortWindowBase = (uintptr_t) &_mh_execute_header;
+    g_PortWindowBase = PORT_IMAGE_START;
     p = (void *) (((uintptr_t) s_WindowArena + 0xFFFFu) & ~(uintptr_t) 0xFFFFu);
     if ((uintptr_t) p + PORT_WINDOW_RESERVE - g_PortWindowBase > PORT_WINDOW_SIZE)
     {
@@ -150,17 +180,21 @@ void *portWindowAlloc(size_t size)
 
 void portWindowBadPtr(const void *p)
 {
-    void *frames[32];
-    int n = backtrace(frames, 32);
-    int i;
-
     portConLogf("ge: window: %p is outside the address window (base %p) and can't be stored in a 32-bit word\n",
             p, (void *) g_PortWindowBase);
-    /* symbolize: atos -o ProjectMidas -l <base> <addresses> */
-    for (i = 0; i < n; i++)
+#ifndef _WIN32
     {
-        portConLogf("ge: window:   #%d %p\n", i, frames[i]);
+        void *frames[32];
+        int n = backtrace(frames, 32);
+        int i;
+
+        /* symbolize: atos (macOS) or addr2line (Linux), offsets from <base> */
+        for (i = 0; i < n; i++)
+        {
+            portConLogf("ge: window:   #%d %p\n", i, frames[i]);
+        }
     }
+#endif
     abort();
 }
 #endif

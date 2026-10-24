@@ -84,15 +84,20 @@ if(WIN32)
     # image base above the N64 segment range so gfx_pc.cpp seg_addr can tell
     # addresses from segment refs, and use a 16MB stack (recursive room/portal
     # walks overflow 1MB).
+    # GE_64BIT keeps the default (above 4 GB) image base instead: the address
+    # window assumes no program pointer sits below 4 GB (port_hostptr.h).
     add_link_options($<$<NOT:$<BOOL:${GE_64BIT}>>:-m32> -static-libgcc -static-libstdc++
-                     -Wl,--image-base=0x10000000 -Wl,--disable-dynamicbase
+                     $<$<NOT:$<BOOL:${GE_64BIT}>>:-Wl,--image-base=0x10000000>
+                     $<$<NOT:$<BOOL:${GE_64BIT}>>:-Wl,--disable-dynamicbase>
                      -Wl,--stack,16777216)
     link_libraries(dbghelp)
 elseif(APPLE)
     # macOS executables are always PIE. 16MB main-thread stack, as on Windows.
     add_link_options(-Wl,-stack_size,0x1000000)
 else()
-    add_link_options($<$<NOT:$<BOOL:${GE_64BIT}>>:-m32> -no-pie)
+    # GE_64BIT links as PIE, which loads the image above 4 GB as the address
+    # window expects (port_hostptr.h); it has no -fno-pic asset objects.
+    add_link_options($<$<NOT:$<BOOL:${GE_64BIT}>>:-m32> $<$<NOT:$<BOOL:${GE_64BIT}>>:-no-pie>)
 endif()
 
 add_compile_definitions(
