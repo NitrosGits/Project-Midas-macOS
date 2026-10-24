@@ -131,6 +131,13 @@ unaffected. Details are in `docs/port/macos-arm64.md`.
 | --- | --- | --- |
 | macOS | `build_mac/ProjectMidas` | the controller files, `Data/` |
 
+To make a double-clickable app instead, run
+`./scripts/package_macos.sh`. It writes `dist/ProjectMidas.app` (SDL
+bundled, ad-hoc signed) and a zip. The app keeps its settings, saves and
+logs in `~/Library/Application Support/Project Midas/`, so put the ROM in
+that folder's `Data/` subfolder. The first time, right-click the app and
+choose Open.
+
 The Mac build is new. It plays through the intro, menus and the Dam
 mission, but other levels are less tested. Please report problems with the
 log attached.

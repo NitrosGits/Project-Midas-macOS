@@ -627,6 +627,70 @@ static char sPortRootDir[1024]; /* with trailing separator; "" = cwd fallback */
 #include <unistd.h> /* readlink */
 #endif
 
+#ifdef __APPLE__
+#include <sys/stat.h> /* mkdir */
+
+/* Copy one shipped read-only file (the app's Resources) over the user's copy,
+ * so an updated app brings its new controller database and shader list. */
+static void portCopyBundledFile(const char *resdir, const char *name)
+{
+    char from[1200];
+    char to[1200];
+    FILE *in;
+    FILE *out;
+    char buf[8192];
+    size_t n;
+
+    snprintf(from, sizeof(from), "%s%s", resdir, name);
+    snprintf(to, sizeof(to), "%s%s", sPortRootDir, name);
+    in = fopen(from, "rb");
+    if (in == NULL) {
+        return;
+    }
+    out = fopen(to, "wb");
+    if (out != NULL) {
+        while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
+            fwrite(buf, 1, n, out);
+        }
+        fclose(out);
+    }
+    fclose(in);
+}
+
+/* Inside ProjectMidas.app the executable's folder is part of the signed,
+ * possibly read-only bundle, so the game's files (midas.ini, Data/: the ROM,
+ * saves, profiles, logs) live in ~/Library/Application Support/Project Midas/
+ * instead, seeded from Contents/Resources. A bare binary keeps its own folder. */
+static void portUseAppSupportIfBundled(void)
+{
+    static const char *const shipped[] = {
+        "gamecontrollerdb.txt", "gamecontrollerdefault.txt", "midas_ini_help.txt", "Data/shaders_base.txt",
+    };
+    char resdir[1100];
+    const char *home = getenv("HOME");
+    size_t len = strlen(sPortRootDir);
+    const char *tail = "/Contents/MacOS/";
+    size_t tlen = strlen(tail);
+    unsigned i;
+
+    if (home == NULL || len <= tlen || strcmp(sPortRootDir + len - tlen, tail) != 0) {
+        return; /* not inside an app bundle */
+    }
+    snprintf(resdir, sizeof(resdir), "%.*sContents/Resources/", (int) (len - tlen + 1), sPortRootDir);
+    snprintf(sPortRootDir, sizeof(sPortRootDir), "%s/Library/Application Support/Project Midas/", home);
+    mkdir(sPortRootDir, 0755);
+    {
+        char data[1200];
+
+        snprintf(data, sizeof(data), "%sData", sPortRootDir);
+        mkdir(data, 0755);
+    }
+    for (i = 0; i < sizeof(shipped) / sizeof(shipped[0]); i++) {
+        portCopyBundledFile(resdir, shipped[i]);
+    }
+}
+#endif
+
 static void portInitRootDir(const char *argv0)
 {
     int last = -1;
@@ -668,6 +732,9 @@ static void portInitRootDir(const char *argv0)
      * PATH/cwd - fall back to cwd-relative files. */
     sPortRootDir[last + 1] = '\0';
 
+#ifdef __APPLE__
+    portUseAppSupportIfBundled();
+#endif
     /* always-on: log where eeprom.bin/midas.ini actually live this run */
     portConLogf("ge: root: %s\n", sPortRootDir[0] != '\0' ? sPortRootDir : "(cwd)");
 }
