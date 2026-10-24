@@ -90,12 +90,25 @@ static void crashPrintf(const char *fmt, ...)
  * via GetModuleHandle(NULL)). Every read is bounds-checked and nothing here can
  * block; an unnamed image prints "?" with the absolute address kept as the
  * offset. */
-static const char *portModuleFor(unsigned long addr, unsigned long *offset)
+/* The context's instruction, frame and stack registers, by architecture */
+#ifdef _WIN64
+#define PORT_CTX_IP(c) ((uintptr_t) (c)->Rip)
+#define PORT_CTX_FP(c) ((uintptr_t) (c)->Rbp)
+#define PORT_CTX_SP(c) ((uintptr_t) (c)->Rsp)
+#define PORT_STACKWALK_MACHINE IMAGE_FILE_MACHINE_AMD64
+#else
+#define PORT_CTX_IP(c) ((uintptr_t) (c)->Eip)
+#define PORT_CTX_FP(c) ((uintptr_t) (c)->Ebp)
+#define PORT_CTX_SP(c) ((uintptr_t) (c)->Esp)
+#define PORT_STACKWALK_MACHINE IMAGE_FILE_MACHINE_I386
+#endif
+
+static const char *portModuleFor(uintptr_t addr, uintptr_t *offset)
 {
     static char name[64];
     MEMORY_BASIC_INFORMATION mbi;
     const unsigned char *base;
-    unsigned long pe, expRva, nameRva, i;
+    unsigned long pe, expRva, nameRva, i, dirOff;
 
     *offset = addr;
     if (!VirtualQuery((void *) (uintptr_t) addr, &mbi, sizeof(mbi)) || mbi.AllocationBase == NULL) {
@@ -103,21 +116,27 @@ static const char *portModuleFor(unsigned long addr, unsigned long *offset)
     }
     base = (const unsigned char *) mbi.AllocationBase;
     if ((HMODULE) mbi.AllocationBase == GetModuleHandleA(NULL)) {
-        *offset = addr - (unsigned long) (uintptr_t) base;
+        *offset = addr - (uintptr_t) base;
         return "ProjectMidas.exe";
     }
     if (!portPtrReadable(base, 0x40) || base[0] != 'M' || base[1] != 'Z') {
         return "?";
     }
     pe = *(const unsigned long *) (base + 0x3C);
-    /* "PE\0\0" + COFF(20) + PE32 optional header: DataDirectory[EXPORT]
-     * sits at pe+0x78 (32-bit image - this is a 32-bit process) */
-    if (pe > 0x1000 || !portPtrReadable(base + pe, 0x80) ||
-        *(const unsigned long *) (base + pe) != 0x00004550ul ||
-        *(const unsigned short *) (base + pe + 0x18) != 0x10B) {
+    /* "PE\0\0" + COFF(20) + optional header: DataDirectory[EXPORT] sits at
+     * pe+0x78 in a PE32 image (magic 0x10B) and pe+0x88 in PE32+ (0x20B) */
+    if (pe > 0x1000 || !portPtrReadable(base + pe, 0x90) ||
+        *(const unsigned long *) (base + pe) != 0x00004550ul) {
         return "?";
     }
-    expRva = *(const unsigned long *) (base + pe + 0x78);
+    if (*(const unsigned short *) (base + pe + 0x18) == 0x10B) {
+        dirOff = 0x78;
+    } else if (*(const unsigned short *) (base + pe + 0x18) == 0x20B) {
+        dirOff = 0x88;
+    } else {
+        return "?";
+    }
+    expRva = *(const unsigned long *) (base + pe + dirOff);
     if (expRva == 0 || !portPtrReadable(base + expRva, 0x28)) {
         return "?";
     }
@@ -129,7 +148,7 @@ static const char *portModuleFor(unsigned long addr, unsigned long *offset)
         name[i] = (char) base[nameRva + i];
     }
     name[i] = '\0';
-    *offset = addr - (unsigned long) (uintptr_t) base;
+    *offset = addr - (uintptr_t) base;
     return name;
 }
 
@@ -150,8 +169,8 @@ static LONG WINAPI portSehHandler(EXCEPTION_POINTERS *ep)
     u32 arenasize = 0;
     void *arena;
     /* snapshot before StackWalk64 - it MUTATES the CONTEXT it walks */
-    unsigned long faultEip = ctx->Eip;
-    unsigned long ebp = ctx->Ebp;
+    uintptr_t faultEip = PORT_CTX_IP(ctx);
+    uintptr_t ebp = PORT_CTX_FP(ctx);
     int i;
 
     crashPrintf( "\nge: EXCEPTION 0x%08lx (menu=%d stage=%d frame=%u)\n",
@@ -159,13 +178,20 @@ static LONG WINAPI portSehHandler(EXCEPTION_POINTERS *ep)
             current_menu, g_MainStageNum, g_PortFramesPumped);
     if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
         ep->ExceptionRecord->NumberParameters >= 2) {
-        crashPrintf( "  %s of address 0x%08lx at eip 0x%08lx\n",
+        crashPrintf( "  %s of address 0x%08llx at ip 0x%08llx\n",
                 ep->ExceptionRecord->ExceptionInformation[0] ? "WRITE" : "READ",
-                (unsigned long) ep->ExceptionRecord->ExceptionInformation[1],
-                (unsigned long) ctx->Eip);
+                (unsigned long long) ep->ExceptionRecord->ExceptionInformation[1],
+                (unsigned long long) PORT_CTX_IP(ctx));
     }
+#ifdef _WIN64
+    crashPrintf( "  rax=%llx rbx=%llx rcx=%llx rdx=%llx rsi=%llx rdi=%llx rbp=%llx rsp=%llx\n",
+            (unsigned long long) ctx->Rax, (unsigned long long) ctx->Rbx, (unsigned long long) ctx->Rcx,
+            (unsigned long long) ctx->Rdx, (unsigned long long) ctx->Rsi, (unsigned long long) ctx->Rdi,
+            (unsigned long long) ctx->Rbp, (unsigned long long) ctx->Rsp);
+#else
     crashPrintf( "  eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx ebp=%08lx esp=%08lx\n",
             ctx->Eax, ctx->Ebx, ctx->Ecx, ctx->Edx, ctx->Esi, ctx->Edi, ctx->Ebp, ctx->Esp);
+#endif
 
     arena = portGetMempArena(&arenasize);
     crashPrintf( "  memp arena: %p + 0x%08lx\n", arena, (unsigned long) arenasize);
@@ -179,12 +205,12 @@ static LONG WINAPI portSehHandler(EXCEPTION_POINTERS *ep)
     crashPrintf( "ge: StackWalk64 backtrace:\n");
     SymInitialize(proc, NULL, TRUE);
     memset(&sf, 0, sizeof(sf));
-    sf.AddrPC.Offset = ctx->Eip;    sf.AddrPC.Mode = AddrModeFlat;
-    sf.AddrFrame.Offset = ctx->Ebp; sf.AddrFrame.Mode = AddrModeFlat;
-    sf.AddrStack.Offset = ctx->Esp; sf.AddrStack.Mode = AddrModeFlat;
+    sf.AddrPC.Offset = PORT_CTX_IP(ctx);    sf.AddrPC.Mode = AddrModeFlat;
+    sf.AddrFrame.Offset = PORT_CTX_FP(ctx); sf.AddrFrame.Mode = AddrModeFlat;
+    sf.AddrStack.Offset = PORT_CTX_SP(ctx); sf.AddrStack.Mode = AddrModeFlat;
 
     for (i = 0; i < 24; i++) {
-        if (!StackWalk64(IMAGE_FILE_MACHINE_I386, proc, thr, &sf, ctx,
+        if (!StackWalk64(PORT_STACKWALK_MACHINE, proc, thr, &sf, ctx,
                          NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL))
             break;
         if (sf.AddrPC.Offset == 0) break;
@@ -195,19 +221,19 @@ static LONG WINAPI portSehHandler(EXCEPTION_POINTERS *ep)
      * address), since StackWalk64 has no PDB symbols to guide it. Needs
      * -fno-omit-frame-pointer, set in CMakeLists. */
     {
-        unsigned long off;
+        uintptr_t off;
         const char *mod = portModuleFor(faultEip, &off);
-        crashPrintf( "ge: EBP-chain backtrace (eip 0x%08lx first):\n  0x%08lx (%s+0x%lx)\n",
-                faultEip, faultEip, mod, off);
+        crashPrintf( "ge: frame-chain backtrace (ip 0x%08llx first):\n  0x%08llx (%s+0x%llx)\n",
+                (unsigned long long) faultEip, (unsigned long long) faultEip, mod, (unsigned long long) off);
     }
     for (i = 0; i < 32; i++) {
-        unsigned long *fp = (unsigned long *) ebp;
-        unsigned long off;
+        uintptr_t *fp = (uintptr_t *) ebp;
+        uintptr_t off;
         const char *mod;
-        if (!portPtrReadable(fp, 8)) break;
+        if (!portPtrReadable(fp, 2 * sizeof(uintptr_t))) break;
         if (fp[1] == 0) break;
         mod = portModuleFor(fp[1], &off);
-        crashPrintf( "  0x%08lx (%s+0x%lx)\n", fp[1], mod, off);
+        crashPrintf( "  0x%08llx (%s+0x%llx)\n", (unsigned long long) fp[1], mod, (unsigned long long) off);
         if (fp[0] <= ebp) break; /* stack grows down; next frame must be higher */
         ebp = fp[0];
     }
@@ -230,13 +256,13 @@ static LONG WINAPI portWatchHandler(EXCEPTION_POINTERS *ep)
         extern unsigned int g_PortFramesPumped;
         extern int current_menu;
         CONTEXT *c = ep->ContextRecord;
-        unsigned long hits = c->Dr6 & 0xF;
+        unsigned long hits = (unsigned long) (c->Dr6 & 0xF);
         int i;
         for (i = 0; i < 4; i++) {
             if (hits & (1ul << i)) {
-                portConLogf("ge: WATCH dr%d %p=0x%08lx written, eip after=0x%08lx (menu=%d frame=%u)\n",
-                        i, s_WatchAddr[i], (unsigned long) *(unsigned long *) s_WatchAddr[i],
-                        (unsigned long) c->Eip, current_menu, g_PortFramesPumped);
+                portConLogf("ge: WATCH dr%d %p=0x%08lx written, ip after=0x%08llx (menu=%d frame=%u)\n",
+                        i, s_WatchAddr[i], (unsigned long) *(unsigned int *) s_WatchAddr[i],
+                        (unsigned long long) PORT_CTX_IP(c), current_menu, g_PortFramesPumped);
             }
         }
         fflush(stderr);
@@ -257,10 +283,10 @@ static DWORD WINAPI portWatchArmThread(LPVOID param)
     SuspendThread(args->mainThread);
     if (GetThreadContext(args->mainThread, &ctx)) {
         int i;
-        ctx.Dr0 = (DWORD) (uintptr_t) s_WatchAddr[0];
-        ctx.Dr1 = (DWORD) (uintptr_t) s_WatchAddr[1];
-        ctx.Dr2 = (DWORD) (uintptr_t) s_WatchAddr[2];
-        ctx.Dr3 = (DWORD) (uintptr_t) s_WatchAddr[3];
+        ctx.Dr0 = (DWORD_PTR) s_WatchAddr[0];
+        ctx.Dr1 = (DWORD_PTR) s_WatchAddr[1];
+        ctx.Dr2 = (DWORD_PTR) s_WatchAddr[2];
+        ctx.Dr3 = (DWORD_PTR) s_WatchAddr[3];
         ctx.Dr7 = 0;
         for (i = 0; i < 4; i++) {
             ctx.Dr7 |= 1ul << (2 * i);            /* local enable */
@@ -295,15 +321,15 @@ static LONG WINAPI portFirstChanceAV(EXCEPTION_POINTERS *ep)
     if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
         InterlockedIncrement(&printed) <= 3) {
         extern unsigned int g_PortFramesPumped;
-        DWORD ebp = ep->ContextRecord->Ebp;
+        uintptr_t ebp = PORT_CTX_FP(ep->ContextRecord);
         int d;
-        crashPrintf( "ge: AV(first-chance) %s 0x%08lx eip=0x%08lx frame=%u\n",
+        crashPrintf( "ge: AV(first-chance) %s 0x%08llx ip=0x%08llx frame=%u\n",
                 ep->ExceptionRecord->ExceptionInformation[0] ? "WRITE" : "READ",
-                (unsigned long) ep->ExceptionRecord->ExceptionInformation[1],
-                (unsigned long) ep->ContextRecord->Eip, g_PortFramesPumped);
-        for (d = 0; d < 12 && portPtrReadable((void *) (uintptr_t) ebp, 8); d++) {
-            crashPrintf( "   #%d 0x%08lx\n", d, (unsigned long) ((DWORD *) (uintptr_t) ebp)[1]);
-            ebp = ((DWORD *) (uintptr_t) ebp)[0];
+                (unsigned long long) ep->ExceptionRecord->ExceptionInformation[1],
+                (unsigned long long) PORT_CTX_IP(ep->ContextRecord), g_PortFramesPumped);
+        for (d = 0; d < 12 && portPtrReadable((void *) ebp, 2 * sizeof(uintptr_t)); d++) {
+            crashPrintf( "   #%d 0x%08llx\n", d, (unsigned long long) ((uintptr_t *) ebp)[1]);
+            ebp = ((uintptr_t *) ebp)[0];
         }
         fflush(stderr);
     }
@@ -381,12 +407,12 @@ static DWORD WINAPI portStallWatchdog(LPVOID param)
             ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
             SuspendThread(mainThread);
             if (GetThreadContext(mainThread, &ctx)) {
-                unsigned long off;
+                uintptr_t off;
                 char eipMod[64];
                 const char *callerMod = "?";
-                snprintf(eipMod, sizeof(eipMod), "%s", portModuleFor(ctx.Eip, &off));
-                if (portPtrReadable((void *) (uintptr_t) ctx.Ebp, 8)) {
-                    callerMod = portModuleFor(((DWORD *) (uintptr_t) ctx.Ebp)[1], &off);
+                snprintf(eipMod, sizeof(eipMod), "%s", portModuleFor(PORT_CTX_IP(&ctx), &off));
+                if (portPtrReadable((void *) PORT_CTX_FP(&ctx), 2 * sizeof(uintptr_t))) {
+                    callerMod = portModuleFor(((uintptr_t *) PORT_CTX_FP(&ctx))[1], &off);
                 }
                 modal = (_stricmp(eipMod, "win32u.dll") == 0 || _stricmp(eipMod, "USER32.dll") == 0)
                      && (_stricmp(callerMod, "USER32.dll") == 0 || _stricmp(callerMod, "uxtheme.dll") == 0);
@@ -417,18 +443,19 @@ static DWORD WINAPI portStallWatchdog(LPVOID param)
                 ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
                 SuspendThread(mainThread);
                 if (GetThreadContext(mainThread, &ctx)) {
-                    DWORD ebp = ctx.Ebp;
-                    unsigned long off;
+                    uintptr_t ebp = PORT_CTX_FP(&ctx);
+                    uintptr_t off;
                     const char *mod;
                     int d;
-                    mod = portModuleFor(ctx.Eip, &off);
-                    crashPrintf("ge: STALL sample %d: eip=0x%08lx (%s+0x%lx) ebp=0x%08lx (frame=%u)\n",
-                            s, (unsigned long) ctx.Eip, mod, off, (unsigned long) ebp, now);
-                    for (d = 0; d < 12 && portPtrReadable((void *) (uintptr_t) ebp, 8); d++) {
-                        unsigned long ret = (unsigned long) ((DWORD *) (uintptr_t) ebp)[1];
+                    mod = portModuleFor(PORT_CTX_IP(&ctx), &off);
+                    crashPrintf("ge: STALL sample %d: ip=0x%08llx (%s+0x%llx) fp=0x%08llx (frame=%u)\n",
+                            s, (unsigned long long) PORT_CTX_IP(&ctx), mod, (unsigned long long) off,
+                            (unsigned long long) ebp, now);
+                    for (d = 0; d < 12 && portPtrReadable((void *) ebp, 2 * sizeof(uintptr_t)); d++) {
+                        uintptr_t ret = ((uintptr_t *) ebp)[1];
                         mod = portModuleFor(ret, &off);
-                        crashPrintf("   #%d 0x%08lx (%s+0x%lx)\n", d, ret, mod, off);
-                        ebp = ((DWORD *) (uintptr_t) ebp)[0];
+                        crashPrintf("   #%d 0x%08llx (%s+0x%llx)\n", d, (unsigned long long) ret, mod, (unsigned long long) off);
+                        ebp = ((uintptr_t *) ebp)[0];
                     }
                 }
                 ResumeThread(mainThread);

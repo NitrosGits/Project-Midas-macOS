@@ -11,7 +11,12 @@
 
 extern void *memcpy(void *, const void *, size_t);
 extern unsigned char *strchr(const unsigned char *, int);
+#if defined(GE_64BIT) && defined(_WIN32)
+/* x64 Windows: SDL pulls in <intrin.h>, which declares the standard form */
+extern size_t strlen(const char *);
+#else
 extern size_t strlen(const unsigned char *);
+#endif
 
 #ifndef TARGET_N64
 /* PC port: the rest of the libc string functions the game and port call.
