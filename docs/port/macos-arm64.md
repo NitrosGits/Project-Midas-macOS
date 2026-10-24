@@ -695,6 +695,22 @@ Still open:
   checked against a 32-bit build.
 - Frame-rate dips to about 40 fps. The time goes to the buffer swap.
 
+### 2026-10-24: Linux and Windows x64 build (port/x64-linux-windows)
+
+GE_64BIT now builds as native x64 on Linux (clang) and Windows (clang for
+MinGW), and CI passes for all five targets.
+
+- The address window takes its base and static pointer records per
+  format: Mach-O, ELF (`__executable_start`, `__start_`/`__stop_ge_ptr32`)
+  and PE (`__ImageBase`, `$a`/`$m`/`$z` sections).
+- Linux links as PIE and Windows keeps its default image base, so the image
+  sits above 4 GB.
+- The Windows crash and stall handlers use x64 registers.
+- A few clang name and declaration clashes are fixed.
+
+Neither x64 build has been run. A known risk on Windows: heap memory can be
+below 4 GB, and the window passes such values through as raw words.
+
 ### How to continue a family
 
 1. Copy the tree first (`--orig` for the object compare needs it).

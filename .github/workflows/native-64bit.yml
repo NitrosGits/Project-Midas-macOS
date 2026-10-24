@@ -1,10 +1,10 @@
 name: Native-64bit-Build
 
 # The native 64-bit builds (GE_64BIT, docs/port/macos-arm64.md). macOS arm64
-# is the supported one. Linux x64 and Windows x64 are experiments: GE_64BIT's
-# address window still uses Mach-O APIs, so those jobs are expected to fail,
-# and they report how far they got in the job summary. The 32-bit builds are
-# in main.yml.
+# is the tested one. Linux x64 and Windows x64 build (port/x64-linux-windows)
+# but haven't been run yet, so their jobs may fail without failing the
+# workflow; they report errors in the job summary. The 32-bit builds are in
+# main.yml.
 
 on:
   push:
