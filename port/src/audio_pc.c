@@ -44,7 +44,9 @@
 #include <ultra64.h>
 #include <PR/libaudio.h>
 #include <PR/abi.h>
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 
 /* ---- config ------------------------------------------------------------ */
 
