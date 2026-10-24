@@ -11,7 +11,9 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <stdarg.h>
+#ifdef GE_64BIT
 #include <string.h>
+#endif
 #include <ultra64.h>
 #ifdef _WIN32
 #include <direct.h>   /* _mkdir: portLogPath */
