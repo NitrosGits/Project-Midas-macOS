@@ -1532,6 +1532,18 @@ static void gfx_opengl_init(void) {
         gl_mirror_clamp = GL_MIRRORED_REPEAT;
     }
 
+    // The profile SDL asked for isn't always the one granted: Wine on macOS
+    // answers a compatibility request with a 4.1 core context, which rejects
+    // GLSL 1.30. Ask the context itself (GL 3.2+).
+    if (!gl_es && !gl_core_profile && (GLVersion.major > 3 || (GLVersion.major == 3 && GLVersion.minor >= 2))) {
+        GLint mask = 0;
+        glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &mask);
+        if (mask & GL_CONTEXT_CORE_PROFILE_BIT) {
+            gl_core_profile = true;
+            sysLogPrintf(LOG_NOTE, "GL: the driver granted a core profile");
+        }
+    }
+
     // determine GLSL version
     if (gl_es) {
         // ES has its own numbering scheme, but it should support 300 even on 3.1 and 3.2

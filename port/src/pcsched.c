@@ -544,8 +544,9 @@ void *portGetMempArena(u32 *outsize)
         /* Pin the arena ABOVE the N64 segment-word range (< 0x10000000):
          * arena-backed pointers get embedded into display lists, and
          * fast3d's seg_addr resolves untagged low-range words as segment
-         * references (see gfx_pc.cpp). 0x20000000 keeps them disjoint. */
-#ifdef _WIN32
+         * references (see gfx_pc.cpp). 0x20000000 keeps them disjoint.
+         * GE_64BIT takes it from the address window like every other arena. */
+#if defined(_WIN32) && !defined(GE_64BIT)
         arena = VirtualAlloc((void *) 0x20000000u, PORT_MEMP_ARENA_SIZE,
                              0x3000 /* MEM_COMMIT|MEM_RESERVE */, 0x04 /* PAGE_READWRITE */);
         if (arena == NULL)
